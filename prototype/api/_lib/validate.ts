@@ -26,6 +26,16 @@ const ActionInputSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('customerAskedReschedule'), orderId, asked: z.boolean() }),
   z.object({ type: z.literal('riderRefuse'), orderId, reason: z.enum(['no_cash', 'want_later', 'not_home', 'changed_mind', 'cheaper_elsewhere', 'not_ordered', 'damaged']).optional() }),
   z.object({ type: z.literal('deskSecondChance'), parcelId }),
+  z.object({
+    type: z.literal('deskInspect'),
+    parcelId,
+    unopened: z.boolean(),
+    sealOk: z.boolean(),
+    invoiceOutside: z.boolean(),
+    photoNote: z.string().max(80).optional(),
+    by: z.enum(['operator', 'bot']).optional(),
+  }),
+  z.object({ type: z.literal('deskSkipSecondChance'), parcelId, reason: z.enum(['refused_firmly', 'not_reachable', 'seller_wants_back', 'other']) }),
   z.object({ type: z.literal('customerSecondChance'), parcelId, accept: z.boolean() }),
   z.object({
     type: z.literal('deskSetParam'),

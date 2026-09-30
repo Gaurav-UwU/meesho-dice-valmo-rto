@@ -1,4 +1,4 @@
-import { LANE_LABEL, routeParcel, type RefusedParcel, type RouteDecision, type RouteOptions } from './router.ts'
+import { factsOf, LANE_LABEL, routeParcel, type RefusedParcel, type RouteDecision, type RouteOptions } from './router.ts'
 
 /**
  * "Try a what-if" on the Desk: what would the Router do if one of these three facts about the parcel were different?
@@ -43,10 +43,13 @@ const signed = (n: number): string => `${n < 0 ? '−' : '+'}₹${Math.abs(Math.
 
 export function whatIf(parcel: RefusedParcel, flips: WhatIfFlips, opts: RouteOptions = {}): WhatIfResult {
   const before = routeParcel(parcel, opts)
-  const real = ORDER.filter((g) => flips[g] !== undefined && flips[g] !== parcel[g])
+  const facts = factsOf(parcel, opts)
+  // Nothing to preview before the inspection: the facts are not known yet.
+  const real = opts.inspection === null ? [] : ORDER.filter((g) => flips[g] !== undefined && flips[g] !== facts[g])
   if (real.length === 0) return { before, after: before, changed: false, text: '' }
   const patch = Object.fromEntries(real.map((g) => [g, flips[g]]))
-  const after = routeParcel({ ...parcel, ...patch }, opts)
+  // What the inspector recorded is what the Router reads, so the what-if changes that copy (in memory only).
+  const after = routeParcel({ ...parcel, ...patch }, opts.inspection ? { ...opts, inspection: { ...opts.inspection, ...patch } } : opts)
   const changed = after.lane !== before.lane
   const holdWas = before.ev.hold !== null
   const holdNow = after.ev.hold !== null

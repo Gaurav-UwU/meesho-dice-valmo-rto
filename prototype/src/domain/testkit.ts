@@ -48,3 +48,11 @@ export const forceParcel = (s: DayState, orderId: string, patch: Partial<Refused
   ...s,
   parcels: s.parcels.map((p) => (p.orderId === orderId ? { ...p, parcel: { ...p.parcel, ...patch } } : p)),
 })
+
+/** The hub operator inspects the parcel of a refused order and records what is really there (by default the parcel's own seeded facts). */
+export function inspectParcel(s: DayState, orderId: string, found: { unopened?: boolean; sealOk?: boolean; invoiceOutside?: boolean; photoNote?: string } = {}, at = AT + 1): DayState {
+  const rec = s.parcels.find((p) => p.orderId === orderId)
+  if (!rec) throw new Error(`no parcel for ${orderId}`)
+  const { unopened, sealOk, invoiceOutside } = rec.parcel
+  return reduce(s, { type: 'deskInspect', at, parcelId: rec.id, unopened, sealOk, invoiceOutside, ...found })
+}

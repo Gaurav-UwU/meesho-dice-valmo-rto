@@ -71,7 +71,7 @@ export const DEMO_STEPS: readonly DemoStep[] = [
     id: 'audit',
     title: 'Check the numbers',
     doThis: 'Open the Audit.',
-    see: 'Ten checks on the day’s own record, all green: one final state per order, nothing delivered without an OTP, the ledger equals every screen.',
+    see: 'Twelve checks on the day’s own record, all green: one final state per order, nothing delivered without an OTP, nothing held without an inspection, the ledger equals every screen.',
     links: [{ route: '/audit', label: 'Open Audit' }],
   },
   {

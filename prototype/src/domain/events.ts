@@ -36,7 +36,9 @@ export const EVENT_FIELDS = {
   STRIKE: ['riderId'],
   // Router
   ROUTER_LANE: ['lane', 'ev', 'inputs'],
+  PARCEL_INSPECTED: ['unopened', 'sealOk', 'invoiceOutside', 'by'],
   SECOND_CHANCE_SENT: [],
+  SECOND_CHANCE_SKIPPED: ['reason'],
   SECOND_CHANCE_ACCEPTED: [],
   SECOND_CHANCE_EXPIRED: [],
   HELD: [],

@@ -21,6 +21,9 @@ async function refuseShowcase(): Promise<void> {
   await store.send('lucknow', { type: 'riderRefuse', orderId: hero })
   const code = /(\d{4})/.exec(state().messages.filter((m) => m.orderId === hero && m.kind === 'refusal_otp').at(-1)!.text)![1]
   await store.send('lucknow', { type: 'submitOtp', orderId: hero, code })
+  // The hub operator inspects it: the facts are what the synthetic parcel really is.
+  const { id, parcel } = state().parcels[0]
+  await store.send('lucknow', { type: 'deskInspect', parcelId: id, unopened: parcel.unopened, sealOk: parcel.sealOk, invoiceOutside: parcel.invoiceOutside })
 }
 
 const showDesk = (): void => {

@@ -8,7 +8,7 @@ import { eventsOf } from './events.ts'
 import { costLedger, ledgerTotals, savingsLedger } from './ledger.ts'
 import { reduce } from './reducer.ts'
 import { deskItems, kpis, stopsOf } from './selectors.ts'
-import { AT, advanceHours, deliverOrder, forceParcel, heroStops, refuseOrder, run, setPayment, startedDay } from './testkit.ts'
+import { AT, advanceHours, deliverOrder, forceParcel, heroStops, inspectParcel, refuseOrder, run, setPayment, startedDay } from './testkit.ts'
 import type { DayState } from './types.ts'
 
 /**
@@ -257,7 +257,7 @@ describe('scenario 7: a second chance with no reply expires at 24 hours and fall
 })
 
 describe('scenario 8: a hard refusal with every gate is held, matched, delivered, and only then is the ₹145 booked', () => {
-  const hard = forceParcel(refuseOrder(day, bonusId), bonusId, { reason: 'not_ordered', sellerState: day.hub.state, sellerGst: false, unopened: true, sealOk: true, sellerOptedIn: true, invoiceOutside: true, demandRate: 0.3 })
+  const hard = inspectParcel(forceParcel(refuseOrder(day, bonusId), bonusId, { reason: 'not_ordered', sellerState: day.hub.state, sellerGst: false, unopened: true, sealOk: true, sellerOptedIn: true, invoiceOutside: true, demandRate: 0.3 }), bonusId)
   const pid = hard.parcels[0].id
   const held = run(hard, { type: 'deskHold', at: AT + 2, parcelId: pid })
   const matched = run(held, { type: 'deskMatch', at: AT + 3, parcelId: pid })
@@ -312,7 +312,7 @@ describe('scenario 8: a hard refusal with every gate is held, matched, delivered
 })
 
 describe('scenario 9: a hold with no match after 48 hours goes back in a batched return', () => {
-  const hard = forceParcel(refuseOrder(day, bonusId), bonusId, { reason: 'not_ordered', sellerState: day.hub.state, sellerGst: false, unopened: true, sealOk: true, sellerOptedIn: true, invoiceOutside: true, demandRate: 0.2 })
+  const hard = inspectParcel(forceParcel(refuseOrder(day, bonusId), bonusId, { reason: 'not_ordered', sellerState: day.hub.state, sellerGst: false, unopened: true, sealOk: true, sellerOptedIn: true, invoiceOutside: true, demandRate: 0.2 }), bonusId)
   const pid = hard.parcels[0].id
   // Nobody comes: the shelf timer is what matters, so force "no buyer within the window".
   const held: DayState = (() => {
@@ -344,7 +344,7 @@ describe('scenario 9: a hold with no match after 48 hours goes back in a batched
 })
 
 describe('scenario 10: a seller that has not opted in can never be forced into the hold lane', () => {
-  const base = forceParcel(refuseOrder(day, bonusId), bonusId, { reason: 'not_ordered', sellerState: day.hub.state, sellerGst: false, unopened: true, sealOk: true, sellerOptedIn: false, invoiceOutside: true, demandRate: 0.3 })
+  const base = inspectParcel(forceParcel(refuseOrder(day, bonusId), bonusId, { reason: 'not_ordered', sellerState: day.hub.state, sellerGst: false, unopened: true, sealOk: true, sellerOptedIn: false, invoiceOutside: true, demandRate: 0.3 }), bonusId)
   const pid = base.parcels[0].id
 
   it('the Router sends it to a consolidated return and the hold action is refused', () => {
@@ -360,7 +360,8 @@ describe('scenario 10: a seller that has not opted in can never be forced into t
 
   it('the other three gates are only a what-if: flipping one previews the lane and never touches the parcel', () => {
     const optedIn = forceParcel(base, bonusId, { sellerOptedIn: true })
-    const r = whatIf(optedIn.parcels[0].parcel, { sealOk: false }, { params: optedIn.router })
+    expect(deskItems(optedIn)[0].decision.lane).toBe('hold_rehome')
+    const r = whatIf(optedIn.parcels[0].parcel, { sealOk: false }, deskItems(optedIn)[0].options)
     expect(r.before.lane).toBe('hold_rehome')
     expect(r.after.lane).toBe('consolidated_return')
     expect(optedIn.parcels[0].parcel.sealOk).toBe(true)
@@ -438,7 +439,7 @@ describe('the Audit is green after a full Autopilot day and Close pilot', () => 
 
   it('every check passes', () => {
     const checks = runAudit(closed)
-    expect(checks).toHaveLength(10)
+    expect(checks).toHaveLength(12)
     const red = checks.filter((c) => !c.ok)
     expect(red.map((c) => `${c.id}: ${c.detail}`)).toEqual([])
   })

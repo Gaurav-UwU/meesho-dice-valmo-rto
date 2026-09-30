@@ -11,7 +11,7 @@ import { useHubParam } from '../ui/hub.ts'
 import './ops/ops.css'
 import './audit.css'
 
-/** Ten checks on the day's own record, each green or red. Read from the event log and the lifecycle, so a screen that lies turns a check red. */
+/** Twelve checks on the day's own record, each green or red. Read from the event log and the lifecycle, so a screen that lies turns a check red. */
 export default function Audit() {
   const { hub } = useHubParam()
   const day = useDay(hub.id)
@@ -37,7 +37,7 @@ export default function Audit() {
         ) : (
           <>
             <section className={`ops-card audit-summary ${green ? 'is-green' : 'is-red'}`} aria-label="Audit result" role="status">
-              <strong>{green ? 'All 10 checks are green' : `${checks.filter((c) => !c.ok).length} of ${checks.length} checks are red`}</strong>
+              <strong>{green ? `All ${checks.length} checks are green` : `${checks.filter((c) => !c.ok).length} of ${checks.length} checks are red`}</strong>
               <span>
                 {day.started ? `${day.stopOrder.length} orders · ${day.events.length} events logged · ${clockText(day.simNow)}` : 'The day has not started: start it on the Ops console.'}
               </span>

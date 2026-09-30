@@ -7,7 +7,7 @@ import { SIM_START } from './clock.ts'
 import type { DayConfig, DayState, StopRecord } from './types.ts'
 
 /** Bump when the shape of DayState changes (see DayState.schema). */
-export const DAY_SCHEMA = 6
+export const DAY_SCHEMA = 7
 
 export const DEFAULT_CONFIG: DayConfig = { maxAttempts: 2, bonus: 15, uplift: 0.12, basePay: 20 }
 

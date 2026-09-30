@@ -1,6 +1,6 @@
 import type { AttemptAssessment, AttemptClaim, AttemptConfidence, AttemptEvidence, CustomerAnswers } from '../engine/attempts.ts'
 import type { LatLng } from '../engine/geo.ts'
-import type { RefusalReason, RefusedParcel, RouterParams } from '../engine/router.ts'
+import type { Inspection, RefusalReason, RefusedParcel, RouterParams, SkipReason } from '../engine/router.ts'
 import type { Arm, Hub, Order, Rider } from '../engine/types.ts'
 import type { DomainEvent } from './events.ts'
 import type { OrderStatus } from './lifecycle.ts'
@@ -131,6 +131,12 @@ export interface ParcelRecord {
   /** The 24 h offer ran out with no answer */
   readonly secondChanceExpired: boolean
   readonly secondChanceSentSim?: number
+  /** What the hub operator recorded; none until they (or, for simulated riders, the bot) inspect it. Hold needs it. */
+  readonly inspection?: Inspection
+  /** The operator skipped the second chance for this reason (logged and counted) */
+  readonly skipReason?: SkipReason
+  /** Damaged or wrong item: it goes back with a "Seller claim / QC needed" chip and is never re-homed */
+  readonly sellerClaim: boolean
   readonly heldSim?: number
   /** Sim time a buyer appears (drawn when the parcel is put on the shelf); none if nobody comes within the hold window */
   readonly matchAt?: number
@@ -235,6 +241,9 @@ export type Action =
   | { readonly type: 'customerAskedReschedule'; readonly at: number; readonly orderId: string; readonly asked: boolean }
   | { readonly type: 'riderRefuse'; readonly at: number; readonly orderId: string; readonly code: string; readonly reason?: RefusalReason }
   | { readonly type: 'deskSecondChance'; readonly at: number; readonly parcelId: string }
+  /** Hub operator: record what is really in front of them. Hold needs it; a second chance and a consolidated return do not. */
+  | { readonly type: 'deskInspect'; readonly at: number; readonly parcelId: string; readonly unopened: boolean; readonly sealOk: boolean; readonly invoiceOutside: boolean; readonly photoNote?: string; readonly by?: 'operator' | 'bot' }
+  | { readonly type: 'deskSkipSecondChance'; readonly at: number; readonly parcelId: string; readonly reason: SkipReason }
   | { readonly type: 'customerSecondChance'; readonly at: number; readonly parcelId: string; readonly accept: boolean }
   | { readonly type: 'deskSetParam'; readonly at: number; readonly param: RouterParamKey; readonly value: number }
   | { readonly type: 'deskHold'; readonly at: number; readonly parcelId: string }

@@ -125,7 +125,7 @@ describe('local store', () => {
 
   it('ignores corrupt saved data and builds a fresh day', async () => {
     const storage = memoryStorage()
-    storage.setItem('rescue-console-day-v6:powai', '{not json')
+    storage.setItem('rescue-console-day-v7:powai', '{not json')
     const store = createLocalStore({ ...small, storage })
     await store.ensureDay('powai')
     expect(store.getState('powai')?.stopOrder).toHaveLength(60)
@@ -182,7 +182,7 @@ describe('local store', () => {
 
   it('ignores a saved day from an older shape instead of crashing', async () => {
     const storage = memoryStorage()
-    storage.setItem('rescue-console-day-v6:powai', JSON.stringify({ version: 3, stops: {}, stopOrder: [], hub: {} }))
+    storage.setItem('rescue-console-day-v7:powai', JSON.stringify({ version: 3, stops: {}, stopOrder: [], hub: {} }))
     const store = createLocalStore({ ...small, storage })
     await store.ensureDay('powai')
     expect(store.getState('powai')?.stopOrder).toHaveLength(60)
@@ -197,7 +197,7 @@ describe('local store', () => {
     await tabB.ensureDay('powai')
     await tabA.send('powai', { type: 'startDay' })
     await tick()
-    expect(JSON.parse(storageB.data.get('rescue-console-day-v6:powai')!).started).toBe(true)
+    expect(JSON.parse(storageB.data.get('rescue-console-day-v7:powai')!).started).toBe(true)
   })
 })
 
@@ -293,7 +293,7 @@ describe('local store: a new day reaches every tab and an old day can never come
     expect(tabB.getState('powai')!.dayId).toBe(fresh.dayId)
     expect(tabB.getState('powai')!.started).toBe(false) // the tap was NOT applied to the new day
     expect(tabB.getInfo('powai').notice?.text).toMatch(/day was reset/i)
-    expect(JSON.parse(storage.data.get('rescue-console-day-v6:powai')!).dayId).toBe(fresh.dayId)
+    expect(JSON.parse(storage.data.get('rescue-console-day-v7:powai')!).dayId).toBe(fresh.dayId)
   })
 
   it('an autopilot step from a tab showing the old day is refused too, and says so (so the loop stops)', async () => {
@@ -323,11 +323,11 @@ describe('local store: a new day reaches every tab and an old day can never come
     await tabB.ensureDay('powai')
     await tabA.reset('powai')
     await tick()
-    const newId = JSON.parse(storage.data.get('rescue-console-day-v6:powai')!).dayId
+    const newId = JSON.parse(storage.data.get('rescue-console-day-v7:powai')!).dayId
     // B is stale and acts on something that is not a day-checked tap (a no-op path); its write must not win either way
     await tabB.send('powai', { type: 'startDay' })
     await tick()
-    expect(JSON.parse(storage.data.get('rescue-console-day-v6:powai')!).dayId).toBe(newId)
+    expect(JSON.parse(storage.data.get('rescue-console-day-v7:powai')!).dayId).toBe(newId)
   })
 
   it('resync() picks up a newer day another tab saved while this one was asleep', async () => {
@@ -363,12 +363,12 @@ describe('local store: a new day reaches every tab and an old day can never come
     await store.send('powai', { type: 'startDay' })
     await tick()
     expect(store.getState('powai')!.version).toBeLessThan(40)
-    expect(storage.data.has('rescue-console-day-v6:powai')).toBe(true)
+    expect(storage.data.has('rescue-console-day-v7:powai')).toBe(true)
   })
 
   it('a saved day with the right key but the wrong shape is replaced, with a notice', async () => {
     const storage = memoryStorage()
-    storage.setItem('rescue-console-day-v6:powai', JSON.stringify({ schema: 4, version: 3, hub: { id: 'powai' }, stopOrder: [] }))
+    storage.setItem('rescue-console-day-v7:powai', JSON.stringify({ schema: 4, version: 3, hub: { id: 'powai' }, stopOrder: [] }))
     const store = createLocalStore({ ...small, storage })
     await store.ensureDay('powai')
     expect(store.getState('powai')?.stopOrder).toHaveLength(60)
@@ -433,10 +433,10 @@ describe('local store: concurrent tabs never silently lose the newer write', () 
     const v1 = tabA.getState('powai')!
     // a third writer saves something newer straight into storage while the broadcast of v1 is still in flight
     const newer = { ...v1, version: v1.version + 2 }
-    storage.setItem('rescue-console-day-v6:powai', JSON.stringify(newer))
+    storage.setItem('rescue-console-day-v7:powai', JSON.stringify(newer))
     toB?.({ hubId: 'powai', state: { ...v1, version: v1.version + 1 } })
     await tick()
-    expect(JSON.parse(storage.data.get('rescue-console-day-v6:powai')!).version).toBe(newer.version)
+    expect(JSON.parse(storage.data.get('rescue-console-day-v7:powai')!).version).toBe(newer.version)
   })
 
   it('two tabs that act at the same version: the second writer notices, keeps the first one\'s saved change and says its own tap was not kept', async () => {
@@ -451,7 +451,7 @@ describe('local store: concurrent tabs never silently lose the newer write', () 
     // both tabs tap before either has flushed
     await Promise.all([tabA.send('powai', { type: 'advanceClock', minutes: 30 }), tabB.send('powai', { type: 'advanceClock', minutes: 60 })])
     await tick()
-    const saved = JSON.parse(storage.data.get('rescue-console-day-v6:powai')!)
+    const saved = JSON.parse(storage.data.get('rescue-console-day-v7:powai')!)
     const told = [tabA, tabB].filter((t) => /tap again/i.test(t.getInfo('powai').notice?.text ?? ''))
     expect(told).toHaveLength(1) // exactly one tab lost its tap, and it knows
     const loser = told[0]

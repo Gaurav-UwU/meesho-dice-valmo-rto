@@ -81,7 +81,8 @@ describe('Router v2: lane 1, second chance', () => {
 
   it('a reason that never accepts (didn\'t order, damaged) skips the second chance', () => {
     expect(routeParcel(parcel({ reason: 'not_ordered' })).lane).toBe('hold_rehome')
-    expect(routeParcel(parcel({ reason: 'damaged' })).lane).toBe('hold_rehome')
+    // A damaged or wrong item is never re-homed (see the "Item condition OK" gate below), so it goes back.
+    expect(routeParcel(parcel({ reason: 'damaged' })).lane).toBe('consolidated_return')
   })
 
   it('even a hard reason with a small acceptance chance gets the offer first (EV is still positive)', () => {
@@ -163,6 +164,67 @@ describe('Router v2: lane 2, Hold & Re-home', () => {
   it('registered sellers need the hub added as an additional place of business', () => {
     const gates = holdGates(parcel({ sellerGst: true }))
     expect(gates.find((g) => g.name === 'Same state')?.note).toMatch(/additional place of business/i)
+  })
+})
+
+describe('Router v3: the inspection, the item-condition gate and skipping the second chance', () => {
+  const found = { unopened: true, sealOk: true, invoiceOutside: true }
+
+  it('a parcel that has not been inspected cannot be held: the Inspected gate fails and so do the three facts it would record', () => {
+    const d = routeParcel(parcel(), { inspection: null })
+    expect(d.lane).toBe('consolidated_return')
+    expect(d.ev.hold).toBeNull()
+    const byName = (n: string) => d.gates.find((g) => g.name === n)
+    expect(byName('Inspected')).toMatchObject({ pass: false })
+    expect(byName('Inspected')?.note).toMatch(/inspect/i)
+    for (const n of ['Unopened', 'Seal intact', 'Invoice outside the parcel']) {
+      expect(byName(n)?.pass).toBe(false)
+      expect(byName(n)?.note).toMatch(/waiting for the inspection/i)
+    }
+    expect(d.reason).toMatch(/inspected/i)
+  })
+
+  it('an inspected parcel takes the hold lane when everything the inspector found is fine', () => {
+    const d = routeParcel(parcel(), { inspection: { ...found, at: 1, by: 'Hub operator', photoNote: '' } })
+    expect(d.lane).toBe('hold_rehome')
+    expect(d.gates.find((g) => g.name === 'Inspected')?.pass).toBe(true)
+  })
+
+  it('what the inspector recorded wins over the parcel\'s own seeded facts', () => {
+    const broken = routeParcel(parcel({ sealOk: true }), { inspection: { ...found, sealOk: false, at: 1, by: 'Hub operator', photoNote: '' } })
+    expect(broken.lane).toBe('consolidated_return')
+    expect(broken.gates.find((g) => g.name === 'Seal intact')?.pass).toBe(false)
+    const fine = routeParcel(parcel({ sealOk: false }), { inspection: { ...found, at: 1, by: 'Hub operator', photoNote: '' } })
+    expect(fine.lane).toBe('hold_rehome')
+  })
+
+  it('with no inspection step at all (engine use only) the parcel\'s own facts are used', () => {
+    expect(routeParcel(parcel()).lane).toBe('hold_rehome')
+    expect(routeParcel(parcel({ sealOk: false })).lane).toBe('consolidated_return')
+  })
+
+  it('a damaged or wrong item fails "Item condition OK" and is never re-homed, however much demand there is', () => {
+    const d = routeParcel(parcel({ reason: 'damaged', demandRate: 0.5 }))
+    expect(d.lane).toBe('consolidated_return')
+    const gate = d.gates.find((g) => g.name === 'Item condition OK')
+    expect(gate?.pass).toBe(false)
+    expect(gate?.note).toMatch(/seller claim|QC/i)
+    expect(d.reason).toMatch(/item condition/i)
+    expect(routeParcel(parcel({ reason: 'not_ordered' })).gates.find((g) => g.name === 'Item condition OK')?.pass).toBe(true)
+  })
+
+  it('skipping the second chance sends a soft refusal to the next lane, and never opens a closed gate', () => {
+    expect(routeParcel(parcel(soft), { secondChanceSkipped: true }).lane).toBe('hold_rehome')
+    const closed = routeParcel(parcel({ ...soft, sellerOptedIn: false }), { secondChanceSkipped: true })
+    expect(closed.lane).toBe('consolidated_return')
+    expect(closed.gates.find((g) => g.name === 'Seller opted in')?.pass).toBe(false)
+  })
+
+  it('lists the gates in a fixed order: inspected first, item condition after the invoice', () => {
+    const names = holdGates(parcel()).map((g) => g.name)
+    expect(names.slice(0, 4)).toEqual(['Inspected', 'Unopened', 'Seal intact', 'Same state'])
+    expect(names).toContain('Item condition OK')
+    expect(names.indexOf('Item condition OK')).toBeGreaterThan(names.indexOf('Invoice outside the parcel'))
   })
 })
 

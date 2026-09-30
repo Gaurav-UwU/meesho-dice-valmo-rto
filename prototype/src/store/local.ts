@@ -34,7 +34,7 @@ export interface LocalStoreOptions {
 }
 
 // Bump the version when the shape of the day changes, so old saved days are ignored instead of crashing a screen.
-const STORAGE_PREFIX = 'rescue-console-day-v6:'
+const STORAGE_PREFIX = 'rescue-console-day-v7:'
 const AUTOPILOT_SEED_BASE = 7
 
 interface Broadcast {

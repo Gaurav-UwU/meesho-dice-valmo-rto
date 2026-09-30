@@ -1,3 +1,4 @@
+import { holdGates, PARCEL_GATES } from '../engine/router.ts'
 import { ruleHash } from '../engine/verdict.ts'
 import { eventsOf } from './events.ts'
 import { ledgerTotals } from './ledger.ts'
@@ -18,7 +19,7 @@ export interface AuditCheck {
 const list = (items: readonly string[], max = 5): string => `${items.slice(0, max).join('; ')}${items.length > max ? `; and ${items.length - max} more` : ''}`
 
 /**
- * The ten checks on the day's own record (prototype spec, Audit tab). Each is green or red. They read the event log and the
+ * The twelve checks on the day's own record (prototype spec, Audit tab). Each is green or red. They read the event log and the
  * lifecycle, so an action that forgot to log itself, or a screen that shows a different ₹ figure, turns a check red.
  */
 export function runAudit(s: DayState): readonly AuditCheck[] {
@@ -72,6 +73,13 @@ export function runAudit(s: DayState): readonly AuditCheck[] {
   const flaggedInArms = k.flaggedBonus.n + k.flaggedControl.n
   const flaggedNotRehome = stops.filter((x) => x.flagged && x.arm !== undefined && x.rehomedFrom === undefined && x.status !== 'cancelled').length
 
+  const heldEvents = eventsOf(s, 'HELD')
+  const heldUninspected = heldEvents.filter((h) => !s.events.some((e) => e.type === 'PARCEL_INSPECTED' && e.orderId === h.orderId && e.seq < h.seq))
+  const overridden = heldEvents
+    .map((h) => s.parcels.find((p) => p.orderId === h.orderId))
+    .filter((p): p is NonNullable<typeof p> => p !== undefined)
+    .filter((p) => holdGates(p.parcel, { params: s.router, inspection: p.inspection ?? null }).some((g) => PARCEL_GATES.includes(g.name) && !g.pass))
+
   return [
     { id: 'orders-balance', label: 'Orders = terminal + open', ok: terminal.length + open === stops.length && missing.length === 0, detail: missing.length === 0 ? `${stops.length} orders = ${terminal.length} in a terminal state + ${open} still open` : `orders with no record: ${list(missing)}` },
     { id: 'one-terminal', label: 'Every order has exactly one terminal state (or is open)', ok: wrongTerminal.length === 0, detail: wrongTerminal.length === 0 ? `${terminal.length} terminal orders each ended once; ${open} are open` : `wrong for ${list(wrongTerminal.map((x) => x.order.id))}` },
@@ -94,6 +102,18 @@ export function runAudit(s: DayState): readonly AuditCheck[] {
       label: 'No re-home order in pilot metrics',
       ok: leakedRehome.length === 0 && flaggedInArms === flaggedNotRehome,
       detail: leakedRehome.length === 0 && flaggedInArms === flaggedNotRehome ? `${rehome.length} re-homed orders, all outside the arms (${flaggedInArms} flagged orders in the pilot)` : `re-home orders with an arm or flag: ${list(leakedRehome.map((x) => x.order.id))}`,
+    },
+    {
+      id: 'inspect-before-hold',
+      label: 'No parcel held without an inspection',
+      ok: heldUninspected.length === 0,
+      detail: heldUninspected.length === 0 ? (heldEvents.length === 0 ? 'no parcel has been held yet' : `${heldEvents.length} held, each after the hub operator's (or the bot's) inspection`) : `held with no inspection before it: ${list(heldUninspected.map((e) => e.orderId ?? '?'))}`,
+    },
+    {
+      id: 'gates-not-overridden',
+      label: 'No gate was overridden',
+      ok: overridden.length === 0,
+      detail: overridden.length === 0 ? `${heldEvents.length} held parcels, each passing inspection, same state, seller opt-in, invoice and item condition` : `held although a gate fails: ${list(overridden.map((p) => p.orderId))}`,
     },
   ]
 }

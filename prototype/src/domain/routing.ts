@@ -1,6 +1,6 @@
 import { rescueScore } from '../engine/rescue.ts'
 import { createRng, hashSeed } from '../engine/rng.ts'
-import { isSoftReason, routeParcel, REFUSAL_REASONS, type RouteDecision, type RouteOptions, type RouterParams } from '../engine/router.ts'
+import { isSoftReason, routeParcel, REFUSAL_REASONS, SKIP_REASONS, type Inspection, type RouteDecision, type RouteOptions, type RouterParams } from '../engine/router.ts'
 import type { Order } from '../engine/types.ts'
 import { HOUR_MS } from './clock.ts'
 import { emit } from './events.ts'
@@ -33,6 +33,8 @@ export function routeOptionsFor(s: S, rec: ParcelRecord): RouteOptions {
     riderHasSpace: s.riders.some((r) => openLoad(s, r.id) < RIDER_BAG_CAPACITY),
     secondChanceDeclined: rec.secondChanceDeclined,
     secondChanceExpired: rec.secondChanceExpired,
+    secondChanceSkipped: rec.skipReason !== undefined,
+    inspection: rec.inspection ?? null,
   }
 }
 
@@ -52,6 +54,45 @@ export function deskSecondChance(s: S, a: Extract<Action, { type: 'deskSecondCha
   next = emit(next, a.at, 'SECOND_CHANCE_SENT', {}, { orderId: p.orderId })
   next = sendProactive(next, { orderId: p.orderId, at: a.at, direction: 'out', kind: 'second_chance', text: secondChanceText(st.order.awb), buttons: SECOND_CHANCE_BUTTONS })
   return feedAdd(next, a.at, 'desk', `Second-chance WhatsApp sent for ${st.order.awb}. The customer has ${s.router.secondChanceHours} h to answer`, p.orderId)
+}
+
+const PHOTO_NOTE_MAX = 80
+
+/** Write the inspection on the parcel and log it. The one place an inspection is made, for the operator and for the bots. */
+function recordInspection(s: S, p: ParcelRecord, found: Pick<Inspection, 'unopened' | 'sealOk' | 'invoiceOutside' | 'photoNote'>, by: string, at: number): S {
+  const inspection: Inspection = { ...found, at: s.simNow, by }
+  let next = patchParcel(s, p.id, { inspection })
+  next = emit(next, at, 'PARCEL_INSPECTED', { unopened: found.unopened, sealOk: found.sealOk, invoiceOutside: found.invoiceOutside, by }, { orderId: p.orderId })
+  const seen = [found.unopened ? 'unopened' : 'opened', found.sealOk ? 'seal intact' : 'seal broken', found.invoiceOutside ? 'invoice outside' : 'invoice inside'].join(', ')
+  return feedAdd(next, at, 'desk', `${p.parcel.awb} inspected by ${by}: ${seen}`, p.orderId)
+}
+
+export const BOT_INSPECTOR = 'Bot (synthetic)'
+export const OPERATOR = 'Hub operator'
+
+/** Hub operator inspects a parcel that is still waiting in the queue. It can be corrected until a lane is chosen. */
+export function deskInspect(s: S, a: Extract<Action, { type: 'deskInspect' }>): S {
+  const p = findParcel(s, a.parcelId)
+  if (!p || p.state !== 'queued') return s
+  const note = (a.photoNote ?? '').slice(0, PHOTO_NOTE_MAX)
+  return recordInspection(s, p, { unopened: a.unopened, sealOk: a.sealOk, invoiceOutside: a.invoiceOutside, photoNote: note }, a.by === 'bot' ? BOT_INSPECTOR : OPERATOR, a.at)
+}
+
+/** Simulated riders' parcels are inspected straight away with the synthetic facts (the values the inspection would find). */
+export function autoInspect(s: S, parcelId: string, at: number): S {
+  const p = findParcel(s, parcelId)
+  if (!p || p.state !== 'queued' || p.inspection) return s
+  return recordInspection(s, p, { unopened: p.parcel.unopened, sealOk: p.parcel.sealOk, invoiceOutside: p.parcel.invoiceOutside, photoNote: 'synthetic' }, BOT_INSPECTOR, at)
+}
+
+/** The operator skips the second chance, with a reason. Only while it is the lane on offer; no message is sent and no gate is touched. */
+export function deskSkipSecondChance(s: S, a: Extract<Action, { type: 'deskSkipSecondChance' }>): S {
+  const p = findParcel(s, a.parcelId)
+  if (!p || p.state !== 'queued' || p.skipReason !== undefined || !SKIP_REASONS.includes(a.reason)) return s
+  if (decisionFor(s, p).lane !== 'second_chance') return s
+  let next = patchParcel(s, p.id, { skipReason: a.reason })
+  next = emit(next, a.at, 'SECOND_CHANCE_SKIPPED', { reason: a.reason }, { orderId: p.orderId })
+  return feedAdd(next, a.at, 'desk', `Second chance skipped for ${p.parcel.awb} (${a.reason.replace(/_/g, ' ')}): routed to the next lane`, p.orderId)
 }
 
 export function customerSecondChance(s: S, a: Extract<Action, { type: 'customerSecondChance' }>): S {

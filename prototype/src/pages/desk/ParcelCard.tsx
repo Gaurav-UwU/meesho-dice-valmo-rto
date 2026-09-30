@@ -1,11 +1,12 @@
 import type { DeskItem } from '../../domain/selectors.ts'
 import { useState } from 'react'
 import type { ActionInput } from '../../store/types.ts'
-import { REFUSAL_LABEL } from '../../engine/router.ts'
+import { factsOf, REFUSAL_LABEL, SKIP_LABEL } from '../../engine/router.ts'
 import { whatIf, type WhatIfFlips, type WhatIfGate } from '../../engine/whatif.ts'
 import { rupees, signedRupees } from '../../ui/format.ts'
 import { GateList } from './GateList.tsx'
 import { effectRange, LANE_LABEL, STATE_LABEL } from './lanes.ts'
+import { InspectBlock } from './InspectBlock.tsx'
 import { ParcelActions } from './ParcelActions.tsx'
 
 interface ParcelCardProps {
@@ -22,12 +23,14 @@ export function ParcelCard({ item, send, simNow, secondChanceHours, holdHours }:
   const { parcel } = record
   const [flips, setFlips] = useState<WhatIfFlips>({})
   const parcelId = record.id
-  const editable = record.state === 'queued'
+  const facts = factsOf(parcel, item.options)
+  // The what-if needs the inspector's facts, so it is off until the parcel has been inspected.
+  const editable = record.state === 'queued' && record.inspection !== undefined
   const toggle = (gate: WhatIfGate, value: boolean): void => {
     // Flipping back to what the parcel really has drops the flip.
     setFlips((cur) => {
       const next = { ...cur, [gate]: value }
-      if (value === parcel[gate]) delete next[gate]
+      if (value === facts[gate]) delete next[gate]
       return next
     })
   }
@@ -44,6 +47,7 @@ export function ParcelCard({ item, send, simNow, secondChanceHours, holdHours }:
         </div>
         <div className="desk-chips">
           <span className={`desk-lane desk-lane--${decision.lane}`}>{LANE_LABEL[decision.lane]}</span>
+          {record.sellerClaim ? <span className="pill danger">Seller claim / QC needed</span> : null}
           <span className="pill status">{STATE_LABEL[record.state]}</span>
         </div>
       </header>
@@ -62,6 +66,7 @@ export function ParcelCard({ item, send, simNow, secondChanceHours, holdHours }:
       {record.secondChanceDeclined ? (
         <p className="desk-note">The customer declined the second chance, so this parcel was re-routed.</p>
       ) : null}
+      {record.skipReason ? <p className="desk-note">Second chance skipped: {SKIP_LABEL[record.skipReason].toLowerCase()}.</p> : null}
       <p className="desk-reason">{decision.reason}</p>
 
       <p className="desk-ev" aria-label="Expected values of each lane">
@@ -76,13 +81,15 @@ export function ParcelCard({ item, send, simNow, secondChanceHours, holdHours }:
 
       <GateList
         gates={decision.gates}
-        parcel={parcel}
+        facts={facts}
         flips={flips}
         preview={whatIf(parcel, flips, item.options).text}
         editable={editable}
         onToggle={toggle}
         onClear={() => setFlips({})}
       />
+
+      <InspectBlock key={`${record.id}-${record.inspection?.at ?? 'none'}`} record={record} send={send} />
 
       <ParcelActions
         record={record}
@@ -95,6 +102,7 @@ export function ParcelCard({ item, send, simNow, secondChanceHours, holdHours }:
         onHold={() => void send({ type: 'deskHold', parcelId })}
         onMatch={() => void send({ type: 'deskMatch', parcelId })}
         onConsolidate={() => void send({ type: 'deskConsolidate', parcelId })}
+        onSkip={(reason) => void send({ type: 'deskSkipSecondChance', parcelId, reason })}
       />
     </article>
   )

@@ -4,7 +4,7 @@ import { deskItems, demoStops, kpis, messagesFor, riderEarnings, suspectStops } 
 import { createDay } from './day.ts'
 import { fakeGeo } from '../engine/testkit.ts'
 import { DAY_MS, DAY_START_MS } from './clock.ts'
-import { AT, forceParcel, heroStops, run, startedDay } from './testkit.ts'
+import { AT, forceParcel, heroStops, inspectParcel, run, startedDay } from './testkit.ts'
 import type { Action, DayState } from './types.ts'
 import { logit, sigmoid } from '../engine/math.ts'
 
@@ -311,8 +311,12 @@ describe('refusal and the Refused-Parcel Desk', () => {
     const pid = s0.parcels[0].id
     // Force a clean parcel that passes every gate, from a customer who never accepts a second chance, in a catchment with demand.
     const fixed = forceParcel(s0, bonusId, { reason: 'not_ordered', sellerState: day.hub.state, sellerGst: false, unopened: true, sealOk: true, sellerOptedIn: true, invoiceOutside: true, demandRate: 0.3 })
-    expect(deskItems(fixed)[0].decision.lane).toBe('hold_rehome')
-    const held = run(fixed, { type: 'deskHold', at: AT + 3, parcelId: pid })
+    // Nothing can be held before the hub operator has inspected it.
+    expect(deskItems(fixed)[0].decision.lane).toBe('consolidated_return')
+    expect(reduce(fixed, { type: 'deskHold', at: AT + 2, parcelId: pid })).toBe(fixed)
+    const inspected = inspectParcel(fixed, bonusId)
+    expect(deskItems(inspected)[0].decision.lane).toBe('hold_rehome')
+    const held = run(inspected, { type: 'deskHold', at: AT + 3, parcelId: pid })
     expect(held.parcels[0].state).toBe('held')
     const s = run(held, { type: 'deskMatch', at: AT + 4, parcelId: pid })
     expect(s.parcels[0].state).toBe('rehomed')
@@ -325,7 +329,7 @@ describe('refusal and the Refused-Parcel Desk', () => {
   })
 
   it('cannot hold a parcel that fails a gate, and cannot match one that is not held', () => {
-    const s0 = forceParcel(refused(bonusId), bonusId, { sealOk: false })
+    const s0 = inspectParcel(refused(bonusId), bonusId, { sealOk: false })
     const pid = s0.parcels[0].id
     expect(reduce(s0, { type: 'deskHold', at: AT + 3, parcelId: pid })).toBe(s0)
     expect(reduce(s0, { type: 'deskMatch', at: AT + 3, parcelId: pid })).toBe(s0)
@@ -364,12 +368,16 @@ describe('demo showcase refusals', () => {
   })
 
   it('the first four refusals of demo stops give four different Router outcomes, in order', () => {
-    const lanes = deskItems(refuseInOrder(4)).map((d) => d.decision.lane)
-    expect(lanes).toEqual(['hold_rehome', 'second_chance', 'consolidated_return', 'consolidated_return'])
+    const s = refuseInOrder(4)
+    // The operator inspects the four demo parcels; until then Hold is closed for the first one.
+    expect(deskItems(s).map((d) => d.decision.lane)).toEqual(['consolidated_return', 'second_chance', 'consolidated_return', 'consolidated_return'])
+    const inspected = s.parcels.reduce((acc, p) => inspectParcel(acc, p.orderId), s)
+    expect(deskItems(inspected).map((d) => d.decision.lane)).toEqual(['hold_rehome', 'second_chance', 'consolidated_return', 'consolidated_return'])
   })
 
   it('names why the last two cannot be re-homed (different state, then a broken seal)', () => {
-    const items = deskItems(refuseInOrder(4))
+    const s0 = refuseInOrder(4)
+    const items = deskItems(s0.parcels.reduce((acc, p) => inspectParcel(acc, p.orderId), s0))
     expect(items[2].decision.reason).toMatch(/Same state/)
     expect(items[3].decision.reason).toMatch(/Seal/)
   })
@@ -461,7 +469,7 @@ describe('order lifecycle in the reducer', () => {
   it('a delivered re-homed order closes the original as re-homed', () => {
     const s0 = run(day, { type: 'riderRefuse', at: AT, orderId: bonusId, code: '7777' }, { type: 'submitOtp', at: AT + 1, orderId: bonusId, code: '7777' })
     const pid = s0.parcels[0].id
-    const fixed = forceParcel(s0, bonusId, { reason: 'not_ordered', sellerState: day.hub.state, sellerGst: false, unopened: true, sealOk: true, sellerOptedIn: true, invoiceOutside: true, demandRate: 0.3 })
+    const fixed = inspectParcel(forceParcel(s0, bonusId, { reason: 'not_ordered', sellerState: day.hub.state, sellerGst: false, unopened: true, sealOk: true, sellerOptedIn: true, invoiceOutside: true, demandRate: 0.3 }), bonusId)
     const matched = run(fixed, { type: 'deskHold', at: AT + 3, parcelId: pid }, { type: 'deskMatch', at: AT + 4, parcelId: pid })
     expect(matched.stops[bonusId].status).toBe('refused')
     const newId = matched.parcels[0].rehomedStopId!

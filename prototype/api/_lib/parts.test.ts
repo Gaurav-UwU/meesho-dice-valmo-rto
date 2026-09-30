@@ -159,6 +159,20 @@ describe('request validation', () => {
     for (const dayId of ['', 'has space', 'x'.repeat(65), '<script>', 7]) expect(parseActionRequest({ hubId: 'lucknow', dayId, action: { type: 'startDay' } }).ok).toBe(false)
   })
 
+  it('accepts the Desk v3 actions and rejects malformed ones (and the removed deskSetGate)', () => {
+    const ok = (action: unknown) => parseActionRequest({ hubId: 'lucknow', dayId: 'd1-x', action }).ok
+    const pid = 'P-lucknow-0001'
+    expect(ok({ type: 'deskInspect', parcelId: pid, unopened: true, sealOk: false, invoiceOutside: true, photoNote: 'label outside' })).toBe(true)
+    expect(ok({ type: 'deskInspect', parcelId: pid, unopened: true, sealOk: false, invoiceOutside: true, by: 'bot' })).toBe(true)
+    expect(ok({ type: 'deskInspect', parcelId: pid, unopened: true, sealOk: 'yes', invoiceOutside: true })).toBe(false)
+    expect(ok({ type: 'deskInspect', parcelId: pid, unopened: true, sealOk: true, invoiceOutside: true, photoNote: 'x'.repeat(81) })).toBe(false)
+    expect(ok({ type: 'deskInspect', parcelId: '../x', unopened: true, sealOk: true, invoiceOutside: true })).toBe(false)
+    for (const reason of ['refused_firmly', 'not_reachable', 'seller_wants_back', 'other']) expect(ok({ type: 'deskSkipSecondChance', parcelId: pid, reason })).toBe(true)
+    expect(ok({ type: 'deskSkipSecondChance', parcelId: pid, reason: 'because' })).toBe(false)
+    expect(ok({ type: 'deskSetParam', param: 'accept_soft', value: 0.4 })).toBe(true)
+    expect(ok({ type: 'deskSetGate', parcelId: pid, gate: 'sealOk', value: false })).toBe(false)
+  })
+
   it('reports why a request was rejected', () => {
     const r = parseActionRequest({ hubId: 'lucknow', dayId: 'd1-x', action: { type: 'submitOtp', orderId: 'bad', code: '1' } })
     expect(r.ok).toBe(false)

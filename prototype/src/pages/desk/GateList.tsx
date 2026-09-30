@@ -1,11 +1,11 @@
-import type { Gate as GateResult, RefusedParcel } from '../../engine/router.ts'
+import type { Gate as GateResult } from '../../engine/router.ts'
 import type { WhatIfFlips, WhatIfGate } from '../../engine/whatif.ts'
 import { toggleableGate } from './lanes.ts'
 
 interface GateListProps {
   readonly gates: readonly GateResult[]
-  /** The parcel as it really is: the what-if switches start from these values */
-  readonly parcel: RefusedParcel
+  /** The three facts as the inspection recorded them: the what-if switches start from these values */
+  readonly facts: Readonly<Record<WhatIfGate, boolean>>
   /** The what-if flips the operator has tried (kept in the screen only, never saved) */
   readonly flips: WhatIfFlips
   /** The one-line result of those flips, or '' */
@@ -16,7 +16,7 @@ interface GateListProps {
   readonly onClear: () => void
 }
 
-export function GateList({ gates, parcel, flips, preview, editable, onToggle, onClear }: GateListProps) {
+export function GateList({ gates, facts, flips, preview, editable, onToggle, onClear }: GateListProps) {
   const tried = Object.keys(flips).length > 0
   return (
     <section className="desk-gates" aria-label="Router gate checklist">
@@ -41,11 +41,11 @@ export function GateList({ gates, parcel, flips, preview, editable, onToggle, on
                 <button
                   type="button"
                   role="switch"
-                  aria-checked={flips[key] ?? parcel[key]}
+                  aria-checked={flips[key] ?? facts[key]}
                   aria-label={`What-if: ${gate.name}`}
                   className={flips[key] === undefined ? 'desk-switch' : 'desk-switch is-tried'}
                   disabled={!editable}
-                  onClick={() => onToggle(key, !(flips[key] ?? parcel[key]))}
+                  onClick={() => onToggle(key, !(flips[key] ?? facts[key]))}
                 />
               ) : (
                 <span className="desk-fixed">fact</span>

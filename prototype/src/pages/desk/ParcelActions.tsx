@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom'
 import { HOUR_MS } from '../../domain/clock.ts'
 import type { ParcelRecord } from '../../domain/types.ts'
-import type { Lane } from '../../engine/router.ts'
+import type { Lane, SkipReason } from '../../engine/router.ts'
 import type { HubId } from '../../engine/types.ts'
+import { SkipSecondChance } from './SkipSecondChance.tsx'
 
 interface ParcelActionsProps {
   readonly record: ParcelRecord
@@ -15,11 +16,12 @@ interface ParcelActionsProps {
   readonly onHold: () => void
   readonly onMatch: () => void
   readonly onConsolidate: () => void
+  readonly onSkip: (reason: SkipReason) => void
 }
 
 const hoursLeft = (until: number, simNow: number): number => Math.max(0, Math.ceil((until - simNow) / HOUR_MS))
 
-export function ParcelActions({ record, lane, hubId, simNow, secondChanceHours, holdHours, onSecondChance, onHold, onMatch, onConsolidate }: ParcelActionsProps) {
+export function ParcelActions({ record, lane, hubId, simNow, secondChanceHours, holdHours, onSecondChance, onHold, onMatch, onConsolidate, onSkip }: ParcelActionsProps) {
   if (record.state === 'second_chance_sent') {
     return (
       <div className="desk-actions">
@@ -48,6 +50,7 @@ export function ParcelActions({ record, lane, hubId, simNow, secondChanceHours, 
         <button type="button" className="btn primary" onClick={onSecondChance}>
           Send second-chance WhatsApp
         </button>
+        <SkipSecondChance onSkip={onSkip} />
       </div>
     )
   }

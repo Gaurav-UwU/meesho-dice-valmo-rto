@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { deskMoney } from './deskMoney.ts'
 import { deskItems } from './selectors.ts'
-import { AT, advanceHours, deliverOrder, forceParcel, heroStops, refuseOrder, run, startedDay } from './testkit.ts'
+import { AT, advanceHours, deliverOrder, forceParcel, heroStops, inspectParcel, refuseOrder, run, startedDay } from './testkit.ts'
 
 const day = startedDay()
 const { bonus: bonusId } = heroStops(day)
@@ -14,7 +14,7 @@ describe('Desk money tiles: booked so far, still in play, cost of sending everyt
   })
 
   it('a queued parcel books nothing; it is in play at the expected value of its recommended lane; sending it back costs ₹120', () => {
-    const s = forceParcel(refuseOrder(day, bonusId), bonusId, HARD_HOLDABLE)
+    const s = inspectParcel(forceParcel(refuseOrder(day, bonusId), bonusId, HARD_HOLDABLE), bonusId)
     const m = deskMoney(s)
     expect(m.parcels).toBe(1)
     expect(m.booked).toBe(0)
@@ -36,7 +36,7 @@ describe('Desk money tiles: booked so far, still in play, cost of sending everyt
   })
 
   it('a hold books its ₹8 as a real cost (booked goes negative) and the parcel stays in play at the remaining-hold value', () => {
-    const s0 = forceParcel(refuseOrder(day, bonusId), bonusId, HARD_HOLDABLE)
+    const s0 = inspectParcel(forceParcel(refuseOrder(day, bonusId), bonusId, HARD_HOLDABLE), bonusId)
     const held = run(s0, { type: 'deskHold', at: AT + 2, parcelId: s0.parcels[0].id })
     const m = deskMoney(held)
     expect(m.routerCosts).toBe(8)
@@ -61,7 +61,7 @@ describe('Desk money tiles: booked so far, still in play, cost of sending everyt
   })
 
   it('a re-home that is delivered books ₹145 gross, less the ₹8 hold and the ₹21 local leg', () => {
-    const s0 = forceParcel(refuseOrder(day, bonusId), bonusId, HARD_HOLDABLE)
+    const s0 = inspectParcel(forceParcel(refuseOrder(day, bonusId), bonusId, HARD_HOLDABLE), bonusId)
     const pid = s0.parcels[0].id
     const matched = run(s0, { type: 'deskHold', at: AT + 2, parcelId: pid }, { type: 'deskMatch', at: AT + 3, parcelId: pid })
     const newId = matched.parcels[0].rehomedStopId!

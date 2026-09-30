@@ -26,8 +26,13 @@ function openWork(s: DayState): number {
 function deskRound(s: DayState, at: number, reduce: Reduce): DayState {
   let next = s
   for (const rec of s.parcels) {
-    const cur = next.parcels.find((p) => p.id === rec.id)
+    let cur = next.parcels.find((p) => p.id === rec.id)
     if (!cur || cur.state !== 'queued') continue
+    // The demo is over: the bots inspect whatever the operator has not got to.
+    if (!cur.inspection) {
+      next = reduce(next, { type: 'deskInspect', at, parcelId: cur.id, unopened: cur.parcel.unopened, sealOk: cur.parcel.sealOk, invoiceOutside: cur.parcel.invoiceOutside, photoNote: 'synthetic', by: 'bot' })
+      cur = next.parcels.find((p) => p.id === rec.id) ?? cur
+    }
     const lane = decisionFor(next, cur).lane
     if (lane === 'consolidated_return') {
       next = reduce(next, { type: 'deskConsolidate', at, parcelId: cur.id })

@@ -35,6 +35,23 @@ export const REFUSAL_LABEL: Readonly<Record<RefusalReason, string>> = {
 /** Not home, no cash and "later" are soft: the sale may still be there. The rest are hard. */
 export const isSoftReason = (r: RefusalReason): boolean => r === 'no_cash' || r === 'want_later' || r === 'not_home'
 
+/** Why the operator skipped the second chance. Logged and counted; it never opens a closed gate. */
+export type SkipReason = 'refused_firmly' | 'not_reachable' | 'seller_wants_back' | 'other'
+
+export const SKIP_REASONS: readonly SkipReason[] = ['refused_firmly', 'not_reachable', 'seller_wants_back', 'other']
+
+export const SKIP_LABEL: Readonly<Record<SkipReason, string>> = {
+  refused_firmly: 'Customer already refused firmly at the door',
+  not_reachable: 'Customer not reachable',
+  seller_wants_back: 'Seller wants it back',
+  other: 'Other',
+}
+
+/** The hold gates that depend on the parcel itself (not on the shelf, a rider's bag or the forecast): the ones that may never be overridden. */
+export const PARCEL_GATES: readonly string[] = ['Inspected', 'Unopened', 'Seal intact', 'Same state', 'Seller opted in', 'Invoice outside the parcel', 'Item condition OK']
+
+const INSPECTED_FACTS: readonly string[] = ['Unopened', 'Seal intact', 'Invoice outside the parcel']
+
 export interface RouterParams {
   /** P(customer accepts a second chance | reason). ASSUMPTION. */
   readonly acceptByReason: Readonly<Record<RefusalReason, number>>
@@ -83,6 +100,19 @@ export interface RefusedParcel {
   readonly demandRate: number
 }
 
+/** What the hub operator found when they opened the refusal and looked at the parcel (nothing is uploaded: the photo is a note). */
+export interface Inspection {
+  readonly unopened: boolean
+  readonly sealOk: boolean
+  readonly invoiceOutside: boolean
+  /** Sim time of the inspection */
+  readonly at: number
+  /** Who inspected: the hub operator, or "Bot (synthetic)" when autopilot does it */
+  readonly by: string
+  /** Placeholder for a photo: a short note, no upload */
+  readonly photoNote: string
+}
+
 export interface Gate {
   readonly name: string
   readonly pass: boolean
@@ -121,6 +151,19 @@ export interface RouteOptions {
   readonly shelfUsed?: number
   /** False when no rider has room in the bag for a re-homed parcel */
   readonly riderHasSpace?: boolean
+  /** The operator skipped the second chance (with a reason): the parcel moves on to the next lane */
+  readonly secondChanceSkipped?: boolean
+  /**
+   * What the hub operator recorded. `null` means the parcel has not been inspected yet, so Hold is closed.
+   * Left out means there is no inspection step (engine use only): the parcel's own facts are used.
+   */
+  readonly inspection?: Inspection | null
+}
+
+/** The three facts a hold depends on: what the inspector recorded, or, without an inspection step, the parcel's own values. */
+export function factsOf(p: RefusedParcel, opts: RouteOptions = {}): { readonly unopened: boolean; readonly sealOk: boolean; readonly invoiceOutside: boolean } {
+  const src = opts.inspection ?? p
+  return { unopened: src.unopened, sealOk: src.sealOk, invoiceOutside: src.invoiceOutside }
 }
 
 const LANE_EFFECT: Record<Lane, Effect> = {
@@ -163,9 +206,21 @@ export function holdGates(p: RefusedParcel, opts: RouteOptions = {}): readonly G
   const sameState = p.sellerState === p.hubState && p.buyerState === p.hubState
   const shelfUsed = opts.shelfUsed ?? 0
   const ev = holdEv(p.demandRate, params)
+  const pending = opts.inspection === null
+  const facts = factsOf(p, opts)
+  const wait = 'Waiting for the inspection'
   return [
-    { name: 'Unopened', pass: p.unopened, note: p.unopened ? 'Parcel not opened' : 'Opened parcels cannot be re-homed' },
-    { name: 'Seal intact', pass: p.sealOk, note: p.sealOk ? 'Seal check passed' : 'Seal is broken or tampered' },
+    {
+      name: 'Inspected',
+      pass: !pending,
+      note: pending
+        ? 'The hub operator has not inspected this parcel yet: Hold & Re-home stays closed until they do'
+        : opts.inspection
+          ? `Inspected by ${opts.inspection.by}`
+          : 'Checked against the parcel record',
+    },
+    { name: 'Unopened', pass: !pending && facts.unopened, note: pending ? wait : facts.unopened ? 'Parcel not opened' : 'Opened parcels cannot be re-homed' },
+    { name: 'Seal intact', pass: !pending && facts.sealOk, note: pending ? wait : facts.sealOk ? 'Seal check passed' : 'Seal is broken or tampered' },
     {
       name: 'Same state',
       pass: sameState,
@@ -182,8 +237,13 @@ export function holdGates(p: RefusedParcel, opts: RouteOptions = {}): readonly G
     },
     {
       name: 'Invoice outside the parcel',
-      pass: p.invoiceOutside,
-      note: p.invoiceOutside ? 'Invoice is in an outside pouch or digital' : 'Invoice is inside the parcel: the seal would have to be broken',
+      pass: !pending && facts.invoiceOutside,
+      note: pending ? wait : facts.invoiceOutside ? 'Invoice is in an outside pouch or digital' : 'Invoice is inside the parcel: the seal would have to be broken',
+    },
+    {
+      name: 'Item condition OK',
+      pass: p.reason !== 'damaged',
+      note: p.reason !== 'damaged' ? 'Item reported as fine' : 'Damaged or wrong item: never re-homed. It goes back with a Seller claim / QC needed flag',
     },
     {
       name: 'Shelf capacity',
@@ -214,7 +274,7 @@ export function routeParcel(p: RefusedParcel, opts: RouteOptions = {}): RouteDec
     consolidated: DEFAULTS.reverseCost * BATCH_SAVING_SHARE,
   }
   const inputs = { pAccept: pAccept(p.reason, params), pMatch: pMatch(p.demandRate, params), demandRate: p.demandRate, refusalReason: p.reason }
-  const tried = opts.secondChanceDeclined === true || opts.secondChanceExpired === true
+  const tried = opts.secondChanceDeclined === true || opts.secondChanceExpired === true || opts.secondChanceSkipped === true
   if (!tried && scEv > 0) {
     return {
       lane: 'second_chance',
@@ -237,7 +297,8 @@ export function routeParcel(p: RefusedParcel, opts: RouteOptions = {}): RouteDec
   }
   return {
     lane: 'consolidated_return',
-    reason: `Cannot re-home. ${failing.map((g) => `${g.name}: ${g.note}`).join('. ')}`,
+    // Before the inspection the three facts all say "waiting"; the one line about the missing inspection says it better.
+    reason: `Cannot re-home. ${failing.filter((g) => !(opts.inspection === null && INSPECTED_FACTS.includes(g.name))).map((g) => `${g.name}: ${g.note}`).join('. ')}`,
     gates,
     effect: LANE_EFFECT.consolidated_return,
     ev,

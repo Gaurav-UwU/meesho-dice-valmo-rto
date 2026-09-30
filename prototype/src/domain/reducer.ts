@@ -27,7 +27,7 @@ import {
 import { closeAsRto, confidenceOf, openException, overtakeException, resolveExceptionFor, retryOne } from './orders.ts'
 import { buildParcel, SHOWCASE } from './parcels.ts'
 import { plannedRuleHash } from './rule.ts'
-import { customerSecondChance, deskConsolidate, deskHold, deskMatch, deskSecondChance, deskSetParam, rehomeDelivered, secondChanceDelivered } from './routing.ts'
+import { customerSecondChance, deskConsolidate, deskHold, autoInspect, deskInspect, deskMatch, deskSecondChance, deskSetParam, deskSkipSecondChance, rehomeDelivered, secondChanceDelivered } from './routing.ts'
 import { OTP_SIM_TTL_MS, tick } from './tick.ts'
 import type { Action, DayState, StopRecord } from './types.ts'
 import type { Order } from '../engine/types.ts'
@@ -207,9 +207,11 @@ function completeRefusal(s: S, orderId: string, at: number, reason: Parameters<t
   const parcel = buildParcel(st, s.hub, showcaseIndex >= 0 && showcaseIndex < SHOWCASE.length ? showcaseIndex : undefined, reason)
   next = {
     ...next,
-    parcels: [...next.parcels, { id: parcel.id, orderId, parcel, state: 'queued', secondChanceDeclined: false, secondChanceExpired: false, at }],
+    parcels: [...next.parcels, { id: parcel.id, orderId, parcel, state: 'queued', secondChanceDeclined: false, secondChanceExpired: false, sellerClaim: parcel.reason === 'damaged', at }],
   }
-  return feedAdd(next, at, 'refuse', 'Refusal confirmed by OTP: parcel sent to the Refused-Parcel Desk', orderId)
+  next = feedAdd(next, at, 'refuse', 'Refusal confirmed by OTP: parcel sent to the Refused-Parcel Desk', orderId)
+  // A simulated rider's parcel is inspected at once; the live demo stop waits for the hub operator.
+  return st.manual ? next : autoInspect(next, parcel.id, at)
 }
 
 function submitOtp(s: S, a: Extract<Action, { type: 'submitOtp' }>): S {
@@ -360,6 +362,10 @@ function apply(s: S, a: Action): S {
       return customerAskedReschedule(s, a)
     case 'deskSecondChance':
       return deskSecondChance(s, a)
+    case 'deskInspect':
+      return deskInspect(s, a)
+    case 'deskSkipSecondChance':
+      return deskSkipSecondChance(s, a)
     case 'customerSecondChance':
       return customerSecondChance(s, a)
     case 'deskSetParam':

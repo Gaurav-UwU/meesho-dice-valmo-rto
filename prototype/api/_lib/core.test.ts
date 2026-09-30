@@ -184,6 +184,37 @@ describe('handleInbound', () => {
   })
 })
 
+describe('Desk v3 over the API: inspect, then hold; skip the second chance', () => {
+  async function refused(reason: 'not_ordered' | 'not_home') {
+    const { h, orderId } = await started()
+    await runAction(h.deps, HUB, { type: 'riderRefuse', orderId, reason })
+    await runAction(h.deps, HUB, { type: 'submitOtp', orderId, code: '4321' })
+    return { h, orderId, parcelId: `P-${orderId}` }
+  }
+
+  it('a parcel cannot be held before it is inspected, and can be after', async () => {
+    const { h, orderId, parcelId } = await refused('not_ordered')
+    const rec = () => h.db.days.get(HUB)!.parcels.find((p) => p.id === parcelId)!
+    expect(rec().inspection).toBeUndefined()
+    await runAction(h.deps, HUB, { type: 'deskHold', parcelId })
+    expect(rec().state).toBe('queued')
+    const r = await runAction(h.deps, HUB, { type: 'deskInspect', parcelId, unopened: true, sealOk: true, invoiceOutside: true, photoNote: 'ok' })
+    expect(r.ok).toBe(true)
+    expect(rec().inspection).toMatchObject({ by: 'Hub operator', sealOk: true })
+    await runAction(h.deps, HUB, { type: 'deskHold', parcelId })
+    expect(rec().state).toBe('held')
+    expect(h.db.days.get(HUB)!.events.filter((e) => e.type === 'PARCEL_INSPECTED' && e.orderId === orderId)).toHaveLength(1)
+  })
+
+  it('skipping the second chance is applied and logged', async () => {
+    const { h, parcelId } = await refused('not_home')
+    await runAction(h.deps, HUB, { type: 'deskSkipSecondChance', parcelId, reason: 'seller_wants_back' })
+    const day = h.db.days.get(HUB)!
+    expect(day.parcels.find((p) => p.id === parcelId)?.skipReason).toBe('seller_wants_back')
+    expect(day.events.filter((e) => e.type === 'SECOND_CHANCE_SKIPPED')).toHaveLength(1)
+  })
+})
+
 describe('autopilot and reset', () => {
   it('autopilot resolves stops and saves the result', async () => {
     const { h } = await started()
@@ -348,7 +379,7 @@ describe('a day saved by an older version of the app', () => {
     const r = await runEnsure(h.deps, HUB)
     expect(r.ok).toBe(true)
     const day = h.db.days.get(HUB)!
-    expect(day.schema).toBe(6)
+    expect(day.schema).toBe(7)
     expect(day.dayNo).toBe(1)
     expect(day.version).toBe(42)
     expect(day.started).toBe(false)
@@ -380,7 +411,7 @@ describe('a day saved by an older version of the app', () => {
     h.db.days.set(HUB, OLD_SHAPE_V5(9))
     const r = await runReset(h.deps, HUB)
     expect(r.ok).toBe(true)
-    expect(h.db.days.get(HUB)).toMatchObject({ schema: 6, dayNo: 1, version: 10 })
+    expect(h.db.days.get(HUB)).toMatchObject({ schema: 7, dayNo: 1, version: 10 })
   })
 })
 
