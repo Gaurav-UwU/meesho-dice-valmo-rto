@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { isDelivered } from '../../src/domain/lifecycle.ts'
 import { demoStops } from '../../src/domain/selectors.ts'
 import type { DayState } from '../../src/domain/types.ts'
-import { bindPhone, handleInbound, MAX_OTP_REQUESTS_PER_ORDER, runAction, runAutopilot, runReset } from './core.ts'
+import { bindPhone, handleInbound, MAX_OTP_REQUESTS_PER_ORDER, runAction, runAutopilot, runEnsure, runReset } from './core.ts'
 import { hashOtp } from './otp.ts'
 import { harness } from './testkit.ts'
 
@@ -31,8 +31,9 @@ describe('runAction', () => {
     expect(h.db.days.get(HUB)!.version).toBe(before)
   })
 
-  it('never stores a plain OTP: the code is hashed and the message masked', async () => {
+  it('never stores a plain OTP: the code is hashed and, for a real phone, the message masked', async () => {
     const { h, orderId } = await started()
+    await bindPhone(h.deps, { phone: PHONE, hubId: HUB, orderId })
     await runAction(h.deps, HUB, { type: 'riderDeliver', orderId })
     const day = h.db.days.get(HUB)!
     expect(day.otps[orderId].code).toBe(hashOtp('test-pepper', orderId, '4321'))
@@ -270,5 +271,135 @@ describe('duplicate replies', () => {
     await bindPhone(h.deps, { phone: PHONE, hubId: HUB, orderId })
     expect(await handleInbound(h.deps, PHONE, '1', undefined, 'SM1')).toMatchObject({ ok: true })
     expect(await handleInbound(h.deps, PHONE, '1', undefined, 'SM1')).toEqual({ ok: true, ignored: 'duplicate' })
+  })
+})
+
+const OLD_SHAPE_V5 = (version: number): DayState => ({ ...({ schema: 5, version, hub: { id: HUB }, stopOrder: [], stops: {} } as unknown as DayState) })
+
+describe('the day has an identity: a tap made on a day that was reset must not touch the new one', () => {
+  it('a new day has a day id and number, and the first one is day 1', async () => {
+    const h = harness()
+    await runEnsure(h.deps, HUB)
+    const day = h.db.days.get(HUB)!
+    expect(day.dayId).toBeTruthy()
+    expect(day.dayNo).toBe(1)
+  })
+
+  it('applies an action that carries the current day id', async () => {
+    const { h, day } = await started()
+    const r = await runAction(h.deps, HUB, { type: 'advanceClock', minutes: 30 }, 'browser', day.dayId)
+    expect(r.ok).toBe(true)
+    expect(h.db.days.get(HUB)!.version).toBe(day.version + 1)
+  })
+
+  it('refuses an action from a screen that was showing another day, says why, and changes nothing', async () => {
+    const { h, day } = await started()
+    const r = await runAction(h.deps, HUB, { type: 'advanceClock', minutes: 30 }, 'browser', 'some-older-day')
+    expect(r).toEqual({ ok: false, code: 'day_reset', error: 'The day was reset, refreshing' })
+    expect(h.db.days.get(HUB)).toEqual(day)
+  })
+
+  it('THE BUG: after a reset, a late tap from a device still on the old day is refused, not applied to the new day', async () => {
+    const { h, day: oldDay } = await started()
+    await runReset(h.deps, HUB)
+    const fresh = h.db.days.get(HUB)!
+    expect(fresh.dayId).not.toBe(oldDay.dayId)
+    expect(fresh.dayNo).toBe(oldDay.dayNo + 1)
+    const late = await runAction(h.deps, HUB, { type: 'startDay' }, 'browser', oldDay.dayId)
+    expect(late).toMatchObject({ ok: false, code: 'day_reset' })
+    expect(h.db.days.get(HUB)!.started).toBe(false)
+    expect(h.db.days.get(HUB)!.version).toBe(fresh.version)
+  })
+
+  it('autopilot from a stale device is refused too', async () => {
+    const { h, day: oldDay } = await started()
+    await runReset(h.deps, HUB)
+    await runAction(h.deps, HUB, { type: 'startDay' })
+    const fresh = h.db.days.get(HUB)!
+    const r = await runAutopilot(h.deps, HUB, 30, oldDay.dayId)
+    expect(r).toMatchObject({ ok: false, code: 'day_reset' })
+    expect(h.db.days.get(HUB)).toEqual(fresh)
+    expect((await runAutopilot(h.deps, HUB, 30, fresh.dayId)).ok).toBe(true)
+  })
+
+  it('a reset keeps the version climbing (so a late write expecting an old version can never slip in) and counts the days', async () => {
+    const { h, day } = await started()
+    await runReset(h.deps, HUB)
+    const one = h.db.days.get(HUB)!
+    await runReset(h.deps, HUB)
+    const two = h.db.days.get(HUB)!
+    expect(one.version).toBe(day.version + 1)
+    expect(two.version).toBe(one.version + 1)
+    expect([day.dayNo, one.dayNo, two.dayNo]).toEqual([1, 2, 3])
+    expect(new Set([day.dayId, one.dayId, two.dayId]).size).toBe(3)
+  })
+
+  it('the first reset before any day exists is day 1', async () => {
+    const h = harness()
+    await runReset(h.deps, 'gaya', 5)
+    expect(h.db.days.get('gaya')!.dayNo).toBe(1)
+  })
+})
+
+describe('a day saved by an older version of the app', () => {
+  it('ensure upgrades it on its own to a fresh current day, so no screen sits on Loading', async () => {
+    const h = harness()
+    h.db.days.set(HUB, OLD_SHAPE_V5(41))
+    const r = await runEnsure(h.deps, HUB)
+    expect(r.ok).toBe(true)
+    const day = h.db.days.get(HUB)!
+    expect(day.schema).toBe(6)
+    expect(day.dayNo).toBe(1)
+    expect(day.version).toBe(42)
+    expect(day.started).toBe(false)
+  })
+
+  it('ensure leaves a current day alone, and a day from a NEWER app alone', async () => {
+    const h = harness()
+    await runEnsure(h.deps, HUB)
+    const cur = h.db.days.get(HUB)!
+    await runEnsure(h.deps, HUB)
+    expect(h.db.days.get(HUB)).toBe(cur)
+    const newer = { ...cur, schema: cur.schema + 1 } as DayState
+    h.db.days.set(HUB, newer)
+    await runEnsure(h.deps, HUB)
+    expect(h.db.days.get(HUB)).toBe(newer)
+  })
+
+  it('an action on an old-shape day is refused with a clear message instead of crashing the server', async () => {
+    const h = harness()
+    h.db.days.set(HUB, OLD_SHAPE_V5(3))
+    const r = await runAction(h.deps, HUB, { type: 'startDay' }, 'browser', 'x')
+    expect(r).toMatchObject({ ok: false, code: 'old_shape' })
+    expect((r as { error: string }).error).toMatch(/older version/i)
+    expect(h.db.days.get(HUB)).toEqual(OLD_SHAPE_V5(3))
+  })
+
+  it('a reset replaces it and counts on from version 1', async () => {
+    const h = harness()
+    h.db.days.set(HUB, OLD_SHAPE_V5(9))
+    const r = await runReset(h.deps, HUB)
+    expect(r.ok).toBe(true)
+    expect(h.db.days.get(HUB)).toMatchObject({ schema: 6, dayNo: 1, version: 10 })
+  })
+})
+
+describe('the OTP on a demo phone', () => {
+  it('a synthetic customer (no real phone) sees the code on the in-app phone, while the stored code stays hashed', async () => {
+    const { h, orderId } = await started()
+    await runAction(h.deps, HUB, { type: 'riderDeliver', orderId })
+    const day = h.db.days.get(HUB)!
+    const otpMsg = day.messages.filter((m) => m.kind === 'delivery_otp').at(-1)!
+    expect(otpMsg.text).toContain('4321')
+    expect(JSON.stringify(day.otps)).not.toContain('4321')
+  })
+
+  it('a real customer\'s code is still masked', async () => {
+    const { h, orderId } = await started()
+    await bindPhone(h.deps, { phone: PHONE, hubId: HUB, orderId })
+    await runAction(h.deps, HUB, { type: 'riderDeliver', orderId })
+    const otpMsg = h.db.days.get(HUB)!.messages.filter((m) => m.kind === 'delivery_otp').at(-1)!
+    expect(otpMsg.text).not.toContain('4321')
+    expect(h.sent.at(-1)!.body).toContain('4321') // the real phone still gets the real code
   })
 })

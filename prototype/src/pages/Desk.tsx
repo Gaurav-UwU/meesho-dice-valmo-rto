@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { deskItems, deskSummary } from '../domain/selectors.ts'
 import type { DayState } from '../domain/types.ts'
 import { batchBySeller } from '../engine/router.ts'
-import { useDay, useDayControls, useSend, useStore } from '../store/StoreContext.tsx'
+import { useDay, useDayControls, useSend } from '../store/StoreContext.tsx'
+import { DayLoading } from '../ui/DayLoading.tsx'
 import { Footer } from '../ui/Footer.tsx'
 import { HubPicker } from '../ui/HubPicker.tsx'
+import { SyncBadge } from '../ui/SyncBadge.tsx'
 import { useHubParam } from '../ui/hub.ts'
 import { DeskDrawer } from './desk/DeskDrawer.tsx'
 import { DeskSummary } from './desk/DeskSummary.tsx'
@@ -26,7 +28,6 @@ function doneEntries(day: DayState, items: ReturnType<typeof deskItems>): readon
 }
 
 export default function Desk() {
-  const { mode } = useStore()
   const { hub } = useHubParam()
   const day = useDay(hub.id)
   const send = useSend(hub.id)
@@ -69,7 +70,7 @@ export default function Desk() {
         <h1>Refused Parcel Desk</h1>
         <div className="desk-bar-right">
           <HubPicker light />
-          <span className="desk-demo-pill">{mode === 'demo' ? 'Demo mode' : 'Live mode'}</span>
+          <SyncBadge hubId={hub.id} />
         </div>
       </header>
 
@@ -77,7 +78,7 @@ export default function Desk() {
         <DeskDrawer hubName={hub.name} hubId={hub.id} isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
         <main className="desk-main">
           {!day ? (
-            <p role="status">Loading the hub day...</p>
+            <DayLoading hubId={hub.id} text="Loading the hub day..." />
           ) : (
             <>
               <DeskSummary summary={deskSummary(day)} />

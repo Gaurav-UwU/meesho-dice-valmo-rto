@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useDay } from '../store/StoreContext.tsx'
+import { DayLoading } from '../ui/DayLoading.tsx'
 import { Footer } from '../ui/Footer.tsx'
 import { useHubParam } from '../ui/hub.ts'
 import { PhoneFrame } from '../ui/PhoneFrame.tsx'
@@ -27,7 +28,7 @@ export default function Rider() {
 
   if (state && rider && state.started) {
     return (
-      <PhoneFrame label={FRAME_LABEL}>
+      <PhoneFrame label={FRAME_LABEL} hubId={hub.id}>
         <RiderApp state={state} hub={hub} rider={rider} onSwitch={() => pick(null)} />
       </PhoneFrame>
     )
@@ -35,7 +36,7 @@ export default function Rider() {
 
   let body: ReactNode
   if (!state) {
-    body = <p className="rider-empty">Loading…</p>
+    body = <DayLoading hubId={hub.id} className="rider-empty" text="Loading…" />
   } else if (!rider) {
     body = (
       <>
@@ -56,7 +57,7 @@ export default function Rider() {
   }
 
   return (
-    <PhoneFrame label={FRAME_LABEL}>
+    <PhoneFrame label={FRAME_LABEL} hubId={hub.id}>
       <div className="rider-root">
         <header className="rider-header">
           <div className="rider-header-text">

@@ -7,7 +7,7 @@ import { SIM_START } from './clock.ts'
 import type { DayConfig, DayState, StopRecord } from './types.ts'
 
 /** Bump when the shape of DayState changes (see DayState.schema). */
-export const DAY_SCHEMA = 5
+export const DAY_SCHEMA = 6
 
 export const DEFAULT_CONFIG: DayConfig = { maxAttempts: 2, bonus: 15, uplift: 0.12, basePay: 20 }
 
@@ -16,6 +16,10 @@ export interface DayOptions {
   readonly orders: number
   readonly riders: number
   readonly config?: DayConfig
+  /** Give every new day its own id (the stores do). Left out, it is derived from the seed so tests stay deterministic. */
+  readonly dayId?: string
+  /** 1 for the first day of a hub; a reset passes the old number plus one */
+  readonly dayNo?: number
 }
 
 export const DEFAULT_DAY: DayOptions = { seed: 2026, orders: 300, riders: 12 }
@@ -50,6 +54,8 @@ export function createDay(geo: HubGeo, opts: DayOptions = DEFAULT_DAY): DayState
   }
   return {
     schema: DAY_SCHEMA,
+    dayId: opts.dayId ?? `day-${opts.seed}`,
+    dayNo: opts.dayNo ?? 1,
     version: 0,
     hub: geo.hub,
     seed: opts.seed,

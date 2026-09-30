@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useSyncExternalStore, type ReactNode } from 'react'
 import type { DayState } from '../domain/types.ts'
 import type { HubId } from '../engine/types.ts'
-import type { ActionInput, Store } from './types.ts'
+import type { ActionInput, Store, SyncInfo } from './types.ts'
 
 const StoreContext = createContext<Store | null>(null)
 
@@ -24,6 +24,12 @@ export function useDay(hubId: HubId): DayState | undefined {
   return useSyncExternalStore(store.subscribe, () => store.getState(hubId))
 }
 
+/** Where this device stands for a hub: synced with others, alone, offline or needing a person. Re-renders when it changes. */
+export function useSyncInfo(hubId: HubId): SyncInfo {
+  const store = useStore()
+  return useSyncExternalStore(store.subscribe, () => store.getInfo(hubId))
+}
+
 /** Send actions to a hub's day. The store stamps the time and generates OTP codes. */
 export function useSend(hubId: HubId): (input: ActionInput) => Promise<void> {
   const store = useStore()
@@ -32,7 +38,7 @@ export function useSend(hubId: HubId): (input: ActionInput) => Promise<void> {
 
 /** Autopilot and reset controls for the ops console. */
 export function useDayControls(hubId: HubId): {
-  readonly autopilot: (count: number) => Promise<void>
+  readonly autopilot: (count: number) => Promise<boolean>
   readonly reset: () => Promise<void>
 } {
   const store = useStore()

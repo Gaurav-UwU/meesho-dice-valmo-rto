@@ -125,7 +125,7 @@ describe('local store', () => {
 
   it('ignores corrupt saved data and builds a fresh day', async () => {
     const storage = memoryStorage()
-    storage.setItem('rescue-console-day-v5:powai', '{not json')
+    storage.setItem('rescue-console-day-v6:powai', '{not json')
     const store = createLocalStore({ ...small, storage })
     await store.ensureDay('powai')
     expect(store.getState('powai')?.stopOrder).toHaveLength(60)
@@ -182,7 +182,7 @@ describe('local store', () => {
 
   it('ignores a saved day from an older shape instead of crashing', async () => {
     const storage = memoryStorage()
-    storage.setItem('rescue-console-day-v5:powai', JSON.stringify({ version: 3, stops: {}, stopOrder: [], hub: {} }))
+    storage.setItem('rescue-console-day-v6:powai', JSON.stringify({ version: 3, stops: {}, stopOrder: [], hub: {} }))
     const store = createLocalStore({ ...small, storage })
     await store.ensureDay('powai')
     expect(store.getState('powai')?.stopOrder).toHaveLength(60)
@@ -197,6 +197,223 @@ describe('local store', () => {
     await tabB.ensureDay('powai')
     await tabA.send('powai', { type: 'startDay' })
     await tick()
-    expect(JSON.parse(storageB.data.get('rescue-console-day-v5:powai')!).started).toBe(true)
+    expect(JSON.parse(storageB.data.get('rescue-console-day-v6:powai')!).started).toBe(true)
+  })
+})
+
+/** A channel that goes nowhere: a tab that is asleep, a browser with no BroadcastChannel message delivered. */
+const deaf: ChannelLike = { postMessage: () => undefined, listen: () => undefined }
+
+describe('local store: a new day reaches every tab and an old day can never come back', () => {
+  it('a reset makes a new day id and a higher day number, and keeps the version climbing', async () => {
+    const store = createLocalStore(small)
+    await store.send('powai', { type: 'startDay' })
+    const before = store.getState('powai')!
+    await store.reset('powai')
+    const after = store.getState('powai')!
+    expect(after.dayId).not.toBe(before.dayId)
+    expect(after.dayNo).toBe(before.dayNo + 1)
+    expect(after.version).toBeGreaterThan(before.version)
+    expect(after.started).toBe(false)
+  })
+
+  it('a first day is day 1, and tabs that open at the same time hold the SAME first day (so they never start out as rivals)', async () => {
+    const one = createLocalStore({ ...small, random: () => 0.1 })
+    const two = createLocalStore({ ...small, random: () => 0.7 })
+    await one.ensureDay('powai')
+    await two.ensureDay('powai')
+    expect(one.getState('powai')!.dayNo).toBe(1)
+    expect(one.getState('powai')!.dayId).toBe(two.getState('powai')!.dayId)
+    await one.reset('powai')
+    await two.reset('powai')
+    expect(one.getState('powai')!.dayId).not.toBe(two.getState('powai')!.dayId) // each reset is its own event
+  })
+
+  it('tabs that opened at the same moment (nothing saved yet) follow each other from the first tap', async () => {
+    const [ca, cb] = linkedChannels()
+    const tabA = createLocalStore({ ...small, channel: ca, random: () => 0.2 })
+    const tabB = createLocalStore({ ...small, channel: cb, random: () => 0.9 })
+    await Promise.all([tabA.ensureDay('powai'), tabB.ensureDay('powai')])
+    await tabA.send('powai', { type: 'startDay' })
+    await tick()
+    expect(tabB.getState('powai')!.started).toBe(true)
+    await tabB.send('powai', { type: 'advanceClock', minutes: 30 })
+    await tick()
+    expect(tabA.getState('powai')!.version).toBe(tabB.getState('powai')!.version)
+  })
+
+  it('THE BUG: a tab that took more actions still switches to the new day after a reset somewhere else', async () => {
+    // A hears nothing from B, B hears A: B took three actions A never saw, then A resets.
+    let toB: ((data: unknown) => void) | undefined
+    const a: ChannelLike = { postMessage: (m) => toB?.(m), listen: () => undefined }
+    const b: ChannelLike = { postMessage: () => undefined, listen: (h) => void (toB = h) }
+    const tabA = createLocalStore({ ...small, channel: a })
+    const tabB = createLocalStore({ ...small, channel: b })
+    await tabA.ensureDay('powai')
+    await tabB.ensureDay('powai')
+    await tabB.send('powai', { type: 'startDay' })
+    await tabB.send('powai', { type: 'advanceClock', minutes: 30 })
+    await tabB.send('powai', { type: 'advanceClock', minutes: 30 })
+    expect(tabB.getState('powai')!.version).toBeGreaterThan(tabA.getState('powai')!.version + 1)
+    await tabA.reset('powai')
+    await tick()
+    expect(tabB.getState('powai')!.dayId).toBe(tabA.getState('powai')!.dayId)
+    expect(tabB.getState('powai')!.started).toBe(false)
+  })
+
+  it('an old day broadcast late does not replace a newer day', async () => {
+    const [ca, cb] = linkedChannels()
+    const tabA = createLocalStore({ ...small, channel: ca })
+    const tabB = createLocalStore({ ...small, channel: cb })
+    await tabA.ensureDay('powai')
+    await tabB.ensureDay('powai')
+    const oldDay = tabA.getState('powai')!
+    await tabA.reset('powai')
+    await tick()
+    const fresh = tabB.getState('powai')!
+    expect(fresh.dayNo).toBe(2)
+    // replay the old day into B, as a slow channel would
+    ca.postMessage({ hubId: 'powai', state: { ...oldDay, version: 999 } })
+    await tick()
+    expect(tabB.getState('powai')!.dayId).toBe(fresh.dayId)
+  })
+
+  it('a tab that missed the reset message cannot overwrite it: its tap is refused and it moves to the new day', async () => {
+    const storage = memoryStorage()
+    const tabA = createLocalStore({ ...small, storage, channel: deaf })
+    const tabB = createLocalStore({ ...small, storage, channel: deaf })
+    await tabA.ensureDay('powai')
+    await tabB.ensureDay('powai')
+    await tabA.reset('powai')
+    await tick()
+    const fresh = tabA.getState('powai')!
+    expect(tabB.getState('powai')!.dayId).not.toBe(fresh.dayId) // B never heard
+    await tabB.send('powai', { type: 'startDay' })
+    await tick()
+    expect(tabB.getState('powai')!.dayId).toBe(fresh.dayId)
+    expect(tabB.getState('powai')!.started).toBe(false) // the tap was NOT applied to the new day
+    expect(tabB.getInfo('powai').notice?.text).toMatch(/day was reset/i)
+    expect(JSON.parse(storage.data.get('rescue-console-day-v6:powai')!).dayId).toBe(fresh.dayId)
+  })
+
+  it('an autopilot step from a tab showing the old day is refused too, and says so (so the loop stops)', async () => {
+    const storage = memoryStorage()
+    const tabA = createLocalStore({ ...small, storage, channel: deaf })
+    const tabB = createLocalStore({ ...small, storage, channel: deaf })
+    await tabA.send('powai', { type: 'startDay' })
+    await tick()
+    await tabB.ensureDay('powai')
+    await tabA.reset('powai')
+    await tick()
+    expect(await tabB.autopilot('powai', 20)).toBe(false)
+    expect(tabB.getState('powai')!.dayId).toBe(tabA.getState('powai')!.dayId)
+    expect(tabB.getState('powai')!.started).toBe(false)
+  })
+
+  it('autopilot reports true when it did work', async () => {
+    const store = createLocalStore(small)
+    await store.send('powai', { type: 'startDay' })
+    expect(await store.autopilot('powai', 10)).toBe(true)
+  })
+
+  it('never writes an older day over a newer one in storage', async () => {
+    const storage = memoryStorage()
+    const tabA = createLocalStore({ ...small, storage, channel: deaf })
+    const tabB = createLocalStore({ ...small, storage, channel: deaf })
+    await tabB.ensureDay('powai')
+    await tabA.reset('powai')
+    await tick()
+    const newId = JSON.parse(storage.data.get('rescue-console-day-v6:powai')!).dayId
+    // B is stale and acts on something that is not a day-checked tap (a no-op path); its write must not win either way
+    await tabB.send('powai', { type: 'startDay' })
+    await tick()
+    expect(JSON.parse(storage.data.get('rescue-console-day-v6:powai')!).dayId).toBe(newId)
+  })
+
+  it('resync() picks up a newer day another tab saved while this one was asleep', async () => {
+    const storage = memoryStorage()
+    const tabA = createLocalStore({ ...small, storage, channel: deaf })
+    const tabB = createLocalStore({ ...small, storage, channel: deaf })
+    await tabB.ensureDay('powai')
+    await tabA.send('powai', { type: 'startDay' })
+    await tabA.reset('powai')
+    await tick()
+    const listener = vi.fn()
+    tabB.subscribe(listener)
+    await tabB.resync()
+    expect(tabB.getState('powai')!.dayId).toBe(tabA.getState('powai')!.dayId)
+    expect(listener).toHaveBeenCalled()
+    expect(tabB.getInfo('powai').notice?.text).toMatch(/new day|reset/i)
+  })
+
+  it('resync() does nothing when storage holds the same or an older day', async () => {
+    const storage = memoryStorage()
+    const store = createLocalStore({ ...small, storage })
+    await store.send('powai', { type: 'startDay' })
+    await tick()
+    const before = store.getState('powai')
+    await store.resync()
+    expect(store.getState('powai')).toBe(before)
+  })
+
+  it('a saved day from the old shape (v5 key) is not read, and the new key is used', async () => {
+    const storage = memoryStorage()
+    storage.setItem('rescue-console-day-v5:powai', JSON.stringify({ schema: 5, version: 40, hub: { id: 'powai' }, stopOrder: [] }))
+    const store = createLocalStore({ ...small, storage })
+    await store.send('powai', { type: 'startDay' })
+    await tick()
+    expect(store.getState('powai')!.version).toBeLessThan(40)
+    expect(storage.data.has('rescue-console-day-v6:powai')).toBe(true)
+  })
+
+  it('a saved day with the right key but the wrong shape is replaced, with a notice', async () => {
+    const storage = memoryStorage()
+    storage.setItem('rescue-console-day-v6:powai', JSON.stringify({ schema: 4, version: 3, hub: { id: 'powai' }, stopOrder: [] }))
+    const store = createLocalStore({ ...small, storage })
+    await store.ensureDay('powai')
+    expect(store.getState('powai')?.stopOrder).toHaveLength(60)
+    expect(store.getInfo('powai').notice?.text).toMatch(/older version|fresh/i)
+  })
+})
+
+describe('local store: it always says whether this device is alone', () => {
+  it('Demo mode is ALONE and says why, with nothing wrong', async () => {
+    const store = createLocalStore({ ...small, storage: memoryStorage(), channel: deaf })
+    await store.ensureDay('powai')
+    const info = store.getInfo('powai')
+    expect(info).toMatchObject({ mode: 'demo', link: 'alone', aloneReason: 'demo', warnings: [] })
+    expect(info.day).toMatchObject({ hubId: 'powai', dayNo: 1 })
+    expect(info.day?.dayId).toBe(store.getState('powai')!.dayId)
+  })
+
+  it('warns when the browser cannot keep the day (private tab) or cannot tell its other tabs', async () => {
+    const store = createLocalStore(small)
+    await store.ensureDay('powai')
+    expect(store.getInfo('powai').warnings).toEqual(['storage-blocked', 'no-tab-sync'])
+  })
+
+  it('says when Live mode was asked for but is not available in this build', async () => {
+    const store = createLocalStore({ ...small, aloneReason: 'live-unavailable' })
+    await store.ensureDay('powai')
+    expect(store.getInfo('powai')).toMatchObject({ link: 'alone', aloneReason: 'live-unavailable' })
+  })
+
+  it('records when the day last changed and gives the same object until something changes', async () => {
+    let t = 5_000
+    const store = createLocalStore({ ...small, now: () => t })
+    await store.ensureDay('powai')
+    const one = store.getInfo('powai')
+    expect(store.getInfo('powai')).toBe(one)
+    t = 9_000
+    await store.send('powai', { type: 'startDay' })
+    const two = store.getInfo('powai')
+    expect(two).not.toBe(one)
+    expect(two.lastUpdateAt).toBe(9_000)
+    expect(two.day?.version).toBe(1)
+  })
+
+  it('before the day has loaded there is no day in the info', () => {
+    const store = createLocalStore(small)
+    expect(store.getInfo('powai').day).toBeUndefined()
   })
 })

@@ -147,25 +147,29 @@ describe('twilio', () => {
 
 describe('request validation', () => {
   it('accepts a well-formed action and rejects malformed ones', () => {
-    expect(parseActionRequest({ hubId: 'lucknow', action: { type: 'startDay' } })).toEqual({ ok: true, hubId: 'lucknow', action: { type: 'startDay' } })
-    expect(parseActionRequest({ hubId: 'lucknow', action: { type: 'submitOtp', orderId: 'lucknow-0001', code: '1234' } }).ok).toBe(true)
-    expect(parseActionRequest({ hubId: 'mars', action: { type: 'startDay' } }).ok).toBe(false)
-    expect(parseActionRequest({ hubId: 'lucknow', action: { type: 'hack' } }).ok).toBe(false)
-    expect(parseActionRequest({ hubId: 'lucknow', action: { type: 'submitOtp', orderId: 'lucknow-0001', code: '12' } }).ok).toBe(false)
-    expect(parseActionRequest({ hubId: 'lucknow', action: { type: 'riderDeliver', orderId: '../etc' } }).ok).toBe(false)
-    expect(parseActionRequest({ hubId: 'lucknow', action: { type: 'customerReply', orderId: 'lucknow-0001', reply: 'home', location: { lat: 999, lng: 0 } } }).ok).toBe(false)
+    expect(parseActionRequest({ hubId: 'lucknow', dayId: 'd1-x', action: { type: 'startDay' } })).toEqual({ ok: true, hubId: 'lucknow', dayId: 'd1-x', action: { type: 'startDay' } })
+    expect(parseActionRequest({ hubId: 'lucknow', dayId: 'd1-x', action: { type: 'submitOtp', orderId: 'lucknow-0001', code: '1234' } }).ok).toBe(true)
+    expect(parseActionRequest({ hubId: 'mars', dayId: 'd1-x', action: { type: 'startDay' } }).ok).toBe(false)
+    expect(parseActionRequest({ hubId: 'lucknow', dayId: 'd1-x', action: { type: 'hack' } }).ok).toBe(false)
+    expect(parseActionRequest({ hubId: 'lucknow', dayId: 'd1-x', action: { type: 'submitOtp', orderId: 'lucknow-0001', code: '12' } }).ok).toBe(false)
+    expect(parseActionRequest({ hubId: 'lucknow', dayId: 'd1-x', action: { type: 'riderDeliver', orderId: '../etc' } }).ok).toBe(false)
+    expect(parseActionRequest({ hubId: 'lucknow', dayId: 'd1-x', action: { type: 'customerReply', orderId: 'lucknow-0001', reply: 'home', location: { lat: 999, lng: 0 } } }).ok).toBe(false)
     expect(parseActionRequest('junk').ok).toBe(false)
+    expect(parseActionRequest({ hubId: 'lucknow', action: { type: 'startDay' } }).ok).toBe(false) // which day?
+    for (const dayId of ['', 'has space', 'x'.repeat(65), '<script>', 7]) expect(parseActionRequest({ hubId: 'lucknow', dayId, action: { type: 'startDay' } }).ok).toBe(false)
   })
 
   it('reports why a request was rejected', () => {
-    const r = parseActionRequest({ hubId: 'lucknow', action: { type: 'submitOtp', orderId: 'bad', code: '1' } })
+    const r = parseActionRequest({ hubId: 'lucknow', dayId: 'd1-x', action: { type: 'submitOtp', orderId: 'bad', code: '1' } })
     expect(r.ok).toBe(false)
     if (!r.ok) expect(r.error).toMatch(/orderId|code/)
   })
 
   it('validates admin operations', () => {
     expect(AdminRequestSchema.safeParse({ op: 'reset', hubId: 'gaya', seed: 3 }).success).toBe(true)
-    expect(AdminRequestSchema.safeParse({ op: 'autopilot', hubId: 'gaya', count: 9999 }).success).toBe(false)
+    expect(AdminRequestSchema.safeParse({ op: 'autopilot', hubId: 'gaya', dayId: 'd1-x', count: 30 }).success).toBe(true)
+    expect(AdminRequestSchema.safeParse({ op: 'autopilot', hubId: 'gaya', dayId: 'd1-x', count: 9999 }).success).toBe(false)
+    expect(AdminRequestSchema.safeParse({ op: 'autopilot', hubId: 'gaya', count: 30 }).success).toBe(false)
     expect(AdminRequestSchema.safeParse({ op: 'bind', hubId: 'gaya', orderId: 'gaya-0001', phone: '+919999900001' }).success).toBe(true)
     expect(AdminRequestSchema.safeParse({ op: 'bind', hubId: 'gaya', orderId: 'gaya-0001', phone: '9999900001' }).success).toBe(false)
   })

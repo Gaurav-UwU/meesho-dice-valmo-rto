@@ -1,4 +1,5 @@
 import { useDay } from '../store/StoreContext.tsx'
+import { DayLoading } from '../ui/DayLoading.tsx'
 import { Footer } from '../ui/Footer.tsx'
 import { useHubParam } from '../ui/hub.ts'
 import './ops/ops.css'
@@ -15,9 +16,7 @@ export default function Ops() {
       {state ? (
         <OpsDashboard key={hub.id} state={state} />
       ) : (
-        <p className="ops-loading" role="status">
-          Loading {hub.name}…
-        </p>
+        <DayLoading hubId={hub.id} className="ops-loading" />
       )}
       <Footer />
     </div>

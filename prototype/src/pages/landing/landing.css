@@ -413,6 +413,21 @@
   font-weight: 700;
 }
 
+/* Sync + mode chooser in Setup */
+.land-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+.land-modes .land-btn[disabled] {
+  cursor: default;
+  opacity: 1;
+}
+.land-modes .land-btn--outline[disabled] {
+  opacity: 0.55;
+}
+
 /* Walkthrough */
 .land-walk {
   scroll-margin-top: 16px;

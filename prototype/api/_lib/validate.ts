@@ -46,19 +46,24 @@ const ActionInputSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('closePilot') }),
 ])
 
-export const ActionRequestSchema = z.object({ hubId: HubIdSchema, action: ActionInputSchema })
+/** The id of the day the screen was showing: a tap made on a day that has since been reset is refused, never applied to the new one. */
+export const DayIdSchema = z.string().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/)
 
-export type ParsedRequest = { readonly ok: true; readonly hubId: HubId; readonly action: ActionInput } | { readonly ok: false; readonly error: string }
+export const ActionRequestSchema = z.object({ hubId: HubIdSchema, dayId: DayIdSchema, action: ActionInputSchema })
+
+export type ParsedRequest =
+  | { readonly ok: true; readonly hubId: HubId; readonly dayId: string; readonly action: ActionInput }
+  | { readonly ok: false; readonly error: string }
 
 export function parseActionRequest(raw: unknown): ParsedRequest {
   const r = ActionRequestSchema.safeParse(raw)
   if (!r.success) return { ok: false, error: r.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ') }
-  return { ok: true, hubId: r.data.hubId, action: r.data.action }
+  return { ok: true, hubId: r.data.hubId, dayId: r.data.dayId, action: r.data.action }
 }
 
 export const AdminRequestSchema = z.discriminatedUnion('op', [
   z.object({ op: z.literal('reset'), hubId: HubIdSchema, seed: z.number().int().min(0).max(1_000_000).optional() }),
-  z.object({ op: z.literal('autopilot'), hubId: HubIdSchema, count: z.number().int().min(1).max(500) }),
+  z.object({ op: z.literal('autopilot'), hubId: HubIdSchema, dayId: DayIdSchema, count: z.number().int().min(1).max(500) }),
   z.object({ op: z.literal('bind'), hubId: HubIdSchema, orderId, phone: z.string().regex(/^\+\d{10,15}$/) }),
   z.object({ op: z.literal('ping'), phone: z.string().regex(/^\+\d{10,15}$/) }),
 ])

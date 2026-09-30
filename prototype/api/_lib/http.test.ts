@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { demoStops } from '../../src/domain/selectors.ts'
-import { runAction } from './core.ts'
+import { runAction, runEnsure, runReset } from './core.ts'
 import { loadEnv } from './env.ts'
 import { createRateLimiter, handleAction, handleAdmin, handleTwilio } from './http.ts'
 import { twilioSignature } from './twilio.ts'
@@ -9,13 +9,21 @@ import { harness } from './testkit.ts'
 const post = (url: string, body: unknown, headers: Record<string, string> = {}): Request =>
   new Request(url, { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body), headers: { 'content-type': 'application/json', ...headers } })
 
+/** Make the hub's day exist and return its id, like a screen does when it opens. */
+async function ready(h: ReturnType<typeof harness>, hub: 'lucknow' | 'gaya' = 'lucknow'): Promise<string> {
+  await runEnsure(h.deps, hub)
+  return h.db.days.get(hub)!.dayId
+}
+
 describe('handleAction', () => {
   const cfg = { liveKey: 'live-key' }
-  const startDay = { hubId: 'lucknow', action: { type: 'startDay' } }
+  // Every tap names the day it was made on. Screens get the id from the day they read; the tests read it from the store.
+  const startDay = { hubId: 'lucknow', dayId: 'test-day', action: { type: 'startDay' } }
 
   it('applies a valid, authorised action', async () => {
     const h = harness()
-    const res = await handleAction(post('http://x/api/action', startDay, { 'x-live-key': 'live-key' }), h.deps, cfg)
+    const dayId = await ready(h)
+    const res = await handleAction(post('http://x/api/action', { ...startDay, dayId }, { 'x-live-key': 'live-key' }), h.deps, cfg)
     expect(res.status).toBe(200)
     expect(h.db.days.get('lucknow')?.started).toBe(true)
   })
@@ -29,7 +37,27 @@ describe('handleAction', () => {
 
   it('needs no key when none is configured', async () => {
     const h = harness()
-    expect((await handleAction(post('http://x', startDay), h.deps, {})).status).toBe(200)
+    const dayId = await ready(h)
+    expect((await handleAction(post('http://x', { ...startDay, dayId }), h.deps, {})).status).toBe(200)
+  })
+
+  it('refuses a tap that does not say which day it was made on (an old page that is still open)', async () => {
+    const h = harness()
+    await ready(h)
+    const res = await handleAction(post('http://x', { hubId: 'lucknow', action: { type: 'startDay' } }), h.deps, {})
+    expect(res.status).toBe(400)
+    expect(((await res.json()) as { error: string }).error).toMatch(/dayId/)
+    expect(h.db.days.get('lucknow')!.started).toBe(false)
+  })
+
+  it('answers 409 with the code day_reset when the tap was made on a day that has since been reset, and does not apply it', async () => {
+    const h = harness()
+    const oldId = await ready(h)
+    await runReset(h.deps, 'lucknow')
+    const res = await handleAction(post('http://x', { ...startDay, dayId: oldId }), h.deps, {})
+    expect(res.status).toBe(409)
+    expect(await res.json()).toEqual({ ok: false, code: 'day_reset', error: 'The day was reset, refreshing' })
+    expect(h.db.days.get('lucknow')!.started).toBe(false)
   })
 
   it('refuses a body that is not declared as JSON (blocks cross-site form posts)', async () => {
@@ -44,7 +72,7 @@ describe('handleAction', () => {
     expect((await handleAction(new Request('http://x', { method: 'GET' }), h.deps, {})).status).toBe(405)
     expect((await handleAction(post('http://x', '{not json'), h.deps, {})).status).toBe(400)
     expect((await handleAction(post('http://x', 'x'.repeat(20_000)), h.deps, {})).status).toBe(400)
-    const bad = await handleAction(post('http://x', { hubId: 'lucknow', action: { type: 'submitOtp', orderId: 'bad', code: 'x' } }), h.deps, {})
+    const bad = await handleAction(post('http://x', { hubId: 'lucknow', dayId: 'x', action: { type: 'submitOtp', orderId: 'bad', code: 'x' } }), h.deps, {})
     expect(bad.status).toBe(400)
     expect(h.db.days.size).toBe(0)
   })
@@ -53,11 +81,12 @@ describe('handleAction', () => {
     const h = harness()
     await runAction(h.deps, 'lucknow', { type: 'startDay' })
     const orderId = demoStops(h.db.days.get('lucknow')!).bonus[0]
-    const otp = { hubId: 'lucknow', action: { type: 'riderDeliver', orderId } }
+    const dayId = h.db.days.get('lucknow')!.dayId
+    const otp = { hubId: 'lucknow', dayId, action: { type: 'riderDeliver', orderId } }
     for (let i = 0; i < 5; i++) await handleAction(post('http://x', otp), h.deps, {})
     expect((await handleAction(post('http://x', otp), h.deps, {})).status).toBe(429)
     h.db.conflicts = 99
-    expect((await handleAction(post('http://x', { hubId: 'lucknow', action: { type: 'customerReply', orderId, reply: 'home' } }), h.deps, {})).status).toBe(409)
+    expect((await handleAction(post('http://x', { hubId: 'lucknow', dayId, action: { type: 'customerReply', orderId, reply: 'home' } }), h.deps, {})).status).toBe(409)
   })
 })
 
@@ -77,11 +106,32 @@ describe('handleAdmin', () => {
     const h = harness()
     expect((await handleAdmin(post('http://x', { op: 'reset', hubId: 'lucknow' }, auth), h.deps, cfg)).status).toBe(200)
     await runAction(h.deps, 'lucknow', { type: 'startDay' })
-    expect((await handleAdmin(post('http://x', { op: 'autopilot', hubId: 'lucknow', count: 30 }, auth), h.deps, cfg)).status).toBe(200)
+    const dayId = h.db.days.get('lucknow')!.dayId
+    expect((await handleAdmin(post('http://x', { op: 'autopilot', hubId: 'lucknow', count: 30, dayId }, auth), h.deps, cfg)).status).toBe(200)
     const orderId = demoStops(h.db.days.get('lucknow')!).bonus[0]
     const bound = await handleAdmin(post('http://x', { op: 'bind', hubId: 'lucknow', orderId, phone: '+919999900001' }, auth), h.deps, cfg)
     expect(bound.status).toBe(200)
     expect(h.db.bindings.get('+919999900001')?.orderId).toBe(orderId)
+  })
+
+  it('refuses autopilot from a device showing an old day (409 day_reset), and one that names no day (400)', async () => {
+    const h = harness()
+    await handleAdmin(post('http://x', { op: 'reset', hubId: 'lucknow' }, auth), h.deps, cfg)
+    await runAction(h.deps, 'lucknow', { type: 'startDay' })
+    const before = h.db.days.get('lucknow')!
+    const stale = await handleAdmin(post('http://x', { op: 'autopilot', hubId: 'lucknow', count: 30, dayId: 'an-older-day' }, auth), h.deps, cfg)
+    expect(stale.status).toBe(409)
+    expect(((await stale.json()) as { code: string }).code).toBe('day_reset')
+    expect((await handleAdmin(post('http://x', { op: 'autopilot', hubId: 'lucknow', count: 30 }, auth), h.deps, cfg)).status).toBe(400)
+    expect(h.db.days.get('lucknow')).toEqual(before)
+  })
+
+  it('reset works from any device with the token and gives every screen a new day to switch to', async () => {
+    const h = harness()
+    const first = await ready(h)
+    const res = await handleAdmin(post('http://x', { op: 'reset', hubId: 'lucknow' }, auth), h.deps, cfg)
+    expect(res.status).toBe(200)
+    expect(h.db.days.get('lucknow')!.dayId).not.toBe(first)
   })
 
   it('rejects other methods, bad bodies and invalid operations', async () => {
@@ -224,6 +274,7 @@ describe('handleEnsure', () => {
     expect((await handleEnsure(req(), h.deps, { liveKey: 'k' })).status).toBe(200)
     const created = h.db.days.get('gaya')!
     expect(created.started).toBe(false)
+    expect(created.dayId).toBeTruthy()
     await runAction(h.deps, 'gaya', { type: 'startDay' })
     expect((await handleEnsure(req(), h.deps, { liveKey: 'k' })).status).toBe(200)
     expect(h.db.days.get('gaya')!.started).toBe(true)

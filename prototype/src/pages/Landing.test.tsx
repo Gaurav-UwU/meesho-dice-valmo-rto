@@ -9,7 +9,7 @@ import { createLocalStore } from '../store/local.ts'
 import { StoreProvider } from '../store/StoreContext.tsx'
 import Landing from './Landing.tsx'
 import { DEMO_STEPS } from './landing/content.ts'
-import { loadProgress, saveProgress, toggleStep } from './landing/progress.ts'
+import { loadProgress, reconcileProgress, saveProgress, toggleStep } from './landing/progress.ts'
 
 const show = () => {
   const store = createLocalStore({ loadGeo: async (id) => syntheticGeo(getHub(id)) })
@@ -84,6 +84,20 @@ describe('Landing: one job, the demo', () => {
     expect(screen.getByRole('progressbar', { name: 'Demo progress' }).getAttribute('aria-valuenow')).toBe('0')
   })
 
+  it('drops the ticks when the day is reset, from this device or another, but keeps them while it is the same day', async () => {
+    const store = show()
+    const user = userEvent.setup()
+    await waitFor(() => expect(store.getState('lucknow')).toBeDefined())
+    await user.click(screen.getByRole('checkbox', { name: /Mark step 1 done/ }))
+    await user.click(screen.getByRole('checkbox', { name: /Mark step 2 done/ }))
+    expect(screen.getByRole('progressbar', { name: 'Demo progress' }).getAttribute('aria-valuenow')).toBe('2')
+    await store.send('lucknow', { type: 'startDay' }) // same day, more actions: ticks stay
+    expect(screen.getByRole('progressbar', { name: 'Demo progress' }).getAttribute('aria-valuenow')).toBe('2')
+    await store.reset('lucknow')
+    await waitFor(() => expect(screen.getByRole('progressbar', { name: 'Demo progress' }).getAttribute('aria-valuenow')).toBe('0'))
+    expect(loadProgress(DEMO_STEPS.map((s) => s.id))).toEqual([])
+  })
+
   it('says so when every step is ticked', async () => {
     saveProgress(DEMO_STEPS.map((s) => s.id))
     show()
@@ -112,6 +126,13 @@ describe('Landing: one job, the demo', () => {
 })
 
 describe('progress helpers', () => {
+  it('reconcileProgress keeps ticks on the same day or before days were tracked, and drops them on a different day', () => {
+    expect(reconcileProgress('d1', 'd1', ['a'])).toEqual({ dayId: 'd1', done: ['a'] })
+    expect(reconcileProgress(undefined, 'd1', ['a'])).toEqual({ dayId: 'd1', done: ['a'] })
+    expect(reconcileProgress('d1', 'd2', ['a'])).toEqual({ dayId: 'd2', done: [] })
+    expect(reconcileProgress('d1', undefined, ['a'])).toEqual({ dayId: 'd1', done: ['a'] })
+  })
+
   it('toggles without mutating, and ignores junk in storage', () => {
     const before = ['a']
     expect(toggleStep(before, 'b')).toEqual(['a', 'b'])

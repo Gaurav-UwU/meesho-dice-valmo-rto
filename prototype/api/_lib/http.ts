@@ -39,7 +39,7 @@ export async function handleAction(req: Request, deps: Deps, cfg: ActionConfig):
   }
   const parsed = parseActionRequest(raw)
   if (!parsed.ok) return json({ ok: false, error: parsed.error }, 400)
-  return fromResult(await runAction(deps, parsed.hubId, parsed.action))
+  return fromResult(await runAction(deps, parsed.hubId, parsed.action, 'browser', parsed.dayId))
 }
 
 /** GET ?hub=<id>: create the hub's day if it does not exist yet, so a screen opening first still has something to show. */
@@ -73,7 +73,7 @@ export async function handleAdmin(req: Request, deps: Deps, cfg: AdminConfig): P
     case 'reset':
       return fromResult(await runReset(deps, op.hubId, op.seed))
     case 'autopilot':
-      return fromResult(await runAutopilot(deps, op.hubId, op.count))
+      return fromResult(await runAutopilot(deps, op.hubId, op.count, op.dayId))
     case 'bind':
       return fromResult(await bindPhone(deps, { phone: op.phone, hubId: op.hubId, orderId: op.orderId }))
     case 'ping':

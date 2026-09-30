@@ -9,6 +9,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { runAction, runReset, type Deps } from '../api/_lib/core.ts'
 import { createSupabaseDb } from '../api/_lib/supabaseDb.ts'
+import { newDayId } from '../src/domain/dayId.ts'
 import { demoStops } from '../src/domain/selectors.ts'
 import { getHub } from '../src/engine/hubs.ts'
 import { syntheticGeo } from '../src/engine/synthetic-geo.ts'
@@ -33,6 +34,7 @@ const deps: Deps = {
   newCode: () => CODE,
   loadGeo: async (id) => syntheticGeo(getHub(id)),
   pepper,
+  newDayId: (dayNo) => newDayId(Date.now(), Math.random, dayNo),
 }
 
 let failed = 0
@@ -50,8 +52,12 @@ const storedRow = async (): Promise<string> => {
 
 const r0 = await runReset(deps, hub)
 check('reset creates the day in Supabase', r0.ok, r0.ok ? `version ${r0.version}` : r0.error)
-const r1 = await runAction(deps, hub, { type: 'startDay' })
-check('start day', r1.ok)
+const first = await db.loadDay(hub)
+check('the new day has a day id and number', Boolean(first?.dayId) && (first?.dayNo ?? 0) >= 1, `${first?.dayId} #${first?.dayNo}`)
+const r1 = await runAction(deps, hub, { type: 'startDay' }, 'browser', first?.dayId)
+check('start day (the tap names its day)', r1.ok)
+const staleTap = await runAction(deps, hub, { type: 'advanceClock', minutes: 30 }, 'browser', 'an-older-day')
+check('a tap from an older day is refused', !staleTap.ok && staleTap.code === 'day_reset')
 const day = await db.loadDay(hub)
 check('day reads back with 300 orders', day?.stopOrder.length === 300, `${day?.stopOrder.length}`)
 const orderId = day ? demoStops(day).bonus[0] : undefined
@@ -61,8 +67,9 @@ if (orderId) {
   const r2 = await runAction(deps, hub, { type: 'riderDeliver', orderId })
   check('rider Deliver issues an OTP', r2.ok)
   const row = await storedRow()
-  check('the stored row never contains the plain OTP', !row.includes(`"code":"${CODE}"`) && !row.includes(`OTP is ${CODE}`))
-  check('OTP messages are masked in the stored row', row.includes('••••'))
+  check('the stored OTP record never contains the plain code (it is a hash)', !row.includes(`"code":"${CODE}"`))
+  // A synthetic customer is played by the in-app phone, which must be able to show the code. Real phones' messages are masked (see core.test.ts).
+  check('the synthetic customer can read the code on the in-app phone', row.includes(`OTP is ${CODE}`) || row.includes(CODE))
   const wrong = await runAction(deps, hub, { type: 'submitOtp', orderId, code: '0000' })
   check('a wrong code is accepted as a request but does not deliver', wrong.ok && (await db.loadDay(hub))?.stops[orderId].status === 'otp_sent')
   const right = await runAction(deps, hub, { type: 'submitOtp', orderId, code: CODE })

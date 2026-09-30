@@ -1,8 +1,29 @@
 # NEXT SESSION: pick up from here
 
-**Last updated at the end of Session 11 (1 Oct): plan 18, the simplified pilot, is built and deployed.** Read [`../00-MASTER.md`](../00-MASTER.md) first, then this file.
+**Last updated at the end of Session 12 (1 Oct): the multi-device sync and "new day" reset bug is FIXED in code (tests and a real-browser check pass) but NOT yet deployed.** Read [`../00-MASTER.md`](../00-MASTER.md) first, then this file, then the Session 12 entry at the bottom of `R2-HANDOVER.md`.
 
-## ⭐ NOW: the prototype is feature-complete; what is left is the call, the deck numbers, and the freeze
+## ⭐ FIRST: deploy and try it on real phones
+1. `cd prototype && npx vitest run && npx tsc -b && npx oxlint && npm run build`, then `node scripts/build-api.mjs && npx vercel deploy --prod --yes` (needs Gaurav's Vercel login; none in the cloud session). Check `https://valmo-rescue-console.vercel.app/api/health`.
+2. Confirm the Vercel build has `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`; otherwise the landing page says the shared day is "not set up" and phones can only be ALONE (honest, but not what the demo needs). `LIVE_KEY` and `ADMIN_TOKEN` must be known to the team. No manual Reset is needed after this deploy: the server replaces the old-shape day by itself.
+3. **Multi-phone run:** laptop → landing page → "Several devices (shared day)" → "Start with a fresh day" → scan the Rider and Customer QR codes → every screen should say **SYNCED · same Day and id**. Press Reset day on Ops: phones switch to the next day within about 5 s. A phone that says **ALONE** is on its own private day (tap the badge for why).
+4. Test on **real iPhone Safari and Android Chrome**, and a private tab and a WhatsApp in-app browser. Only Chromium at phone width was tested.
+5. Decisions waiting for Gaurav: (a) shared day = Live mode with the in-app WhatsApp (chosen, Twilio off), (b) Start day keeps the day id, only Reset day makes a new one, (c) the QR codes contain the live key, so show them only to the team's phones.
+
+## Then the list from Session 11 (unchanged)
+1. **Deck:** send the teammate `16-deck-changes-prototype-v2.md` (the new section at the bottom is the source for slide 5); `14-deck-handoff.md`'s "PENDING" lines, "~7.5" and "GO 2 times in 3" are replaced. The HTML copy of 14 is not synced.
+2. Run the independent **code-review + security-review agents** (not run in Sessions 8, 9, 11 or 12). Session 12 touched the API (day id check, OTP masking rule, old-shape upgrade), so the security review matters more now.
+3. Fix from `17-prototype-audit.md` if time: item 1 (Live `closePilot` messages bound phones), then the nice-to-haves.
+4. **Freeze Fri 2 Oct, 3 pm:** Ops, Desk, Rider, Audit and `/pilot` at desktop and phone width; screenshots for deck slides 4 and 6, the QR, the 90 s video (Demo mode, one browser), then redeploy.
+5. Optional: a "Plan Pilot 2" button, the re-home matching engine, Playwright e2e in the repo (the Session 12 check was a throwaway script), Hindi on the rider sheets.
+
+**The single most important thing to know before the mentor call (Thu 1 Oct, 3:30 pm) is unchanged:** the default pilot says GO (+13.6, range +11.1 to +16.2), smallest effect about 4 per 100, P(GO) at +12 about 58%, and a real pilot will be noisier than the simulation. Say that before a judge does.
+
+Paste to start the next session:
+> We're working on Meesho DICE 3.0 Round 2 (Team GPS, Valmo RTO case). Read `C:\Users\gaura\OneDrive\Desktop\Meesho DICE\00-MASTER.md`, then `work/NEXT-SESSION.md`, then the newest entries at the bottom of `work/R2-HANDOVER.md` (Session 12 is the sync and reset fix). Tell me what happened on the real phones and at the mentor call, then do the next steps in NEXT-SESSION.md. Tests first for store, reducer and API changes, update (don't delete) existing tests, keep Live mode compiling, deploy only when `npx vitest run && npx tsc -b && npx oxlint && npm run build` are clean (chained with `&&`), and ask me before cutting anything on the "never cut" list. Explain in simple language. Before we stop, log the session in R2-HANDOVER.md and update NEXT-SESSION.md and 00-MASTER.md.
+
+---
+
+## (Session 11 state, kept for reference) the prototype is feature-complete; what is left is the call, the deck numbers, and the freeze
 **Plan 18 is DONE** (Session 11 at the bottom of `R2-HANDOVER.md`). Live: https://valmo-rescue-console.vercel.app · 723 tests, `tsc -b` / `oxlint` / `vite build` clean. Riders are paired on past delivery rate, the range is pair by pair on `/pilot`, the Ops card and "Check today's Ops day", a ✔ Fair comparison line, two safety rules, Top 20% / 10% only, Pilot 2 as the "Next:" sentence.
 
 **The single most important thing to know before the mentor call (Thu 1 Oct, 3:30 pm):** the **default pilot now says GO** (+13.6, range +11.1 to +16.2), not RE-PRICE, and the **smallest effect it can see is about 4 per 100** (was 7.5). Chance of GO if the true effect is +12 is **about 58%** (was 27%), at +15 it is 97%. The simplified maths is sharper because pairing removes rider-to-rider noise, **but the simulation has no month-to-month luck in riders, so a real pilot will be noisier**. Say that before a judge does. Top 10% on the default seed says RE-PRICE by luck (+10.2, range +6.6 to +13.8).

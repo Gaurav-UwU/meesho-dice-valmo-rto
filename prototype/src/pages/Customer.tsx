@@ -1,6 +1,7 @@
 import { useSearchParams } from 'react-router-dom'
 import { demoStops, messagesFor } from '../domain/selectors.ts'
-import { useDay, useStore } from '../store/StoreContext.tsx'
+import { useDay, useSyncInfo } from '../store/StoreContext.tsx'
+import { DayLoading } from '../ui/DayLoading.tsx'
 import { Footer } from '../ui/Footer.tsx'
 import { useHubParam } from '../ui/hub.ts'
 import { PhoneFrame } from '../ui/PhoneFrame.tsx'
@@ -13,7 +14,7 @@ import { StartDayShortcut } from './rider/StartDayShortcut.tsx'
 export default function Customer() {
   const { hub } = useHubParam()
   const state = useDay(hub.id)
-  const store = useStore()
+  const info = useSyncInfo(hub.id)
   const [params, setParams] = useSearchParams()
 
   const pick = (orderId: string): void => {
@@ -27,7 +28,7 @@ export default function Customer() {
   const hasChat = state !== undefined && orderId !== undefined && messagesFor(state, orderId).length > 0
 
   return (
-    <PhoneFrame label="Customer phone (WhatsApp)">
+    <PhoneFrame label="Customer phone (WhatsApp)" hubId={hub.id}>
       <div className="cust-root">
         <header className="cust-header">
           <div className="cust-avatar" aria-hidden="true">
@@ -40,19 +41,21 @@ export default function Customer() {
             <p>Business account</p>
           </div>
         </header>
-        {store.mode === 'demo' ? <div className="cust-banner">Demo-mode phone. In Live mode this is your real WhatsApp.</div> : null}
+        <div className="cust-banner">
+          {info.mode === 'live'
+            ? 'In-app WhatsApp phone on the shared day. Real WhatsApp is only used for an order linked to a real number.'
+            : 'Demo-mode phone: it lives on this device only.'}
+        </div>
         {state && orderId ? <OrderSelector state={state} orderId={orderId} onPick={pick} /> : null}
         {state && orderId && hasChat ? (
           <ChatView state={state} hub={hub} orderId={orderId} />
         ) : (
           <div className="cust-chat">
-            <p className="cust-empty">
-              {!state
-                ? 'Loading…'
-                : state.started
-                  ? 'No messages for this customer yet.'
-                  : 'No messages yet. The ops team has not started the day.'}
-            </p>
+            {state ? (
+              <p className="cust-empty">{state.started ? 'No messages for this customer yet.' : 'No messages yet. The ops team has not started the day.'}</p>
+            ) : (
+              <DayLoading hubId={hub.id} className="cust-empty" text="Loading…" />
+            )}
             {state && !state.started ? <StartDayShortcut hubId={hub.id} /> : null}
             <Footer />
           </div>

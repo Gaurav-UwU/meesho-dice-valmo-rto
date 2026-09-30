@@ -5,6 +5,7 @@ import { syntheticGeo } from '../../src/engine/synthetic-geo.ts'
 import type { GeoPoint, HubGeo, HubId } from '../../src/engine/types.ts'
 import type { Deps } from './core.ts'
 import { loadEnv, type ServerEnv } from './env.ts'
+import { newDayId } from '../../src/domain/dayId.ts'
 import { newOtp } from './otp.ts'
 import { createSupabaseDb } from './supabaseDb.ts'
 import { sendWhatsApp } from './twilio.ts'
@@ -39,6 +40,7 @@ export function runtime(): { env: ServerEnv; deps: Deps } {
     newCode: newOtp,
     loadGeo: loadGeoNode,
     pepper: env.OTP_PEPPER,
+    newDayId: (dayNo) => newDayId(Date.now(), Math.random, dayNo),
   }
   cached = { env, deps }
   return cached

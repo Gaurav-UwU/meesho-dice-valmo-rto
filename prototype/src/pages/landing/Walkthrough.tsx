@@ -1,14 +1,27 @@
 import { useState } from 'react'
 import { DEFAULT_HUB } from '../../ui/hub.ts'
 import { DEMO_STEPS } from './content.ts'
-import { loadProgress, saveProgress, toggleStep } from './progress.ts'
+import { useDay } from '../../store/StoreContext.tsx'
+import { loadProgress, loadProgressDay, reconcileProgress, saveProgress, saveProgressDay, toggleStep } from './progress.ts'
 
 const deep = (route: string): string => `${route}?hub=${DEFAULT_HUB}`
 const IDS = DEMO_STEPS.map((s) => s.id)
 
 /** The eight-step demo, one step at a time. Ticking a step off is remembered in this browser. */
 export function Walkthrough() {
+  const dayId = useDay(DEFAULT_HUB)?.dayId
   const [done, setDone] = useState<readonly string[]>(() => loadProgress(IDS))
+  const [forDay, setForDay] = useState<string | undefined>(loadProgressDay)
+  // The ticks belong to a day: when someone resets it (on this device or another), the old ticks go too.
+  if (dayId && dayId !== forDay) {
+    const next = reconcileProgress(forDay, dayId, done)
+    setForDay(dayId)
+    saveProgressDay(dayId)
+    if (next.done !== done) {
+      setDone(next.done)
+      saveProgress(next.done)
+    }
+  }
   const total = DEMO_STEPS.length
   const nextId = DEMO_STEPS.find((s) => !done.includes(s.id))?.id
 

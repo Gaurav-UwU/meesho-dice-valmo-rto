@@ -6,10 +6,13 @@ import { ErrorBoundary } from './ui/ErrorBoundary.tsx'
 import { showToast } from './ui/toast.ts'
 import { loadGeo } from './store/geo.ts'
 import { createLiveStore } from './store/live.ts'
+import { chooseMode, liveAvailable, LIVE_KEY_STORAGE, MODE_STORAGE, parseJoin } from './store/join.ts'
+import { askOnce, tabSecrets } from './store/secrets.ts'
 import { createLocalStore, type ChannelLike, type KeyValue } from './store/local.ts'
 import type { Store } from './store/types.ts'
 import { createSupabaseFeed } from './store/supabaseFeed.ts'
 import { StoreProvider } from './store/StoreContext.tsx'
+import { wireResync } from './store/wire.ts'
 
 /** Storage and tabs can be blocked (private window, file previews). The demo must still run in memory. */
 function safeStorage(): KeyValue | undefined {
@@ -38,51 +41,53 @@ function safeChannel(): ChannelLike | undefined {
   }
 }
 
-/** Ask once per browser tab and remember for the tab (sessionStorage), so keys are never stored on disk or in the URL. */
-const declined = new Set<string>()
-
-function tabSecret(name: string, question: string): string | undefined {
+/**
+ * A link or QR code can carry the mode (?mode=live) and, after the #, the live key. Read them once, keep them for this tab only
+ * (sessionStorage), and take the key out of the address bar so it is not left on screen or in the history.
+ */
+function consumeJoinLink(): { requested: string | null; remembered: string | null } {
+  const join = parseJoin(window.location.search, window.location.hash)
+  let remembered: string | null = null
   try {
-    const have = window.sessionStorage.getItem(name)
-    if (have) return have
-    if (declined.has(name)) return undefined
-    const answer = window.prompt(question)?.trim()
-    if (!answer) declined.add(name)
-    if (answer) window.sessionStorage.setItem(name, answer)
-    return answer || undefined
+    if (join.mode) window.sessionStorage.setItem(MODE_STORAGE, join.mode)
+    remembered = window.sessionStorage.getItem(MODE_STORAGE)
   } catch {
-    return undefined
+    // Storage blocked: the link itself still decides for this page load.
   }
+  if (join.liveKey) {
+    tabSecrets.set(LIVE_KEY_STORAGE, join.liveKey)
+    try {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    } catch {
+      // Not critical: the key just stays in the address bar.
+    }
+  }
+  return { requested: join.mode ?? null, remembered }
 }
 
 /**
- * Demo mode is the default and needs nothing. Live mode (real WhatsApp, shared across devices) is chosen with ?mode=live
- * and only when the Supabase settings were built in; otherwise we quietly stay in Demo mode.
+ * Demo mode is the default and needs nothing: this device has its own day (and says so). Several devices on one day is Live mode,
+ * chosen with ?mode=live (the landing page's QR codes do this) and only possible when the Supabase settings were built in.
+ * If it was asked for and cannot be offered, the device stays in Demo mode and SAYS it is alone, and why.
  */
 function chooseStore(): Store {
   const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
   const anon = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
-  let wantsLive = false
-  try {
-    const q = new URLSearchParams(window.location.search).get('mode')
-    if (q) window.sessionStorage.setItem('rescue-mode', q)
-    wantsLive = window.sessionStorage.getItem('rescue-mode') === 'live'
-  } catch {
-    wantsLive = false
-  }
-  if (wantsLive && url && anon) {
+  const choice = chooseMode({ ...consumeJoinLink(), liveAvailable: liveAvailable({ url, anon }) })
+  if (choice.mode === 'live' && url && anon) {
     return createLiveStore({
       feed: createSupabaseFeed(url, anon),
       call: (path, init) => fetch(path, init),
-      getLiveKey: () => tabSecret('rescue-live-key', 'Live key (ask the team)'),
-      getAdminToken: () => tabSecret('rescue-admin-token', 'Admin token (ask the team)'),
+      getLiveKey: () => askOnce(tabSecrets, (q) => window.prompt(q), LIVE_KEY_STORAGE, 'Live key (ask the team, or scan the QR code on the landing page)'),
+      getAdminToken: () => askOnce(tabSecrets, (q) => window.prompt(q), 'rescue-admin-token', 'Admin token (ask the team)'),
       onError: (message) => showToast(message),
     })
   }
-  return createLocalStore({ loadGeo, storage: safeStorage(), channel: safeChannel() })
+  return createLocalStore({ loadGeo, storage: safeStorage(), channel: safeChannel(), ...(choice.aloneReason ? { aloneReason: choice.aloneReason } : {}) })
 }
 
 const store = chooseStore()
+wireResync(store, window, document)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

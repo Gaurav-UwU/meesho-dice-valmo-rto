@@ -10,7 +10,7 @@ Specs: `../work/08-prototype-spec.md` (plan), `../work/12-prototype-theme.md` (l
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # 700+ tests
+npm test           # 800+ tests
 npm run test:coverage
 npx tsc -b && npx oxlint && npx vite build
 ```
@@ -27,7 +27,7 @@ npx tsc -b && npx oxlint && npx vite build
 | `/pilot` | Meesho decision-maker | 30-day A/B simulator (paired riders, pair-by-pair 95% range, fair-comparison check, two safety rules), GO / RE-PRICE / KILL, P&L, break-even |
 | `/audit` | Anyone | Ten checks on the day's own record, each green or red |
 
-Add `?hub=lucknow|powai|whitefield|gaya` to any link. Open Ops, Rider and Customer in separate tabs: they move together.
+Add `?hub=lucknow|powai|whitefield|gaya` to any link. Open Ops, Rider and Customer in separate tabs of one browser and they move together; to use several phones, see "How to run the multi-phone demo" under Modes.
 
 ### Demo script (about 90 seconds, hub Lucknow)
 1. `/ops` press **Start day**. Top 20% of orders become Bonus-Eligible.
@@ -40,8 +40,17 @@ Add `?hub=lucknow|powai|whitefield|gaya` to any link. Open Ops, Rider and Custom
 
 ## Modes
 
-- **Demo mode (default).** Everything runs in the browser. State is saved in localStorage and synced between tabs with BroadcastChannel. No accounts, no internet needed.
-- **Live mode** (`?mode=live`, only when Supabase settings are built in). State lives in Supabase; screens read it live and send taps to `/api`; OTPs go to real WhatsApp through Twilio.
+Every screen shows a badge that says whether this device shares its day with others (tap it for the details):
+
+- **ALONE** = this device has its **own private day**. Other phones cannot see it.
+- **SYNCED** = a **shared day** (hub, day number and id, version, when it last changed). Every device that joined sees and changes the same day.
+- **OFFLINE** / **NEEDS RESET** / **JOIN KEY REFUSED** / **PAGE OUT OF DATE** say what is wrong and what to do.
+
+**How to run the multi-phone demo (one line):** on the laptop open the landing page, choose **Several devices (shared day)**, press **Start with a fresh day**, then scan the **Rider** and **Customer** QR codes with the phones (the codes carry `?mode=live` and the join key, so nobody types anything).
+
+- **Demo mode (default, one device).** Everything runs in the browser. State is saved in localStorage and synced between the tabs of *that browser* with BroadcastChannel (and the `storage` event where a browser has no BroadcastChannel). No accounts, no internet needed. Separate phones never share a day in this mode, and say ALONE.
+- **Live mode / shared day** (`?mode=live`, only when the Supabase settings are built in). State lives in Supabase; screens read it live (Realtime plus a 5 second poll) and send taps to `/api`. The Customer screen is an in-app WhatsApp, so no Twilio is needed for the multi-phone demo; Twilio is only used for an order you link to a real number. If `?mode=live` is asked for but the site has no Supabase settings, the device says ALONE and why.
+- **A reset is a new day.** Reset day gives the day a new id and the next day number. Every device switches to it within a few seconds, and starts its screens over (open sheets, typed OTPs, Autopilot). A tap made on a day that has since been reset is refused ("The day was reset, refreshing"), never applied to the new one. A stale device cannot overwrite a newer day: days are compared by day number first, then by version. A day saved by an older version of the app is replaced automatically when a screen opens it.
 
 ## Deploy (Vercel)
 

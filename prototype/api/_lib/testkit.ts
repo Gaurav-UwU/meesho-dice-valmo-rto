@@ -68,6 +68,7 @@ export function harness(overrides: Partial<Deps> = {}): Harness {
       newCode: () => '4321',
       loadGeo: async (id) => ({ ...syntheticGeo(getHub(id)), hub: getHub(id) }),
       pepper: 'test-pepper',
+      newDayId: (dayNo) => `d${dayNo}-test`,
       ...overrides,
     },
   }

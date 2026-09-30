@@ -187,7 +187,11 @@ export interface ExceptionItem {
 export interface DayState {
   /** Shape of the saved day. Bump it when the shape changes so an old saved or shared day is ignored, not half-read. */
   readonly schema: number
-  /** Bumped on every applied action; the Live store uses it for optimistic concurrency. */
+  /** Who this day is. A new one is made every time the day is reset, so a device can tell "my day" from "the new day". */
+  readonly dayId: string
+  /** 1, 2, 3 ... how many times the hub's day has been started over. The higher number is the newer day (clocks are never compared). */
+  readonly dayNo: number
+  /** Bumped on every applied action and never reset, even by a reset: the Live store uses it for optimistic concurrency. */
   readonly version: number
   readonly hub: Hub
   readonly seed: number

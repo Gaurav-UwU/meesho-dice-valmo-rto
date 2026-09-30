@@ -80,3 +80,11 @@ From then on that order's WhatsApp messages (order-day message, OTP, checks) go 
 - [ ] Sandbox joined on 2 to 3 phones
 - [ ] `.env.local` filled in
 - [ ] `npx vercel login` done
+
+
+## Several phones on one day (added 1 Oct, Session 12)
+- **No Twilio needed** for the multi-phone demo: the Customer screen is an in-app WhatsApp. Only Supabase, the Vercel API and the keys in Part D are needed.
+- The landing page (Setup, "Several devices (shared day)") makes QR codes that open the rider and customer screens in Live mode and carry the `LIVE_KEY` after the `#`, so phones never type it. The part after `#` is never sent to a server and is removed from the address bar. Show those codes only to your own phones.
+- `ADMIN_TOKEN` is still typed, once per tab, only on the laptop that presses Reset day / Autopilot.
+- **Redeploying with a new day shape no longer needs a manual Reset:** the server replaces a day saved in an older shape when the first screen opens it. (Session 12 moved the day to schema 6, so the day saved before it is replaced that way.) If a screen still says NEEDS RESET, press Reset day on Ops once.
+- **The OTP on the in-app customer phone is readable** in the public day for orders that are **not** linked to a real phone (it is synthetic data, and the in-app phone must show it). For a linked order the OTP message stays masked and only the real phone gets the code. The stored OTP record is always a hash.

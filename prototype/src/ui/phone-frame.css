@@ -31,6 +31,15 @@
   display: flex;
   flex-direction: column;
 }
+/* The sync strip sits above the app; the app fills what is left of the screen. */
+.phone-screen > .sync {
+  flex: none;
+}
+.phone-screen > :not(.sync) {
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto;
+}
 @media (max-width: 500px) {
   .phone-stage {
     padding: 0;
