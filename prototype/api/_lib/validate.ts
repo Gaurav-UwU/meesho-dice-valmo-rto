@@ -36,7 +36,8 @@ const ActionInputSchema = z.discriminatedUnion('type', [
     by: z.enum(['operator', 'bot']).optional(),
   }),
   z.object({ type: z.literal('deskSkipSecondChance'), parcelId, reason: z.enum(['refused_firmly', 'not_reachable', 'seller_wants_back', 'other']) }),
-  z.object({ type: z.literal('customerSecondChance'), parcelId, accept: z.boolean() }),
+  z.object({ type: z.literal('customerSecondChance'), parcelId, accept: z.boolean(), option: z.enum(['deliver', 'later', 'tomorrow', 'day_after', 'pay', 'pickup']).optional() }),
+  z.object({ type: z.literal('deskHandover'), parcelId, code, cashCollected: z.boolean().optional() }),
   z.object({
     type: z.literal('deskSetParam'),
     param: z.enum(['conversion', 'shelfCapacity', 'accept_soft', 'accept_no_cash', 'accept_want_later', 'accept_not_home', 'accept_changed_mind', 'accept_cheaper_elsewhere', 'accept_not_ordered', 'accept_damaged']),

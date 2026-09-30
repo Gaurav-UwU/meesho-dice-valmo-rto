@@ -42,6 +42,7 @@ function fillFor(x: StopRecord): { readonly fill: string; readonly opacity: numb
     case 'otp_sent':
       return { fill: MARKER_COLORS.otp, opacity: 0.95 }
     case 'rescheduled':
+    case 'hub_pickup':
     case 'cancelled':
       return { fill: MARKER_COLORS.muted, opacity: 0.6 }
     case 'scored':

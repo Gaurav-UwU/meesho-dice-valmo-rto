@@ -215,6 +215,66 @@ describe('Desk v3 over the API: inspect, then hold; skip the second chance', () 
   })
 })
 
+describe('the second-chance options and the hub pickup over the API', () => {
+  async function offered(reason: 'not_home' = 'not_home') {
+    const { h, orderId } = await started()
+    await runAction(h.deps, HUB, { type: 'riderRefuse', orderId, reason })
+    await runAction(h.deps, HUB, { type: 'submitOtp', orderId, code: '4321' })
+    const parcelId = `P-${orderId}`
+    await runAction(h.deps, HUB, { type: 'deskSecondChance', parcelId })
+    return { h, orderId, parcelId }
+  }
+  const rec = (h: ReturnType<typeof harness>, parcelId: string) => h.db.days.get(HUB)!.parcels.find((p) => p.id === parcelId)!
+
+  it('a customer can ask for a different time and pick the day', async () => {
+    const { h, orderId, parcelId } = await offered()
+    await runAction(h.deps, HUB, { type: 'customerSecondChance', parcelId, accept: true, option: 'later' })
+    expect(rec(h, parcelId).awaiting).toBe('when')
+    await runAction(h.deps, HUB, { type: 'customerSecondChance', parcelId, accept: true, option: 'day_after' })
+    expect(rec(h, parcelId).state).toBe('recovered')
+    expect(h.db.days.get(HUB)!.stops[orderId].status).toBe('rescheduled')
+  })
+
+  it('pickup: the stored code is a hash, the in-app customer phone can read the real code, and the operator can hand over with it', async () => {
+    const { h, orderId, parcelId } = await offered()
+    await runAction(h.deps, HUB, { type: 'customerSecondChance', parcelId, accept: true, option: 'pickup' })
+    const day = h.db.days.get(HUB)!
+    expect(rec(h, parcelId).state).toBe('pickup_reserved')
+    expect(rec(h, parcelId).pickup!.code).toMatch(/^[0-9a-f]{64}$/)
+    const text = day.messages.filter((m) => m.orderId === orderId && m.kind === 'pickup_code').at(-1)!.text
+    const code = /\b(\d{4})\b/.exec(text)![1]
+    expect(rec(h, parcelId).pickup!.code).toBe(hashOtp('test-pepper', parcelId, code))
+    const wrong = await runAction(h.deps, HUB, { type: 'deskHandover', parcelId, code: code === '0000' ? '1111' : '0000' })
+    expect(wrong.ok).toBe(true)
+    expect(rec(h, parcelId).pickup!.tries).toBe(1)
+    expect(rec(h, parcelId).state).toBe('pickup_reserved')
+    await runAction(h.deps, HUB, { type: 'deskHandover', parcelId, code })
+    expect(rec(h, parcelId).state).toBe('picked_up')
+    expect(h.db.days.get(HUB)!.stops[orderId].status).toBe('hub_pickup')
+  })
+
+  it('pickup for a real phone: the code reaches that phone by WhatsApp but is masked in the stored day', async () => {
+    const { h, orderId, parcelId } = await offered()
+    await bindPhone(h.deps, { phone: PHONE, hubId: HUB, orderId })
+    await handleInbound(h.deps, PHONE, '4')
+    expect(rec(h, parcelId).state).toBe('pickup_reserved')
+    const sentText = h.sent.map((x) => x.body).find((b) => /pickup code/i.test(b))!
+    expect(/\b(\d{4})\b/.exec(sentText)).not.toBeNull()
+    const stored = h.db.days.get(HUB)!.messages.filter((m) => m.orderId === orderId && m.kind === 'pickup_code').at(-1)!.text
+    expect(stored).toContain('••••')
+  })
+
+  it('a customer\'s numbered WhatsApp replies walk the whole flow: 3 = pay, then 1 = paid', async () => {
+    const { h, orderId, parcelId } = await offered()
+    await bindPhone(h.deps, { phone: PHONE, hubId: HUB, orderId })
+    await handleInbound(h.deps, PHONE, '3')
+    expect(rec(h, parcelId).awaiting).toBe('pay')
+    await handleInbound(h.deps, PHONE, '1')
+    expect(rec(h, parcelId).state).toBe('recovered')
+    expect(h.db.days.get(HUB)!.stops[orderId].order.payment).toBe('PREPAID')
+  })
+})
+
 describe('autopilot and reset', () => {
   it('autopilot resolves stops and saves the result', async () => {
     const { h } = await started()

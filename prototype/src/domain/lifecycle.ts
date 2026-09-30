@@ -6,7 +6,7 @@ import type { DayState, StopRecord } from './types.ts'
  * `otp_sent` is a sub-state of `out_for_delivery`: the rider asked for a code and is waiting for the customer to read it out.
  */
 export const OPEN_STATUSES = ['scored', 'out_for_delivery', 'otp_sent', 'ndr', 'rescheduled', 'refused'] as const
-export const TERMINAL_STATUSES = ['delivered_a1', 'delivered_a2', 'rehomed', 'rto', 'cancelled'] as const
+export const TERMINAL_STATUSES = ['delivered_a1', 'delivered_a2', 'rehomed', 'hub_pickup', 'rto', 'cancelled'] as const
 
 export type OpenStatus = (typeof OPEN_STATUSES)[number]
 export type TerminalStatus = (typeof TERMINAL_STATUSES)[number]
@@ -21,7 +21,7 @@ export const isOpen = (status: OrderStatus): status is OpenStatus => !TERMINAL.h
 export const isDelivered = (status: OrderStatus): boolean => status === 'delivered_a1' || status === 'delivered_a2'
 
 /** An attempt was made and the order is delivered or failed as it stands (a failed order may still be retried). Not yet attempted = false. */
-export const isSettled = (status: OrderStatus): boolean => isDelivered(status) || status === 'ndr' || status === 'refused' || status === 'rto' || status === 'rehomed'
+export const isSettled = (status: OrderStatus): boolean => isDelivered(status) || status === 'ndr' || status === 'refused' || status === 'rto' || status === 'rehomed' || status === 'hub_pickup'
 
 /**
  * Every legal move. Anything else is rejected. A delivery is only reachable from `otp_sent`, so nothing is ever delivered without a verified OTP.
@@ -32,10 +32,12 @@ export const TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatus[]>> 
   otp_sent: ['out_for_delivery', 'ndr', 'refused', 'delivered_a1', 'delivered_a2'],
   ndr: ['out_for_delivery', 'rescheduled', 'rto'],
   rescheduled: ['out_for_delivery', 'rto'],
-  refused: ['out_for_delivery', 'rehomed', 'rto'],
+  // A second chance can send it out again at once, or on a later day; a customer can also collect it at the hub (never a delivery).
+  refused: ['out_for_delivery', 'rescheduled', 'rehomed', 'hub_pickup', 'rto'],
   delivered_a1: [],
   delivered_a2: [],
   rehomed: [],
+  hub_pickup: [],
   rto: [],
   cancelled: [],
 }

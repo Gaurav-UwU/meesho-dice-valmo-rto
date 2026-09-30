@@ -52,12 +52,34 @@ export const attemptCheckText = (awb: string): string =>
 export const rescheduleCheckText = 'Did you ask to reschedule this delivery?'
 
 export const secondChanceText = (awb: string): string =>
-  `Your order ${awb} is still at our hub. Would you like us to try again? Choose an option:`
+  `Your order ${awb} is still at our hub. What would you like to do? Choose an option:`
 
-export const SECOND_CHANCE_BUTTONS: readonly MessageButton[] = [
-  { id: 'accept', label: '🔁 Deliver again' },
-  { id: 'decline', label: '❌ Cancel order' },
+const SC = {
+  accept: { id: 'accept', label: '🔁 Deliver again' },
+  later: { id: 'later', label: '🕐 Different time' },
+  pay: { id: 'pay', label: '💳 Pay now by UPI' },
+  pickup: { id: 'pickup', label: '🏬 Pick up at hub' },
+  decline: { id: 'decline', label: '❌ Cancel order' },
+} as const
+
+/** Deliver again and Different time always; Pay now unless the order is already prepaid; Pick up at hub only while the shelf has a free slot. */
+export function secondChanceButtons(offer: { readonly pay: boolean; readonly pickup: boolean }): readonly MessageButton[] {
+  return [SC.accept, SC.later, ...(offer.pay ? [SC.pay] : []), ...(offer.pickup ? [SC.pickup] : []), SC.decline]
+}
+
+export const WHEN_BUTTONS: readonly MessageButton[] = [
+  { id: 'tomorrow', label: 'Tomorrow' },
+  { id: 'day_after', label: 'Day after tomorrow' },
 ]
+
+export const whenText = 'Which day should we try again?'
+
+export const laterAck = (day: 'tomorrow' | 'day_after'): string => `Done. We will try again ${day === 'tomorrow' ? 'tomorrow' : 'the day after tomorrow'} and tell you the time.`
+
+export const pickupFullAck = 'Sorry, the hub shelf has just filled up, so we cannot keep it for you. We will deliver it tomorrow instead and tell you the time.'
+
+export const pickupText = (code: string, hubName: string, hours: number): string =>
+  `Your parcel is kept for you at the ${hubName} hub for ${hours} hours. Show this pickup code at the counter: ${code}. It works for 5 tries. After ${hours} hours it goes back to the seller.`
 
 export const YES_NO: readonly MessageButton[] = [
   { id: 'yes', label: 'Yes' },

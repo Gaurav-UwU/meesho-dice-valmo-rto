@@ -110,7 +110,8 @@ export function kpis(s: DayState): Kpis {
   const refused = count('refused')
   const rto = count('rto')
   const rehomed = count('rehomed')
-  const resolved = delivered + attempted + refused + rto + rehomed
+  // A hub pickup is an attempted order that was not delivered: it is in the denominator, like a re-home, and never a delivery.
+  const resolved = delivered + attempted + refused + rto + rehomed + count('hub_pickup')
   const terminal = stops.filter((x) => isTerminal(x.status)).length
   const modelledRto = mean(stops.map((x) => x.pRto))
   const realisedRto = resolved === 0 ? 0 : (attempted + refused + rto) / resolved
@@ -186,10 +187,12 @@ export interface DeskItem {
   readonly decision: RouteDecision
   /** What the Router was told about the day (shelf, bag space, assumptions): a what-if preview prices with the same ones */
   readonly options: RouteOptions
+  /** How the customer pays for this order: a COD pickup at the hub can note that the cash was taken there */
+  readonly payment: 'COD' | 'PREPAID'
 }
 
 export const deskItems = (s: DayState): readonly DeskItem[] =>
-  s.parcels.map((record) => ({ record, decision: decisionFor(s, record), options: routeOptionsFor(s, record) }))
+  s.parcels.map((record) => ({ record, decision: decisionFor(s, record), options: routeOptionsFor(s, record), payment: s.stops[record.orderId]?.order.payment ?? 'COD' }))
 
 /** Day summary for parcels still waiting for a decision, versus sending them all back. */
 export function deskSummary(s: DayState): DaySummary {

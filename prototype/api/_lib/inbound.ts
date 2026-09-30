@@ -12,6 +12,9 @@ export function formatOutbound(m: WaMessage): string {
   return `${m.text}\n\nReply with a number:\n${options}`
 }
 
+/** The second-chance offer's button ids and the option each one stands for. The id decides, never the position: a pickup is left out when the shelf is full. */
+const SECOND_CHANCE_IDS: Readonly<Record<string, 'deliver' | 'later' | 'pay' | 'pickup'>> = { accept: 'deliver', later: 'later', pay: 'pay', pickup: 'pickup' }
+
 const WORD_TO_INDEX: Readonly<Record<string, number>> = { yes: 0, y: 0, haan: 0, no: 1, n: 1, nahi: 1 }
 
 /** Which button (by index) did the customer pick? Accepts "2", "2.", "Option 2" and, for two-button questions, yes/no. */
@@ -50,8 +53,16 @@ export function actionFromReply(ctx: InboundContext, body: string, location?: La
       return { type: 'customerAskedReschedule', orderId, asked: id === 'yes' }
     case 'pay_prompt':
       return { type: 'customerPayment', orderId, ok: id === 'pay_ok' }
-    case 'second_chance':
-      return parcelId ? { type: 'customerSecondChance', parcelId, accept: id === 'accept' } : null
+    case 'second_chance': {
+      if (!parcelId) return null
+      const option = SECOND_CHANCE_IDS[id]
+      if (id === 'decline') return { type: 'customerSecondChance', parcelId, accept: false }
+      return option ? { type: 'customerSecondChance', parcelId, accept: true, option } : null
+    }
+    case 'second_chance_when':
+      return parcelId && (id === 'tomorrow' || id === 'day_after') ? { type: 'customerSecondChance', parcelId, accept: true, option: id } : null
+    case 'second_chance_pay':
+      return id === 'pay_ok' || id === 'pay_fail' ? { type: 'customerPayment', orderId, ok: id === 'pay_ok' } : null
     default:
       return null
   }

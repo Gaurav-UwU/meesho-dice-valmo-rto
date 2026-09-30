@@ -4,8 +4,7 @@ import { isSoftReason, routeParcel, REFUSAL_REASONS, SKIP_REASONS, type Inspecti
 import type { Order } from '../engine/types.ts'
 import { HOUR_MS } from './clock.ts'
 import { emit } from './events.ts'
-import { bookCost, bookSaving, feedAdd, moveOrder, patchParcel, REVERSE_COST, sendProactive, tap, type S } from './helpers.ts'
-import { SECOND_CHANCE_BUTTONS, secondChanceText } from './messages.ts'
+import { bookCost, bookSaving, feedAdd, moveOrder, patchParcel, patchStop, REVERSE_COST, type S } from './helpers.ts'
 import type { Action, ParcelRecord, RouterParamKey, StopRecord } from './types.ts'
 
 /** How many open stops one rider's bag can hold, for the "rider bag space" gate */
@@ -23,7 +22,8 @@ const OPEN_FOR_BAG = new Set(['scored', 'out_for_delivery', 'otp_sent', 'ndr', '
 
 const openLoad = (s: S, riderId: string): number => s.stopOrder.filter((id) => s.stops[id].riderId === riderId && OPEN_FOR_BAG.has(s.stops[id].status)).length
 
-export const shelfUsed = (s: S): number => s.parcels.filter((p) => p.state === 'held').length
+/** Parcels on the shelf: held for a re-home, or reserved for a customer's pickup. They share one set of slots. */
+export const shelfUsed = (s: S): number => s.parcels.filter((p) => p.state === 'held' || p.state === 'pickup_reserved').length
 
 /** Everything about the day the Router needs beyond the parcel itself */
 export function routeOptionsFor(s: S, rec: ParcelRecord): RouteOptions {
@@ -40,21 +40,10 @@ export function routeOptionsFor(s: S, rec: ParcelRecord): RouteOptions {
 
 export const decisionFor = (s: S, rec: ParcelRecord): RouteDecision => routeParcel(rec.parcel, routeOptionsFor(s, rec))
 
-const laneLogged = (s: S, at: number, rec: ParcelRecord, d: RouteDecision): S =>
+export const laneLogged = (s: S, at: number, rec: ParcelRecord, d: RouteDecision): S =>
   emit(s, at, 'ROUTER_LANE', { lane: d.lane, ev: d.ev, inputs: d.inputs }, { orderId: rec.orderId })
 
-const findParcel = (s: S, parcelId: string): ParcelRecord | undefined => s.parcels.find((p) => p.id === parcelId)
-
-export function deskSecondChance(s: S, a: Extract<Action, { type: 'deskSecondChance' }>): S {
-  const p = findParcel(s, a.parcelId)
-  if (!p || p.state !== 'queued') return s
-  const st = s.stops[p.orderId]
-  let next = laneLogged(s, a.at, p, decisionFor(s, p))
-  next = patchParcel(next, p.id, { state: 'second_chance_sent', secondChanceSentSim: s.simNow })
-  next = emit(next, a.at, 'SECOND_CHANCE_SENT', {}, { orderId: p.orderId })
-  next = sendProactive(next, { orderId: p.orderId, at: a.at, direction: 'out', kind: 'second_chance', text: secondChanceText(st.order.awb), buttons: SECOND_CHANCE_BUTTONS })
-  return feedAdd(next, a.at, 'desk', `Second-chance WhatsApp sent for ${st.order.awb}. The customer has ${s.router.secondChanceHours} h to answer`, p.orderId)
-}
+export const findParcel = (s: S, parcelId: string): ParcelRecord | undefined => s.parcels.find((p) => p.id === parcelId)
 
 const PHOTO_NOTE_MAX = 80
 
@@ -93,21 +82,6 @@ export function deskSkipSecondChance(s: S, a: Extract<Action, { type: 'deskSkipS
   let next = patchParcel(s, p.id, { skipReason: a.reason })
   next = emit(next, a.at, 'SECOND_CHANCE_SKIPPED', { reason: a.reason }, { orderId: p.orderId })
   return feedAdd(next, a.at, 'desk', `Second chance skipped for ${p.parcel.awb} (${a.reason.replace(/_/g, ' ')}): routed to the next lane`, p.orderId)
-}
-
-export function customerSecondChance(s: S, a: Extract<Action, { type: 'customerSecondChance' }>): S {
-  const p = findParcel(s, a.parcelId)
-  if (!p || p.state !== 'second_chance_sent') return s
-  let next = tap(s, a.at, p.orderId, a.accept ? '🔁 Deliver again' : '❌ Cancel order')
-  if (a.accept) {
-    // The refusal stays on the record (failedAttempts = 1); the order goes back out as attempt 2 in the same arm.
-    next = patchParcel(next, p.id, { state: 'recovered' })
-    next = moveOrder(next, p.orderId, 'out_for_delivery', { at: a.at, reason: 'second chance accepted', patch: { viaSecondChance: true } })
-    next = emit(next, a.at, 'SECOND_CHANCE_ACCEPTED', {}, { orderId: p.orderId })
-    return feedAdd(next, a.at, 'desk', 'Customer accepted the second chance: back in the bag as attempt 2 (the ₹120 return is avoided only if it is delivered)', p.orderId)
-  }
-  next = patchParcel(next, p.id, { state: 'queued', secondChanceDeclined: true })
-  return feedAdd(next, a.at, 'desk', 'Customer declined the second chance: parcel re-routed', p.orderId)
 }
 
 /** A second chance that ended in a delivery books its net saving, and only then. */
@@ -253,15 +227,19 @@ export function failRehome(s: S, rehomeOrderId: string, at: number): S {
   return feedAdd(next, at, 'desk', `The re-homed parcel for ${rec.parcel.awb} failed: batched return, no saving booked`, st.rehomedFrom)
 }
 
-/** Timers of the Router: a second chance expires after 24 h; a held parcel matches when its buyer appears or expires after 48 h. */
+/** Timers of the Router: a second chance expires after 24 h; a held parcel matches when its buyer appears or expires after 48 h; a pickup not collected in 48 h goes back in a batched return. */
 export function parcelTimers(s: S, at: number): S {
   let next = s
   for (const rec of s.parcels) {
     const cur = next.parcels.find((p) => p.id === rec.id) ?? rec
     if (cur.state === 'second_chance_sent' && cur.secondChanceSentSim !== undefined && next.simNow - cur.secondChanceSentSim >= next.router.secondChanceHours * HOUR_MS) {
-      next = patchParcel(next, cur.id, { state: 'queued', secondChanceExpired: true })
+      next = patchParcel(next, cur.id, { state: 'queued', secondChanceExpired: true, awaiting: undefined })
+      if (next.stops[cur.orderId]?.paymentPending) next = patchStop(next, cur.orderId, { paymentPending: false })
       next = emit(next, at, 'SECOND_CHANCE_EXPIRED', {}, { orderId: cur.orderId })
       next = feedAdd(next, at, 'desk', `No answer to the second chance for ${cur.parcel.awb} in ${next.router.secondChanceHours} h: routed to the next lane`, cur.orderId)
+    } else if (cur.state === 'pickup_reserved' && cur.pickup !== undefined && next.simNow >= cur.pickup.deadline) {
+      next = emit(next, at, 'PICKUP_EXPIRED', {}, { orderId: cur.orderId })
+      next = batchParcel(next, cur, at, `not collected within ${next.router.pickupHours} h`)
     } else if (cur.state === 'held' && cur.heldSim !== undefined) {
       if (cur.matchAt !== undefined && cur.matchAt <= next.simNow) {
         next = createRehomeOrder(next, cur, at)

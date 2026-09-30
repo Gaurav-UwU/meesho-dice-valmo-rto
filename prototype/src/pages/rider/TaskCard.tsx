@@ -50,6 +50,8 @@ function lockedReason(stop: StopRecord): string | null {
       return 'This order went back to the seller as an RTO.'
     case 'rehomed':
       return 'The parcel was re-homed to a new buyer nearby.'
+    case 'hub_pickup':
+      return 'The customer collected the parcel at the hub. It counts as the refusal it was: not a delivery, no bonus.'
     case 'cancelled':
       return 'This order was cancelled.'
     default:

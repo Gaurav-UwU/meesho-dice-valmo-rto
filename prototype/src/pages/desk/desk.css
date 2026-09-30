@@ -873,3 +873,36 @@
   color: var(--valmo-muted);
   font-weight: 600;
 }
+
+/* Step 4: the pickup handover */
+.desk-handover {
+  align-items: flex-start;
+  flex-direction: column;
+}
+.desk-handover-code {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.desk-handover-code input {
+  font: inherit;
+  font-size: 18px;
+  letter-spacing: 0.3em;
+  width: 7em;
+  padding: 6px 8px;
+  border: 1px solid #c9cfe0;
+  border-radius: 6px;
+}
+.desk-handover-cash {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.desk-danger {
+  margin: 0;
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 600;
+}

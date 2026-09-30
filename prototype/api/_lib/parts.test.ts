@@ -39,6 +39,28 @@ describe('sanitize', () => {
     expect(redactMessage(other)).toBe(other)
   })
 
+  it('masks the pickup code in the confirmation message like an OTP (for real phones, or for everyone when no list is given)', () => {
+    const m = msg('pickup_code', 'Your parcel is kept at the hub. Show this pickup code: 4821. It works for 5 tries.')
+    expect(redactMessage(m).text).toBe('Your parcel is kept at the hub. Show this pickup code: ••••. It works for 5 tries.')
+    expect(redactMessage(m, new Set(['other-order']))).toBe(m)
+    expect(redactMessage(m, new Set(['o'])).text).toContain('••••')
+  })
+
+  it('toStorable stores the pickup code as a peppered hash, once, and keeps the plain one only in memory', () => {
+    let s = startedDay()
+    const id = demoStops(s).bonus[0]
+    s = run(s, { type: 'riderRefuse', at: AT, orderId: id, code: '7777' }, { type: 'submitOtp', at: AT + 1, orderId: id, code: '7777' }, { type: 'deskSecondChance', at: AT + 2, parcelId: `P-${id}` })
+    s = { ...s, parcels: s.parcels.map((p) => ({ ...p, parcel: { ...p.parcel, reason: 'not_home' as const } })) }
+    const reserved = run(s, { type: 'customerSecondChance', at: AT + 3, parcelId: `P-${id}`, accept: true, option: 'pickup' })
+    const plain = reserved.parcels[0].pickup!.code
+    expect(plain).toMatch(/^\d{4}$/)
+    const stored = toStorable(reserved, 'pep')
+    expect(stored.parcels[0].pickup!.code).toBe(hashOtp('pep', `P-${id}`, plain))
+    expect(JSON.stringify(stored.parcels)).not.toContain(`"${plain}"`)
+    expect(toStorable(stored, 'pep')).toEqual(stored)
+    expect(reserved.parcels[0].pickup!.code).toBe(plain)
+  })
+
   it('toStorable hashes plain codes once and leaves hashes alone', () => {
     let s = startedDay()
     const id = demoStops(s).bonus[0]
@@ -86,6 +108,28 @@ describe('inbound parsing', () => {
     expect(actionFromReply({ ...base, lastOffer: offer('attempt_check', ['yes', 'no']) }, '2')).toEqual({ type: 'customerReach', orderId: base.orderId, reached: false })
     expect(actionFromReply({ ...base, lastOffer: offer('reschedule_check', ['yes', 'no']) }, 'yes')).toEqual({ type: 'customerAskedReschedule', orderId: base.orderId, asked: true })
     expect(actionFromReply({ ...base, lastOffer: offer('second_chance', ['accept', 'decline']) }, '2')).toEqual({ type: 'customerSecondChance', parcelId: base.parcelId, accept: false })
+  })
+
+  it('reads the four second-chance options by number, whichever are on offer', () => {
+    const all = offer('second_chance', ['accept', 'later', 'pay', 'pickup', 'decline'])
+    const sc = (accept: boolean, option?: string) => ({ type: 'customerSecondChance', parcelId: base.parcelId, accept, ...(option ? { option } : {}) })
+    expect(actionFromReply({ ...base, lastOffer: all }, '1')).toEqual(sc(true, 'deliver'))
+    expect(actionFromReply({ ...base, lastOffer: all }, '2')).toEqual(sc(true, 'later'))
+    expect(actionFromReply({ ...base, lastOffer: all }, '3')).toEqual(sc(true, 'pay'))
+    expect(actionFromReply({ ...base, lastOffer: all }, '4')).toEqual(sc(true, 'pickup'))
+    expect(actionFromReply({ ...base, lastOffer: all }, '5')).toEqual(sc(false))
+    // With no pickup on offer the numbers shift: the ids decide, never the position.
+    const noPickup = offer('second_chance', ['accept', 'later', 'pay', 'decline'])
+    expect(actionFromReply({ ...base, lastOffer: noPickup }, '4')).toEqual(sc(false))
+    expect(actionFromReply({ ...base, lastOffer: noPickup }, '3')).toEqual(sc(true, 'pay'))
+  })
+
+  it('reads the follow-up questions: which day, and did the payment go through', () => {
+    expect(actionFromReply({ ...base, lastOffer: offer('second_chance_when', ['tomorrow', 'day_after']) }, '2')).toEqual({ type: 'customerSecondChance', parcelId: base.parcelId, accept: true, option: 'day_after' })
+    expect(actionFromReply({ ...base, lastOffer: offer('second_chance_when', ['tomorrow', 'day_after']) }, 'yes')).toEqual({ type: 'customerSecondChance', parcelId: base.parcelId, accept: true, option: 'tomorrow' })
+    expect(actionFromReply({ ...base, lastOffer: offer('second_chance_pay', ['pay_ok', 'pay_fail']) }, '1')).toEqual({ type: 'customerPayment', orderId: base.orderId, ok: true })
+    expect(actionFromReply({ ...base, lastOffer: offer('second_chance_pay', ['pay_ok', 'pay_fail']) }, '2')).toEqual({ type: 'customerPayment', orderId: base.orderId, ok: false })
+    expect(actionFromReply({ ...base, lastOffer: offer('second_chance_when', ['bogus', 'day_after']) }, '1')).toBeNull()
   })
 
   it('understands a shared location even with no open offer', () => {
@@ -171,6 +215,19 @@ describe('request validation', () => {
     expect(ok({ type: 'deskSkipSecondChance', parcelId: pid, reason: 'because' })).toBe(false)
     expect(ok({ type: 'deskSetParam', param: 'accept_soft', value: 0.4 })).toBe(true)
     expect(ok({ type: 'deskSetGate', parcelId: pid, gate: 'sealOk', value: false })).toBe(false)
+  })
+
+  it('accepts the second-chance options and the pickup handover, and rejects anything else', () => {
+    const ok = (action: unknown) => parseActionRequest({ hubId: 'lucknow', dayId: 'd1-x', action }).ok
+    const pid = 'P-lucknow-0001'
+    for (const option of ['deliver', 'later', 'tomorrow', 'day_after', 'pay', 'pickup']) expect(ok({ type: 'customerSecondChance', parcelId: pid, accept: true, option })).toBe(true)
+    expect(ok({ type: 'customerSecondChance', parcelId: pid, accept: true })).toBe(true)
+    expect(ok({ type: 'customerSecondChance', parcelId: pid, accept: true, option: 'refund' })).toBe(false)
+    expect(ok({ type: 'deskHandover', parcelId: pid, code: '4321' })).toBe(true)
+    expect(ok({ type: 'deskHandover', parcelId: pid, code: '4321', cashCollected: true })).toBe(true)
+    expect(ok({ type: 'deskHandover', parcelId: pid, code: '43' })).toBe(false)
+    expect(ok({ type: 'deskHandover', parcelId: pid, code: '4321', cashCollected: 'yes' })).toBe(false)
+    expect(ok({ type: 'deskHandover', parcelId: '../x', code: '4321' })).toBe(false)
   })
 
   it('reports why a request was rejected', () => {

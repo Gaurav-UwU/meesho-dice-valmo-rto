@@ -63,7 +63,7 @@ export function openException(s: S, orderId: string, at: number, confidence: Att
 /** The same-arm rider (not the one who made the attempt) with the lightest bag */
 function otherRider(s: S, orderId: string): string {
   const st = s.stops[orderId]
-  const load = (id: string): number => s.stopOrder.filter((sid) => s.stops[sid].riderId === id && !['delivered_a1', 'delivered_a2', 'rto', 'rehomed', 'cancelled'].includes(s.stops[sid].status)).length
+  const load = (id: string): number => s.stopOrder.filter((sid) => s.stops[sid].riderId === id && !['delivered_a1', 'delivered_a2', 'rto', 'rehomed', 'hub_pickup', 'cancelled'].includes(s.stops[sid].status)).length
   const pool = s.riders.filter((r) => r.arm === st.arm && r.id !== (st.attemptRiderId ?? st.riderId)).sort((a, b) => load(a.id) - load(b.id) || (a.id < b.id ? -1 : 1))
   return pool[0]?.id ?? st.riderId
 }

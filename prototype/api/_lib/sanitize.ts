@@ -3,9 +3,9 @@ import { hashOtp, isPlainOtp } from './otp.ts'
 
 const MASK = '••••'
 
-/** OTP messages keep their wording but lose the code, so the public state never reveals it. */
+/** OTP and pickup-code messages keep their wording but lose the code, so the public state never reveals it. */
 export function redactMessage(m: WaMessage, maskOnlyFor?: ReadonlySet<string>): WaMessage {
-  if (m.kind !== 'delivery_otp' && m.kind !== 'refusal_otp') return m
+  if (m.kind !== 'delivery_otp' && m.kind !== 'refusal_otp' && m.kind !== 'pickup_code') return m
   if (maskOnlyFor && !maskOnlyFor.has(m.orderId)) return m
   return { ...m, text: m.text.replace(/\b\d{4}\b/g, MASK) }
 }
@@ -23,5 +23,7 @@ export function toStorable(state: DayState, pepper: string, maskOnlyFor?: Readon
   const otps = Object.fromEntries(
     Object.entries(state.otps).map(([orderId, otp]) => [orderId, isPlainOtp(otp.code) ? { ...otp, code: hashOtp(pepper, orderId, otp.code) } : otp]),
   )
-  return { ...state, otps, messages: state.messages.map((m) => redactMessage(m, maskOnlyFor)) }
+  // A pickup code is stored like an OTP: a peppered hash, bound to the parcel.
+  const parcels = state.parcels.map((p) => (p.pickup && isPlainOtp(p.pickup.code) ? { ...p, pickup: { ...p.pickup, code: hashOtp(pepper, p.id, p.pickup.code) } } : p))
+  return { ...state, otps, parcels, messages: state.messages.map((m) => redactMessage(m, maskOnlyFor)) }
 }

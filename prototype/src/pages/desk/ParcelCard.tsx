@@ -101,6 +101,9 @@ export function ParcelCard({ item, send, simNow, secondChanceHours, holdHours }:
         simNow={simNow}
         secondChanceHours={secondChanceHours}
         holdHours={holdHours}
+        pickupHours={item.options.params?.pickupHours ?? DEFAULT_ROUTER_PARAMS.pickupHours}
+        payment={item.payment}
+        onHandover={(code, cashCollected) => void send({ type: 'deskHandover', parcelId, code, cashCollected })}
         onSecondChance={() => void send({ type: 'deskSecondChance', parcelId })}
         onHold={() => void send({ type: 'deskHold', parcelId })}
         onMatch={() => void send({ type: 'deskMatch', parcelId })}

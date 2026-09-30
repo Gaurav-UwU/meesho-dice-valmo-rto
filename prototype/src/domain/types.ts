@@ -82,6 +82,10 @@ export type MessageKind =
   | 'attempt_check'
   | 'reschedule_check'
   | 'second_chance'
+  | 'second_chance_when'
+  | 'second_chance_pay'
+  | 'second_chance_ack'
+  | 'pickup_code'
   | 'pay_prompt'
   | 'customer_tap'
 
@@ -120,7 +124,28 @@ export interface LedgerEntry {
   readonly reason?: string
 }
 
-export type ParcelState = 'queued' | 'second_chance_sent' | 'recovered' | 'held' | 'rehomed' | 'batched'
+export type ParcelState = 'queued' | 'second_chance_sent' | 'recovered' | 'held' | 'pickup_reserved' | 'picked_up' | 'rehomed' | 'batched'
+
+/** What a customer picked on the second-chance WhatsApp. `later` asks "which day?"; `tomorrow` and `day_after` answer it. */
+export type SecondChanceOption = 'deliver' | 'later' | 'tomorrow' | 'day_after' | 'pay' | 'pickup'
+
+/** The option the customer finally took (for the KPIs): a different time, paying now and a pickup at the hub each end differently. */
+export type SecondChanceChoice = 'deliver' | 'later' | 'pay' | 'pickup'
+
+/** The customer asked a question the Desk is waiting on (which day? did the payment go through?) */
+export type Awaiting = 'when' | 'pay'
+
+/** A parcel waiting at the hub for its customer. The code is the customer's to show; it is verified by the operator, with 5 tries. */
+export interface Pickup {
+  readonly code: string
+  /** Sim time the window closes */
+  readonly deadline: number
+  readonly reservedSim: number
+  readonly tries: number
+  readonly collectedSim?: number
+  /** COD parcel: the operator noted the cash was collected at the hub (a flag only: no rider, no ledger) */
+  readonly cashCollected?: boolean
+}
 
 export interface ParcelRecord {
   readonly id: string
@@ -137,6 +162,11 @@ export interface ParcelRecord {
   readonly skipReason?: SkipReason
   /** Damaged or wrong item: it goes back with a "Seller claim / QC needed" chip and is never re-homed */
   readonly sellerClaim: boolean
+  /** The shelf was free when the offer was sent, so the customer was offered a pickup */
+  readonly pickupOffered?: boolean
+  readonly choice?: SecondChanceChoice
+  readonly awaiting?: Awaiting
+  readonly pickup?: Pickup
   readonly heldSim?: number
   /** Sim time a buyer appears (drawn when the parcel is put on the shelf); none if nobody comes within the hold window */
   readonly matchAt?: number
@@ -244,7 +274,9 @@ export type Action =
   /** Hub operator: record what is really in front of them. Hold needs it; a second chance and a consolidated return do not. */
   | { readonly type: 'deskInspect'; readonly at: number; readonly parcelId: string; readonly unopened: boolean; readonly sealOk: boolean; readonly invoiceOutside: boolean; readonly photoNote?: string; readonly by?: 'operator' | 'bot' }
   | { readonly type: 'deskSkipSecondChance'; readonly at: number; readonly parcelId: string; readonly reason: SkipReason }
-  | { readonly type: 'customerSecondChance'; readonly at: number; readonly parcelId: string; readonly accept: boolean }
+  | { readonly type: 'customerSecondChance'; readonly at: number; readonly parcelId: string; readonly accept: boolean; readonly option?: SecondChanceOption }
+  /** Hub operator: the customer is at the counter with their pickup code */
+  | { readonly type: 'deskHandover'; readonly at: number; readonly parcelId: string; readonly code: string; readonly cashCollected?: boolean }
   | { readonly type: 'deskSetParam'; readonly at: number; readonly param: RouterParamKey; readonly value: number }
   | { readonly type: 'deskHold'; readonly at: number; readonly parcelId: string }
   /** Demo shortcut: a buyer for the held parcel appears now (otherwise one appears, or not, on the clock) */

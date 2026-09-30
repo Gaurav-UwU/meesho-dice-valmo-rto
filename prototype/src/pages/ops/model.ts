@@ -13,6 +13,7 @@ export const STATUS_LABEL: Readonly<Record<StopStatus, string>> = {
   delivered_a1: 'Delivered',
   delivered_a2: 'Delivered (attempt 2)',
   rehomed: 'Re-homed',
+  hub_pickup: 'Collected at hub',
   rto: 'RTO',
   cancelled: 'Cancelled',
 }

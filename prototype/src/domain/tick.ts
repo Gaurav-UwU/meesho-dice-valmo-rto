@@ -102,6 +102,7 @@ export function overdueTimers(s: S): readonly string[] {
   for (const e of s.exceptions) if (e.status === 'open' && s.simNow - e.openedSim >= EXCEPTION_DEFAULT_MS) out.push(`exception on ${e.orderId} unresolved for 24 h`)
   for (const p of s.parcels) {
     if (p.state === 'second_chance_sent' && p.secondChanceSentSim !== undefined && s.simNow - p.secondChanceSentSim >= s.router.secondChanceHours * HOUR_MS) out.push(`second chance for ${p.parcel.awb} unanswered for 24 h`)
+    if (p.state === 'pickup_reserved' && p.pickup !== undefined && s.simNow >= p.pickup.deadline) out.push(`pickup of ${p.parcel.awb} is past its window`)
     if (p.state === 'held' && p.heldSim !== undefined && (s.simNow - p.heldSim >= s.router.holdHours * HOUR_MS || (p.matchAt !== undefined && p.matchAt <= s.simNow))) out.push(`hold on ${p.parcel.awb} is past its window`)
   }
   for (const id of s.stopOrder) {

@@ -55,6 +55,8 @@ export function bookSaving(s: S, at: number, line: string, amount: number, order
 }
 
 export const REVERSE_COST = 120
+/** ₹ saved by sending a parcel back in a batched return rather than alone (30% of ₹120, a benchmark) */
+export const BATCHED_SAVING = REVERSE_COST * 0.3
 /** Batched returns cost 30% less than a lone return (assumption; benchmark 20-40%) */
 export const BATCHED_RETURN_SHARE = 0.7
 export const REATTEMPT_LEG_COST = 21

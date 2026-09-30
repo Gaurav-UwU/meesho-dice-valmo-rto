@@ -27,7 +27,8 @@ import {
 import { closeAsRto, confidenceOf, openException, overtakeException, resolveExceptionFor, retryOne } from './orders.ts'
 import { buildParcel, SHOWCASE } from './parcels.ts'
 import { plannedRuleHash } from './rule.ts'
-import { customerSecondChance, deskConsolidate, deskHold, autoInspect, deskInspect, deskMatch, deskSecondChance, deskSetParam, deskSkipSecondChance, rehomeDelivered, secondChanceDelivered } from './routing.ts'
+import { autoInspect, deskConsolidate, deskHold, deskInspect, deskMatch, deskSetParam, deskSkipSecondChance, rehomeDelivered, secondChanceDelivered } from './routing.ts'
+import { afterSecondChancePayment, customerSecondChance, deskHandover, deskSecondChance } from './secondChance.ts'
 import { OTP_SIM_TTL_MS, tick } from './tick.ts'
 import type { Action, DayState, StopRecord } from './types.ts'
 import type { Order } from '../engine/types.ts'
@@ -149,12 +150,14 @@ function customerPayment(s: S, a: Extract<Action, { type: 'customerPayment' }>):
   if (!a.ok) {
     next = patchStop(next, a.orderId, { paymentPending: false })
     next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: paymentFailAck })
-    return feedAdd(next, a.at, 'reply', 'Payment failed: the order stays COD', a.orderId)
+    next = feedAdd(next, a.at, 'reply', 'Payment failed: the order stays COD', a.orderId)
+    return afterSecondChancePayment(next, a.orderId, a.at)
   }
   const order: Order = { ...st.order, payment: 'PREPAID' }
   next = patchStop(next, a.orderId, { order, pRto: st.pRto * PAY_NOW_RTO_FACTOR, paymentPending: false })
   next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: paymentOkAck })
-  return feedAdd(next, a.at, 'reply', 'Payment received: COD order switched to prepaid', a.orderId)
+  next = feedAdd(next, a.at, 'reply', 'Payment received: COD order switched to prepaid', a.orderId)
+  return afterSecondChancePayment(next, a.orderId, a.at)
 }
 
 function requestOtp(s: S, orderId: string, code: string, at: number, purpose: 'delivery' | 'refusal', refusalReason?: Extract<Action, { type: 'riderRefuse' }>['reason']): S {
@@ -201,6 +204,8 @@ function completeRefusal(s: S, orderId: string, at: number, reason: Parameters<t
   next = emit(next, at, 'REFUSED', { reason: reason ?? 'unspecified' }, { orderId })
   // A re-homed parcel refused by its new buyer is not a new parcel for the Desk: the original goes back in a batched return.
   if (st.rehomedFrom !== undefined) return closeAsRto(next, orderId, at, 'the new buyer refused the re-homed parcel')
+  // A customer who took the second chance and refuses again on attempt 2 is not a new parcel for the Desk: the order goes back, and no saving books.
+  if (s.parcels.some((p) => p.orderId === orderId)) return closeAsRto(next, orderId, at, 'refused again after the second chance')
   // The first four refusals of demo stops show every Router outcome, in order (see SHOWCASE in parcels.ts).
   const isDemo = (id: string): boolean => s.stops[id]?.manual === true && s.stops[id].rehomedFrom === undefined
   const showcaseIndex = isDemo(orderId) ? s.parcels.filter((p) => isDemo(p.orderId)).length : -1
@@ -366,6 +371,8 @@ function apply(s: S, a: Action): S {
       return deskInspect(s, a)
     case 'deskSkipSecondChance':
       return deskSkipSecondChance(s, a)
+    case 'deskHandover':
+      return deskHandover(s, a)
     case 'customerSecondChance':
       return customerSecondChance(s, a)
     case 'deskSetParam':

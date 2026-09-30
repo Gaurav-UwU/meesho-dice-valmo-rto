@@ -10,6 +10,8 @@ export const STATE_LABEL: Readonly<Record<ParcelState, string>> = {
   queued: 'Queued',
   second_chance_sent: 'Waiting for the customer',
   held: 'On the shelf',
+  pickup_reserved: 'Waiting for pickup',
+  picked_up: 'Collected at hub',
   recovered: 'Sale saved',
   rehomed: 'Re-homed',
   batched: 'In consolidated return',
@@ -29,7 +31,7 @@ export function toggleableGate(gate: GateResult): WhatIfGate | null {
   }
 }
 
-export const isDone = (state: ParcelState): boolean => state === 'recovered' || state === 'rehomed' || state === 'batched'
+export const isDone = (state: ParcelState): boolean => state === 'recovered' || state === 'picked_up' || state === 'rehomed' || state === 'batched'
 
 export const effectRange = (min: number, max: number): string => `${signedRupees(min)} to ${signedRupees(max)}`
 
@@ -38,6 +40,8 @@ export function outcomeText(record: ParcelRecord, riderName: string | undefined)
   switch (record.state) {
     case 'recovered':
       return `Customer accepted the second chance: back in the bag as attempt 2. The ${rupees(120)} return is avoided, for a ${rupees(ROUTER.reAttemptCost)} re-attempt, only once it is delivered.`
+    case 'picked_up':
+      return `Collected at the hub with a verified code: the sale is kept and the ${rupees(120)} return is avoided (net ${rupees(120 - ROUTER.holdCost)} after the ${rupees(ROUTER.holdCost)} shelf slot). It stays the rider's failed attempt in the pilot and pays no bonus.`
     case 'rehomed':
       return `Re-homed to a nearby buyer as new AWB ${record.newAwb ?? ''} in ${riderName ?? 'a rider'}'s bag. The ${rupees(ROUTER.savedPerMatch)} saving books only when the new order is delivered; ${rupees(ROUTER.holdCost)} of holding is already booked.`
     case 'batched':

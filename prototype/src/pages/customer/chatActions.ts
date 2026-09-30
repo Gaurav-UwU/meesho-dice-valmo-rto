@@ -29,8 +29,14 @@ export function isMessageLive(state: DayState, msg: WaMessage, latestId: string 
       return stop.status === 'ndr' && stop.answers.askedReschedule === null
     case 'pay_prompt':
       return stop.paymentPending === true
-    case 'second_chance':
-      return parcelForOrder(state, msg.orderId)?.state === 'second_chance_sent'
+    case 'second_chance': {
+      const parcel = parcelForOrder(state, msg.orderId)
+      return parcel?.state === 'second_chance_sent' && parcel.awaiting === undefined
+    }
+    case 'second_chance_when':
+      return parcelForOrder(state, msg.orderId)?.awaiting === 'when'
+    case 'second_chance_pay':
+      return parcelForOrder(state, msg.orderId)?.awaiting === 'pay'
     default:
       return false
   }
@@ -50,8 +56,17 @@ export function actionForButton(state: DayState, msg: WaMessage, button: Message
       return { type: 'customerPayment', orderId, ok: button.id === 'pay_ok' }
     case 'second_chance': {
       const parcel = parcelForOrder(state, orderId)
-      return parcel ? { type: 'customerSecondChance', parcelId: parcel.id, accept: button.id === 'accept' } : null
+      if (!parcel) return null
+      if (button.id === 'decline') return { type: 'customerSecondChance', parcelId: parcel.id, accept: false }
+      const option = button.id === 'accept' ? 'deliver' : button.id === 'later' || button.id === 'pay' || button.id === 'pickup' ? button.id : null
+      return option ? { type: 'customerSecondChance', parcelId: parcel.id, accept: true, option } : null
     }
+    case 'second_chance_when': {
+      const parcel = parcelForOrder(state, orderId)
+      return parcel && (button.id === 'tomorrow' || button.id === 'day_after') ? { type: 'customerSecondChance', parcelId: parcel.id, accept: true, option: button.id } : null
+    }
+    case 'second_chance_pay':
+      return { type: 'customerPayment', orderId, ok: button.id === 'pay_ok' }
     default:
       return null
   }

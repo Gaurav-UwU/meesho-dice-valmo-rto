@@ -62,6 +62,8 @@ export interface RouterParams {
   readonly holdHours: number
   /** Hours the customer has to answer a second-chance message */
   readonly secondChanceHours: number
+  /** Hours a parcel waits at the hub for its customer to collect it (shares the shelf with Hold) */
+  readonly pickupHours: number
   readonly shelfCapacity: number
 }
 
@@ -70,6 +72,7 @@ export const DEFAULT_ROUTER_PARAMS: RouterParams = {
   conversion: 0.5,
   holdHours: 48,
   secondChanceHours: 24,
+  pickupHours: 48,
   shelfCapacity: 30,
 }
 

@@ -15,8 +15,9 @@ import {
 import { AT, startedDay } from './testkit.ts'
 
 describe('lifecycle table', () => {
-  it('has exactly the five terminal states', () => {
-    expect([...TERMINAL_STATUSES].sort()).toEqual(['cancelled', 'delivered_a1', 'delivered_a2', 'rehomed', 'rto'])
+  it('has exactly the six terminal states (a hub pickup is one, and it is not a delivery)', () => {
+    expect([...TERMINAL_STATUSES].sort()).toEqual(['cancelled', 'delivered_a1', 'delivered_a2', 'hub_pickup', 'rehomed', 'rto'])
+    expect(isDelivered('hub_pickup')).toBe(false)
     for (const s of ORDER_STATUSES) expect(isTerminal(s)).toBe(!isOpen(s))
   })
 
@@ -44,6 +45,8 @@ describe('lifecycle table', () => {
     ['refused', 'out_for_delivery'],
     ['refused', 'rehomed'],
     ['refused', 'rto'],
+    ['refused', 'rescheduled'],
+    ['refused', 'hub_pickup'],
   ])('allows %s -> %s', (from, to) => {
     expect(canTransition(from, to)).toBe(true)
   })

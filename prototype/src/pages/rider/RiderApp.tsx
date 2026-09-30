@@ -19,7 +19,7 @@ type Tab = 'pending' | 'failed' | 'completed'
 
 const TAB_STATUSES: Readonly<Record<Tab, readonly StopStatus[]>> = {
   pending: ['scored', 'out_for_delivery', 'otp_sent', 'rescheduled'],
-  failed: ['ndr', 'refused', 'rto', 'rehomed'],
+  failed: ['ndr', 'refused', 'rto', 'rehomed', 'hub_pickup'],
   completed: ['delivered_a1', 'delivered_a2'],
 }
 const TABS: readonly Tab[] = ['pending', 'failed', 'completed']

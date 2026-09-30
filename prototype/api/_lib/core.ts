@@ -90,6 +90,8 @@ function stamp(deps: Deps, input: ActionInput): Action {
   const at = deps.now()
   if (input.type === 'riderDeliver' || input.type === 'riderRefuse') return { ...input, at, code: deps.newCode() }
   if (input.type === 'submitOtp') return { ...input, at, code: hashOtp(deps.pepper, input.orderId, input.code) }
+  // The code the customer shows at the counter is compared with its stored hash, like an OTP.
+  if (input.type === 'deskHandover') return { ...input, at, code: hashOtp(deps.pepper, input.parcelId, input.code) }
   return { ...input, at } as Action
 }
 

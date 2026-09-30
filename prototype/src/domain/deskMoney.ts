@@ -2,13 +2,14 @@ import { ROUTER } from '../engine/economics.ts'
 import { matchBelief, pointForecast } from '../engine/demand.ts'
 import { laneEv } from '../engine/whatif.ts'
 import { HOUR_MS } from './clock.ts'
-import { WHATSAPP_COST, REVERSE_COST } from './helpers.ts'
+import { PICKUP_COLLECT_SHARE } from './botCustomer.ts'
+import { BATCHED_SAVING, REVERSE_COST, WHATSAPP_COST } from './helpers.ts'
 import { savingsLedger } from './ledger.ts'
 import { decisionFor } from './routing.ts'
 import type { DayState } from './types.ts'
 
 /** Outbound WhatsApp templates the Router sends: each costs ₹0.50 and is a Router cost (the customer's taps are free). */
-const ROUTER_TEMPLATES: ReadonlySet<string> = new Set(['second_chance'])
+const ROUTER_TEMPLATES: ReadonlySet<string> = new Set(['second_chance', 'second_chance_when', 'second_chance_pay', 'second_chance_ack', 'pickup_code'])
 
 export interface DeskMoney {
   /** Refused parcels the Desk has seen today */
@@ -41,6 +42,10 @@ export function deskMoney(s: DayState): DeskMoney {
       inPlayCount++
     } else if (rec.state === 'second_chance_sent') {
       inPlay += decisionFor(s, rec).ev.secondChance
+      inPlayCount++
+    } else if (rec.state === 'pickup_reserved') {
+      // The ₹8 is already spent. Either the customer collects (₹120 saved) or it goes back in a batched return (the usual ₹36).
+      inPlay += PICKUP_COLLECT_SHARE * REVERSE_COST + (1 - PICKUP_COLLECT_SHARE) * BATCHED_SAVING
       inPlayCount++
     } else if (rec.state === 'held' && rec.heldSim !== undefined) {
       // The ₹8 is already spent (it is in the costs), so only the chance of a buyer in the hours left is still in play.
