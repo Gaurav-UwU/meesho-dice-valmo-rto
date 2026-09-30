@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { fakeGeo } from '../engine/testkit.ts'
+import { whatIf } from '../engine/whatif.ts'
 import { runAudit } from './audit.ts'
 import { DAY_MS, HOUR_MS } from './clock.ts'
 import { createDay } from './day.ts'
@@ -352,14 +353,18 @@ describe('scenario 10: a seller that has not opted in can never be forced into t
   })
 
   it('the opt-in cannot be toggled from the Desk, even by a crafted action', () => {
-    const forged = reduce(base, { type: 'deskSetGate', at: AT + 2, parcelId: pid, gate: 'sellerOptedIn' as never, value: true })
+    const forged = reduce(base, { type: 'deskSetGate', at: AT + 2, parcelId: pid, gate: 'sellerOptedIn', value: true } as never)
     expect(forged).toBe(base)
     expect(deskItems(forged)[0].decision.lane).toBe('consolidated_return')
   })
 
-  it('the other what-if gates still work while queued', () => {
-    const s = run(base, { type: 'deskSetGate', at: AT + 2, parcelId: pid, gate: 'sealOk', value: false })
-    expect(s.parcels[0].parcel.sealOk).toBe(false)
+  it('the other three gates are only a what-if: flipping one previews the lane and never touches the parcel', () => {
+    const optedIn = forceParcel(base, bonusId, { sellerOptedIn: true })
+    const r = whatIf(optedIn.parcels[0].parcel, { sealOk: false }, { params: optedIn.router })
+    expect(r.before.lane).toBe('hold_rehome')
+    expect(r.after.lane).toBe('consolidated_return')
+    expect(optedIn.parcels[0].parcel.sealOk).toBe(true)
+    expect(reduce(optedIn, { type: 'deskSetGate', at: AT + 2, parcelId: pid, gate: 'sealOk', value: false } as never)).toBe(optedIn)
   })
 })
 

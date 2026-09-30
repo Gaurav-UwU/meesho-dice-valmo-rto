@@ -1,7 +1,8 @@
 import type { DeskItem } from '../../domain/selectors.ts'
-import type { Gate as GateKey } from '../../domain/types.ts'
+import { useState } from 'react'
 import type { ActionInput } from '../../store/types.ts'
 import { REFUSAL_LABEL } from '../../engine/router.ts'
+import { whatIf, type WhatIfFlips, type WhatIfGate } from '../../engine/whatif.ts'
 import { rupees, signedRupees } from '../../ui/format.ts'
 import { GateList } from './GateList.tsx'
 import { effectRange, LANE_LABEL, STATE_LABEL } from './lanes.ts'
@@ -19,8 +20,17 @@ interface ParcelCardProps {
 export function ParcelCard({ item, send, simNow, secondChanceHours, holdHours }: ParcelCardProps) {
   const { record, decision } = item
   const { parcel } = record
+  const [flips, setFlips] = useState<WhatIfFlips>({})
   const parcelId = record.id
   const editable = record.state === 'queued'
+  const toggle = (gate: WhatIfGate, value: boolean): void => {
+    // Flipping back to what the parcel really has drops the flip.
+    setFlips((cur) => {
+      const next = { ...cur, [gate]: value }
+      if (value === parcel[gate]) delete next[gate]
+      return next
+    })
+  }
   const sameState = parcel.sellerState === parcel.hubState && parcel.buyerState === parcel.hubState
 
   return (
@@ -66,8 +76,12 @@ export function ParcelCard({ item, send, simNow, secondChanceHours, holdHours }:
 
       <GateList
         gates={decision.gates}
+        parcel={parcel}
+        flips={flips}
+        preview={whatIf(parcel, flips, item.options).text}
         editable={editable}
-        onToggle={(gate: GateKey, value: boolean) => void send({ type: 'deskSetGate', parcelId, gate, value })}
+        onToggle={toggle}
+        onClear={() => setFlips({})}
       />
 
       <ParcelActions

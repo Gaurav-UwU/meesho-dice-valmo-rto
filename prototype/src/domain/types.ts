@@ -220,11 +220,9 @@ export interface DayState {
   readonly nextId: number
 }
 
-/** The gates an operator may flip as a what-if. The seller's opt-in is never among them: only the seller decides. */
-export type Gate = 'unopened' | 'sealOk' | 'invoiceOutside'
-
 /** A Router assumption an operator can edit on the Desk. */
-export type RouterParamKey = 'conversion' | 'shelfCapacity' | `accept_${RefusalReason}`
+/** `accept_soft` sets the three soft-refusal rates (no cash, wants it later, not home) at once. */
+export type RouterParamKey = 'conversion' | 'shelfCapacity' | 'accept_soft' | `accept_${RefusalReason}`
 
 export type Action =
   | { readonly type: 'startDay'; readonly at: number }
@@ -238,7 +236,6 @@ export type Action =
   | { readonly type: 'riderRefuse'; readonly at: number; readonly orderId: string; readonly code: string; readonly reason?: RefusalReason }
   | { readonly type: 'deskSecondChance'; readonly at: number; readonly parcelId: string }
   | { readonly type: 'customerSecondChance'; readonly at: number; readonly parcelId: string; readonly accept: boolean }
-  | { readonly type: 'deskSetGate'; readonly at: number; readonly parcelId: string; readonly gate: Gate; readonly value: boolean }
   | { readonly type: 'deskSetParam'; readonly at: number; readonly param: RouterParamKey; readonly value: number }
   | { readonly type: 'deskHold'; readonly at: number; readonly parcelId: string }
   /** Demo shortcut: a buyer for the held parcel appears now (otherwise one appears, or not, on the clock) */

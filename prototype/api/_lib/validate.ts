@@ -27,10 +27,9 @@ const ActionInputSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('riderRefuse'), orderId, reason: z.enum(['no_cash', 'want_later', 'not_home', 'changed_mind', 'cheaper_elsewhere', 'not_ordered', 'damaged']).optional() }),
   z.object({ type: z.literal('deskSecondChance'), parcelId }),
   z.object({ type: z.literal('customerSecondChance'), parcelId, accept: z.boolean() }),
-  z.object({ type: z.literal('deskSetGate'), parcelId, gate: z.enum(['unopened', 'sealOk', 'invoiceOutside']), value: z.boolean() }),
   z.object({
     type: z.literal('deskSetParam'),
-    param: z.enum(['conversion', 'shelfCapacity', 'accept_no_cash', 'accept_want_later', 'accept_not_home', 'accept_changed_mind', 'accept_cheaper_elsewhere', 'accept_not_ordered', 'accept_damaged']),
+    param: z.enum(['conversion', 'shelfCapacity', 'accept_soft', 'accept_no_cash', 'accept_want_later', 'accept_not_home', 'accept_changed_mind', 'accept_cheaper_elsewhere', 'accept_not_ordered', 'accept_damaged']),
     value: z.number().min(0).max(500),
   }),
   z.object({ type: z.literal('deskHold'), parcelId }),

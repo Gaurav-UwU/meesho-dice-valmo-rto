@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { deskMoney } from '../domain/deskMoney.ts'
 import { deskItems, deskSummary } from '../domain/selectors.ts'
 import type { DayState } from '../domain/types.ts'
 import { batchBySeller } from '../engine/router.ts'
@@ -81,7 +82,7 @@ export default function Desk() {
             <DayLoading hubId={hub.id} text="Loading the hub day..." />
           ) : (
             <>
-              <DeskSummary summary={deskSummary(day)} />
+              <DeskSummary summary={deskSummary(day)} money={deskMoney(day)} />
               {items.length === 0 ? (
                 <section className="card desk-empty">
                   <p>No refused parcels yet. Refuse a parcel from the rider app (/rider) or let the ops console run Autopilot.</p>

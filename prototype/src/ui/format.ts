@@ -5,6 +5,10 @@ export const rupees = (n: number): string => `₹${Math.round(n).toLocaleString(
 
 export const signedRupees = (n: number): string => `${n < 0 ? '−' : '+'}₹${Math.abs(Math.round(n)).toLocaleString('en-IN')}`
 
+/** Like signedRupees, but keeps the paise below ₹10 so a ₹0.50 message cost does not round to ₹1 */
+export const signedRupeesFine = (n: number): string =>
+  Math.abs(n) < 10 && !Number.isInteger(n) ? `${n < 0 ? '−' : '+'}₹${Math.abs(n).toFixed(1)}` : signedRupees(n)
+
 export const pct = (x: number, digits = 1): string => `${(x * 100).toFixed(digits)}%`
 
 export const clock = (ms: number): string =>

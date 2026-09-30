@@ -1,6 +1,6 @@
 import { rescueScore } from '../engine/rescue.ts'
 import { createRng, hashSeed } from '../engine/rng.ts'
-import { routeParcel, REFUSAL_REASONS, type RouteDecision, type RouteOptions } from '../engine/router.ts'
+import { isSoftReason, routeParcel, REFUSAL_REASONS, type RouteDecision, type RouteOptions, type RouterParams } from '../engine/router.ts'
 import type { Order } from '../engine/types.ts'
 import { HOUR_MS } from './clock.ts'
 import { emit } from './events.ts'
@@ -74,26 +74,25 @@ export function secondChanceDelivered(s: S, orderId: string, at: number): S {
   return s.stops[orderId]?.viaSecondChance ? bookSaving(s, at, 'Second chance delivered (net of the ₹21 leg)', SECOND_CHANCE_SAVING, orderId) : s
 }
 
-const EDITABLE_GATES = new Set(['unopened', 'sealOk', 'invoiceOutside'])
+const SOFT_REASONS = REFUSAL_REASONS.filter(isSoftReason)
 
-/** Demo what-if on a queued parcel. The seller's opt-in is never editable: only the seller decides. */
-export function deskSetGate(s: S, a: Extract<Action, { type: 'deskSetGate' }>): S {
-  const p = findParcel(s, a.parcelId)
-  if (!p || p.state !== 'queued' || !EDITABLE_GATES.has(a.gate)) return s
-  return patchParcel(s, p.id, { parcel: { ...p.parcel, [a.gate]: a.value } })
+/** The one number the three soft-refusal rows share, or null ("mixed") when an operator has set them apart. */
+export function softAcceptRate(params: RouterParams): number | null {
+  const [first, ...rest] = SOFT_REASONS.map((r) => params.acceptByReason[r])
+  return rest.every((v) => v === first) ? first : null
 }
 
 /** Change a Router assumption. Bounded so a typo cannot break the maths. */
 export function deskSetParam(s: S, a: Extract<Action, { type: 'deskSetParam' }>): S {
-  const value = a.value
-  if (!Number.isFinite(value)) return s
+  if (!Number.isFinite(a.value)) return s
   const key: RouterParamKey = a.param
-  if (key === 'conversion') return { ...s, router: { ...s.router, conversion: Math.min(1, Math.max(0, value)) } }
-  if (key === 'shelfCapacity') return { ...s, router: { ...s.router, shelfCapacity: Math.min(500, Math.max(0, Math.round(value))) } }
-  const reason = key.slice('accept_'.length)
-  const known = REFUSAL_REASONS.find((r) => r === reason)
+  const unit = Math.min(1, Math.max(0, a.value))
+  if (key === 'conversion') return { ...s, router: { ...s.router, conversion: unit } }
+  if (key === 'shelfCapacity') return { ...s, router: { ...s.router, shelfCapacity: Math.min(500, Math.max(0, Math.round(a.value))) } }
+  if (key === 'accept_soft') return { ...s, router: { ...s.router, acceptByReason: { ...s.router.acceptByReason, ...Object.fromEntries(SOFT_REASONS.map((r) => [r, unit])) } } }
+  const known = REFUSAL_REASONS.find((r) => r === key.slice('accept_'.length))
   if (!known) return s
-  return { ...s, router: { ...s.router, acceptByReason: { ...s.router.acceptByReason, [known]: Math.min(1, Math.max(0, value)) } } }
+  return { ...s, router: { ...s.router, acceptByReason: { ...s.router.acceptByReason, [known]: unit } } }
 }
 
 /** When (sim time) a buyer for a held parcel appears, drawn once from an exponential clock; none if nobody comes within the hold window */

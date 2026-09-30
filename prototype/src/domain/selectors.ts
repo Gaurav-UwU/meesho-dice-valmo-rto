@@ -1,10 +1,10 @@
 import { costPerSuccessfulDelivery } from '../engine/economics.ts'
 import { mean } from '../engine/math.ts'
-import { type DaySummary, type Lane, type RouteDecision } from '../engine/router.ts'
+import { type DaySummary, type Lane, type RouteDecision, type RouteOptions } from '../engine/router.ts'
 import type { Arm, Rider } from '../engine/types.ts'
 import { isDelivered, isSettled, isTerminal } from './lifecycle.ts'
 import { ledgerTotals } from './ledger.ts'
-import { decisionFor } from './routing.ts'
+import { decisionFor, routeOptionsFor } from './routing.ts'
 import type { DayState, ExceptionItem, ParcelRecord, StopRecord, WaMessage } from './types.ts'
 
 /** One arm's flagged orders. `n` counts every flagged order in the arm; the rate is over those with a final outcome only. */
@@ -184,10 +184,12 @@ export const messagesFor = (s: DayState, orderId: string): readonly WaMessage[] 
 export interface DeskItem {
   readonly record: ParcelRecord
   readonly decision: RouteDecision
+  /** What the Router was told about the day (shelf, bag space, assumptions): a what-if preview prices with the same ones */
+  readonly options: RouteOptions
 }
 
 export const deskItems = (s: DayState): readonly DeskItem[] =>
-  s.parcels.map((record) => ({ record, decision: decisionFor(s, record) }))
+  s.parcels.map((record) => ({ record, decision: decisionFor(s, record), options: routeOptionsFor(s, record) }))
 
 /** Day summary for parcels still waiting for a decision, versus sending them all back. */
 export function deskSummary(s: DayState): DaySummary {

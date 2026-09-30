@@ -27,7 +27,7 @@ import {
 import { closeAsRto, confidenceOf, openException, overtakeException, resolveExceptionFor, retryOne } from './orders.ts'
 import { buildParcel, SHOWCASE } from './parcels.ts'
 import { plannedRuleHash } from './rule.ts'
-import { customerSecondChance, deskConsolidate, deskHold, deskMatch, deskSecondChance, deskSetGate, deskSetParam, rehomeDelivered, secondChanceDelivered } from './routing.ts'
+import { customerSecondChance, deskConsolidate, deskHold, deskMatch, deskSecondChance, deskSetParam, rehomeDelivered, secondChanceDelivered } from './routing.ts'
 import { OTP_SIM_TTL_MS, tick } from './tick.ts'
 import type { Action, DayState, StopRecord } from './types.ts'
 import type { Order } from '../engine/types.ts'
@@ -362,8 +362,6 @@ function apply(s: S, a: Action): S {
       return deskSecondChance(s, a)
     case 'customerSecondChance':
       return customerSecondChance(s, a)
-    case 'deskSetGate':
-      return deskSetGate(s, a)
     case 'deskSetParam':
       return deskSetParam(s, a)
     case 'deskHold':
@@ -389,6 +387,9 @@ function apply(s: S, a: Action): S {
       return advance(s, a.at, untilNextDay(s))
     case 'closePilot':
       return s.started ? closePilot(s, a.at, reduce) : s
+    default:
+      // A type this build does not know (an old client, a crafted action): the state is left untouched.
+      return s
   }
 }
 

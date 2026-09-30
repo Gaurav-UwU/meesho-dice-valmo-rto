@@ -325,7 +325,7 @@ describe('refusal and the Refused-Parcel Desk', () => {
   })
 
   it('cannot hold a parcel that fails a gate, and cannot match one that is not held', () => {
-    const s0 = run(refused(bonusId), { type: 'deskSetGate', at: AT + 2, parcelId: `P-${bonusId}`, gate: 'sealOk', value: false })
+    const s0 = forceParcel(refused(bonusId), bonusId, { sealOk: false })
     const pid = s0.parcels[0].id
     expect(reduce(s0, { type: 'deskHold', at: AT + 3, parcelId: pid })).toBe(s0)
     expect(reduce(s0, { type: 'deskMatch', at: AT + 3, parcelId: pid })).toBe(s0)
@@ -338,10 +338,11 @@ describe('refusal and the Refused-Parcel Desk', () => {
     expect(s.stops[bonusId].status).toBe('rto')
   })
 
-  it('gate changes only apply while the parcel is still queued', () => {
+  it('the old deskSetGate action is gone: the toggles are a preview, so a crafted action changes nothing', () => {
     const s0 = refused(bonusId)
-    const consolidated = run(s0, { type: 'deskConsolidate', at: AT + 2, parcelId: s0.parcels[0].id })
-    expect(reduce(consolidated, { type: 'deskSetGate', at: AT + 3, parcelId: s0.parcels[0].id, gate: 'sealOk', value: false })).toBe(consolidated)
+    const forged = reduce(s0, { type: 'deskSetGate', at: AT + 3, parcelId: s0.parcels[0].id, gate: 'sealOk', value: false } as never)
+    expect(forged).toBe(s0)
+    expect(forged.parcels[0].parcel.sealOk).toBe(s0.parcels[0].parcel.sealOk)
   })
 })
 

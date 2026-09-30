@@ -1,13 +1,10 @@
 import { ROUTER } from '../../engine/economics.ts'
-import type { Gate as GateResult, Lane } from '../../engine/router.ts'
-import type { Gate as GateKey, ParcelRecord, ParcelState } from '../../domain/types.ts'
+import { LANE_LABEL, type Gate as GateResult } from '../../engine/router.ts'
+import type { WhatIfGate } from '../../engine/whatif.ts'
+import type { ParcelRecord, ParcelState } from '../../domain/types.ts'
 import { rupees, signedRupees } from '../../ui/format.ts'
 
-export const LANE_LABEL: Readonly<Record<Lane, string>> = {
-  second_chance: 'Second chance',
-  hold_rehome: 'Hold & Re-home',
-  consolidated_return: 'Consolidated return',
-}
+export { LANE_LABEL }
 
 export const STATE_LABEL: Readonly<Record<ParcelState, string>> = {
   queued: 'Queued',
@@ -19,7 +16,7 @@ export const STATE_LABEL: Readonly<Record<ParcelState, string>> = {
 }
 
 /** Gates the operator can flip in the demo. The state check, the seller's opt-in (only the seller decides), shelf, bag and expected value are facts, so they are not here. */
-export function toggleableGate(gate: GateResult): GateKey | null {
+export function toggleableGate(gate: GateResult): WhatIfGate | null {
   switch (gate.name) {
     case 'Unopened':
       return 'unopened'

@@ -608,3 +608,61 @@
   border: 1px solid #c9cfe0;
   border-radius: 6px;
 }
+
+/* Step 1: the three money tiles, the what-if line and the headline assumptions */
+.desk-money-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+.desk-money-tiles .desk-tile {
+  flex: 1 1 200px;
+  gap: 2px;
+}
+.desk-money-tiles .desk-tile small {
+  color: var(--valmo-muted);
+  font-size: 12px;
+}
+.desk-tile--booked {
+  border-left-color: #1f9d5c;
+}
+.desk-tile--play {
+  border-left-color: var(--valmo-cyan);
+}
+.desk-tile--back {
+  border-left-color: var(--danger);
+}
+.desk-money-note {
+  display: block;
+  margin-top: 8px;
+  color: var(--valmo-muted);
+  font-size: 12.5px;
+}
+.desk-whatif-line {
+  margin: 8px 0 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fff8e6;
+  border: 1px dashed #d9a400;
+  font-size: 13px;
+}
+.desk-whatif-clear {
+  margin-top: 4px;
+}
+.desk-switch.is-tried {
+  outline: 2px dashed #d9a400;
+  outline-offset: 2px;
+}
+.desk-more {
+  margin-top: 6px;
+}
+.desk-more summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--valmo-muted);
+}
+.desk-mixed {
+  font-size: 12px;
+  color: var(--valmo-muted);
+}

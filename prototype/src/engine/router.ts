@@ -12,6 +12,12 @@ import type { HubId } from './types.ts'
  */
 export type Lane = 'second_chance' | 'hold_rehome' | 'consolidated_return'
 
+export const LANE_LABEL: Readonly<Record<Lane, string>> = {
+  second_chance: 'Second chance',
+  hold_rehome: 'Hold & Re-home',
+  consolidated_return: 'Consolidated return',
+}
+
 export type RefusalReason = 'no_cash' | 'want_later' | 'not_home' | 'changed_mind' | 'cheaper_elsewhere' | 'not_ordered' | 'damaged'
 
 export const REFUSAL_REASONS: readonly RefusalReason[] = ['no_cash', 'want_later', 'not_home', 'changed_mind', 'cheaper_elsewhere', 'not_ordered', 'damaged']
@@ -140,9 +146,12 @@ const LANE_EFFECT: Record<Lane, Effect> = {
 /** P(customer accepts a second chance | reason) */
 export const pAccept = (reason: RefusalReason, params: RouterParams = DEFAULT_ROUTER_PARAMS): number => params.acceptByReason[reason]
 
-/** P(at least one buyer of the same SKU appears and takes it within the hold window) = 1 - exp(-rate x hours x conversion) */
-export const pMatch = (demandRate: number, params: RouterParams = DEFAULT_ROUTER_PARAMS): number =>
-  1 - Math.exp(-Math.max(0, demandRate) * params.holdHours * params.conversion)
+/** P(at least one buyer of the same SKU appears and takes it within `hours`) = 1 - exp(-rate x hours x conversion) */
+export const pMatchWithin = (demandRate: number, hours: number, params: RouterParams = DEFAULT_ROUTER_PARAMS): number =>
+  1 - Math.exp(-Math.max(0, demandRate) * Math.max(0, hours) * params.conversion)
+
+/** The same over the whole hold window */
+export const pMatch = (demandRate: number, params: RouterParams = DEFAULT_ROUTER_PARAMS): number => pMatchWithin(demandRate, params.holdHours, params)
 
 export const secondChanceEv = (reason: RefusalReason, params: RouterParams = DEFAULT_ROUTER_PARAMS): number =>
   pAccept(reason, params) * (DEFAULTS.reverseCost - ROUTER.reAttemptCost) - SECOND_CHANCE_MESSAGES * MESSAGE_COST
