@@ -1,0 +1,461 @@
+/* Rider app: a clone of Valmo Pilot "Today's Tasks". Tokens come from ui/tokens.css. */
+.rider-root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--valmo-page);
+  font-family: var(--font-app);
+}
+.rider-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 12px;
+  background: var(--valmo-navy);
+  color: #fff;
+}
+.rider-avatar {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--valmo-cyan);
+  color: var(--valmo-navy);
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+.rider-header-text {
+  flex: 1;
+  min-width: 0;
+}
+.rider-header-text h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.rider-header-text p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rider-lang {
+  display: flex;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.rider-lang button {
+  min-width: 44px;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 13px;
+}
+.rider-lang button[aria-pressed='true'] {
+  background: #fff;
+  color: var(--valmo-navy);
+  font-weight: 700;
+}
+.rider-switch {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  font-size: 20px;
+}
+.rider-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 72px;
+}
+
+.rider-earn {
+  margin: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow-card);
+}
+.rider-earn-label {
+  font-size: 13px;
+  color: var(--valmo-muted);
+}
+.rider-earn-amount {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--valmo-navy);
+}
+.rider-earn-bonus {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--bonus);
+}
+.rider-earn-hold {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--valmo-muted);
+}
+
+.rider-tabs {
+  display: flex;
+  background: #fff;
+  border-bottom: 1px solid #e1e3ec;
+}
+.rider-tab {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--valmo-muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+.rider-tab[aria-selected='true'] {
+  background: var(--valmo-tab-active);
+  border-bottom-color: #0a2e5f;
+  color: var(--valmo-navy);
+  font-weight: 700;
+}
+.rider-filter-chips {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px 0;
+  flex-wrap: wrap;
+}
+.rider-fchip {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid #c9cde0;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--valmo-text);
+  font-size: 13px;
+}
+.rider-fchip[aria-pressed='true'] {
+  background: var(--valmo-navy);
+  border-color: var(--valmo-navy);
+  color: #fff;
+}
+.rider-fchip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rider-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+.rider-card {
+  background: var(--valmo-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 14px;
+}
+.rider-card-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rider-stop-no {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--valmo-muted);
+}
+.rider-cust {
+  margin: 10px 0 2px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.rider-addr {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.rider-addr.muted {
+  color: var(--valmo-muted);
+  font-size: 13px;
+}
+.rider-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.pill.wa {
+  background: #f1f5fb;
+  color: var(--valmo-navy);
+  font-size: 12px;
+}
+.rider-note {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--valmo-muted);
+}
+.rider-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.rider-dir,
+.rider-act {
+  flex: 1 1 calc(50% - 8px);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--valmo-navy);
+  background: #fff;
+  color: var(--valmo-navy);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.rider-act.primary {
+  background: var(--valmo-navy);
+  color: #fff;
+}
+.rider-act.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.rider-act:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.rider-dir:focus-visible,
+.rider-act:focus-visible {
+  outline: 2px solid var(--valmo-link);
+  outline-offset: 2px;
+}
+
+.rider-fab {
+  position: absolute;
+  right: 14px;
+  bottom: 16px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--valmo-fab);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+.rider-toast {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 84px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--bonus);
+  color: #fff;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+/* Bottom sheets */
+.rider-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(9, 20, 40, 0.5);
+}
+.rider-sheet {
+  width: 100%;
+  padding: 20px 16px 18px;
+  border-radius: 20px 20px 0 0;
+  background: #fff;
+}
+.rider-sheet h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  color: var(--valmo-navy);
+}
+.rider-muted {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--valmo-muted);
+}
+.rider-otp-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+.rider-otp-box {
+  width: 56px;
+  height: 56px;
+  border: 1.5px solid #b9bfd6;
+  border-radius: 10px;
+  font-size: 24px;
+  font-weight: 600;
+  text-align: center;
+}
+.rider-otp-msg {
+  min-height: 22px;
+  margin-bottom: 6px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--danger);
+}
+.rider-submit {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--valmo-fab);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.rider-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.rider-menu-item {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  margin-bottom: 8px;
+  padding: 0 14px;
+  border: 1px solid #c9cde0;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--valmo-text);
+  text-align: left;
+  font-size: 15px;
+}
+.rider-link-btn,
+.rider-dev-link {
+  display: block;
+  margin: 8px auto 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--valmo-link);
+  font-size: 14px;
+  text-decoration: underline;
+}
+
+/* Picker and empty states */
+.rider-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 16px;
+}
+.rider-picker h2 {
+  margin: 0;
+  font-size: 20px;
+  color: var(--valmo-navy);
+}
+.rider-picker .rider-muted {
+  margin: 0;
+}
+.rider-big-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 64px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--valmo-navy);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 600;
+}
+.rider-big-btn.alt {
+  background: #fff;
+  color: var(--valmo-navy);
+  border: 1.5px solid var(--valmo-navy);
+}
+.rider-big-btn span {
+  font-size: 13px;
+  font-weight: 400;
+  opacity: 0.85;
+}
+.rider-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--valmo-muted);
+}
+.rider-field select {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid #c9cde0;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 15px;
+}
+.rider-empty,
+.rider-empty-day p {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--valmo-muted);
+}
+.rider-empty-day {
+  padding-top: 24px;
+}
+
+/* Proof at the door */
+.rider-evidence {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 12px;
+  padding: 10px 12px;
+  background: #f4f6fb;
+  border-radius: 10px;
+}
+.rider-evidence-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+}
+.rider-chipbtn {
+  border: 1px solid #c9cfe0;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  min-height: 36px;
+}
+.rider-chipbtn:focus-visible {
+  outline: 2px solid var(--fab, #f26c2b);
+  outline-offset: 2px;
+}

@@ -1,0 +1,200 @@
+/* Design tokens. Source: work/12-prototype-theme.md (Valmo Pilot / Operations, Meesho, Team GPS R1 deck). */
+:root {
+  /* Valmo layer: rider app, ops console, refused-parcel desk */
+  --valmo-navy: #092d5e;
+  --valmo-navy-ops: #142c5b;
+  --valmo-cyan: #61eeff;
+  --valmo-page: #f2f2f3;
+  --valmo-card: #ffffff;
+  --valmo-cod-bg: #ebf7fe;
+  --valmo-tag-bg: #ecebf5;
+  --valmo-item-pill: #e6e6e6;
+  --valmo-tab-active: #e9eaf3;
+  --valmo-text: #1f1e1e;
+  --valmo-muted: #6e748e;
+  --valmo-fab: #f4511e;
+  --valmo-link: #5985f7;
+  --bonus: #0e8a4f;
+  --bonus-bg: #e7f6ee;
+  --danger: #d93025;
+  --danger-bg: #fdecea;
+  --amber: #c77700;
+  --amber-bg: #fff3d7;
+
+  /* Meesho layer */
+  --meesho-magenta: #9f2089;
+  --meesho-plum: #580a46;
+
+  /* Team GPS pitch layer: landing, pilot simulator */
+  --gps-pink: #ed0b7d;
+  --gps-pink-bg: #fcf0f6;
+  --gps-navy: #120a4a;
+  --gps-purple: #2a0680;
+  --gps-green: #4fbf83;
+  --gps-cream: #fff3d7;
+  --verdict-go: #4fbf83;
+  --verdict-reprice: #f5a623;
+  --verdict-kill: #ed0b7d;
+
+  /* Warm pitch layer: landing and pilot. Light, human colours instead of a dark navy shell. */
+  --pitch-ink: #2b1140;
+  --pitch-muted: #66566f;
+  --pitch-bg: #fff9f3;
+  --pitch-surface: #ffffff;
+  --pitch-line: #efe2dc;
+  --pitch-magenta: #c9126a;
+  --pitch-coral: #e0392e;
+  --pitch-teal: #0b7a6a;
+  --pitch-focus: #5b2bd6;
+  --grad-brand: linear-gradient(135deg, #c9126a 0%, #e0392e 100%);
+  --grad-warm-wash:
+    radial-gradient(60% 90% at 100% 0%, #ffd7bd 0%, transparent 62%), radial-gradient(55% 80% at 0% 25%, #ffc9e2 0%, transparent 60%),
+    radial-gradient(60% 70% at 55% 110%, #c9eef0 0%, transparent 62%);
+  --grad-go: linear-gradient(120deg, #d6f5e6 0%, #b7ecd3 100%);
+  --grad-reprice: linear-gradient(120deg, #ffefcf 0%, #ffd9a3 100%);
+  --grad-kill: linear-gradient(120deg, #ffdcec 0%, #ffc2dc 100%);
+  --grad-incomplete: linear-gradient(120deg, #efeaf7 0%, #dcd4ee 100%);
+  --grad-invalid: linear-gradient(120deg, #2b1140 0%, #4d1b66 100%);
+
+  /* WhatsApp */
+  --wa-header: #008069;
+  --wa-chat-bg: #efeae2;
+  --wa-in: #ffffff;
+  --wa-out: #d9fdd3;
+  --wa-button: #027eb5;
+
+  --radius: 12px;
+  --shadow-card: 0 1px 3px rgba(9, 45, 94, 0.12), 0 1px 2px rgba(9, 45, 94, 0.08);
+  --font-app: 'Roboto', system-ui, 'Segoe UI', sans-serif;
+  --font-pitch: 'Figtree', system-ui, 'Segoe UI', sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-app);
+  color: var(--valmo-text);
+  background: var(--valmo-page);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Shared small components */
+.card {
+  background: var(--valmo-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 14px 16px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--valmo-item-pill);
+  color: var(--valmo-text);
+  white-space: nowrap;
+}
+.pill.cod {
+  background: var(--valmo-cod-bg);
+  color: var(--valmo-navy);
+}
+.pill.tag {
+  background: var(--valmo-tag-bg);
+  color: var(--valmo-navy);
+}
+.pill.bonus {
+  background: var(--bonus-bg);
+  color: var(--bonus);
+  font-weight: 700;
+}
+.pill.danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+.pill.amber {
+  background: var(--amber-bg);
+  color: var(--amber);
+}
+.pill.status {
+  background: var(--valmo-navy-ops);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+
+.btn {
+  border: 1px solid var(--valmo-navy);
+  color: var(--valmo-navy);
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-weight: 500;
+}
+.btn:hover:not(:disabled) {
+  background: var(--valmo-tab-active);
+}
+.btn.primary {
+  background: var(--valmo-navy);
+  color: #fff;
+}
+.btn.primary:hover:not(:disabled) {
+  background: #0d3a78;
+}
+.btn.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.btn.pink {
+  background: var(--gps-pink);
+  border-color: var(--gps-pink);
+  color: #fff;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn:focus-visible,
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--valmo-link);
+  outline-offset: 2px;
+}
+
+/* Footer required on every screen (guardrail from 12-prototype-theme.md) */
+.proto-footer {
+  text-align: center;
+  font-size: 12px;
+  color: var(--valmo-muted);
+  padding: 14px 16px 22px;
+}

@@ -1,0 +1,14 @@
+# Keep secrets and bulky/raw files out of the upload. Generated api/*.js bundles are what Vercel runs.
+.env
+.env.*
+!.env.example
+api/_lib
+api-src
+data/raw
+data/cache
+coverage
+dist
+scripts
+node_modules
+*.test.ts
+*.test.tsx

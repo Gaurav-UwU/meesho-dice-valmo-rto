@@ -1,0 +1,34 @@
+# Secrets. Never commit real values (the prototype's .env.example has only names).
+.env
+.env.*
+!.env.example
+*.local
+
+# Personal data: Gaurav's real Meesho order (shows the rider's phone number and the AWB). Redact before it is ever shared.
+research/order1-valmo-whatsapp.jpg
+
+# The organisers' case material: not ours to republish
+Meesho/
+meesho_q1.pdf
+
+# Build output and dependencies (rebuild with npm install / npm run build / node scripts/build-api.mjs)
+node_modules/
+dist/
+dist-ssr/
+coverage/
+.vercel/
+prototype/api/*.js
+
+# Raw and cached geography (regenerable; data/geo-*.json IS kept)
+prototype/data/raw/
+prototype/data/cache/
+
+# Editor, OS and tool state
+.claude/settings.local.json
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+~$*
+*.log

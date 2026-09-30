@@ -1,0 +1,13 @@
+.live-page { max-width: 760px; margin: 0 auto; padding: 28px 16px 8px; font-family: var(--font-pitch); color: var(--gps-navy); }
+.live-page h1 { font-size: 28px; margin: 0 0 6px; }
+.live-lead { color: var(--valmo-muted); margin: 0 0 22px; }
+.live-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-card); padding: 18px 20px; margin-bottom: 18px; }
+.live-card h2 { font-size: 18px; margin: 0 0 4px; }
+.live-card p { margin: 0 0 12px; color: var(--valmo-muted); font-size: 14px; }
+.live-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.live-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 500; flex: 1 1 200px; }
+.live-field input, .live-field select { padding: 9px 10px; border: 1px solid #c9cedd; border-radius: 8px; font: inherit; }
+.live-msg { margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: 14px; }
+.live-msg.ok { background: var(--bonus-bg); color: var(--bonus); }
+.live-msg.bad { background: var(--danger-bg); color: var(--danger); }
+.live-warn { background: var(--amber-bg); color: var(--amber); padding: 10px 12px; border-radius: 8px; font-size: 14px; margin-bottom: 18px; }

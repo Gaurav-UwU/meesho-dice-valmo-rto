@@ -1,0 +1,139 @@
+# 00 — MASTER INDEX: Meesho DICE 3.0, Team GPS (Valmo RTO)
+
+**Read this first in every new session.** It maps every file, says which one is current, and records the decisions that override older notes.
+For "where exactly we left off", read [`work/NEXT-SESSION.md`](work/NEXT-SESSION.md) next.
+Last updated: **2026-10-01 (Session 11: plan 18, the simplified pilot, built and deployed)**.
+
+---
+
+## 1. Status at a glance
+
+| | |
+|---|---|
+| Competition | Meesho DICE 3.0 · Business track · Case: **Valmo, reduce RTO** · Team **GPS**, IIT Bombay |
+| Round 1 | ✅ Submitted (cover + 3 slides) → **shortlisted** |
+| Round 2 deliverables | **10-slide deck (6–10 allowed)** + **working prototype** + 90s video |
+| Deadline | **Submit Sat 3 Oct 2026**; Sun 4 Oct is buffer only |
+| Mentor | Meesho mentor on Slack. **Mentor Connect call: Thu 1 Oct 2026, 3:30–4:00 pm IST.** Can't be rescheduled; at least one team member must attend; bring a prototype idea, wireframe, demo or WIP |
+| Deck | Handed to the deck teammate on 29 Sep (`work/14-deck-handoff.md`). **She builds the PPTX** |
+| Prototype | **v2 built and deployed, pilot simplified by plan 18 (1 Oct):** https://valmo-rescue-console.vercel.app · 723 tests, all 15 scenarios pass. Order lifecycle + attempt 2 + arm at dispatch, **one verdict rule (GO on the low end of a pair-by-pair 95% range) on `/pilot`, the Ops card and "Check today's Ops day"**, riders paired on past delivery rate, ✔ fair-comparison check, two safety rules, "the bonus caused X extra deliveries" headline, sim clock + timers, typed events, bonus ledger with clawback and COD, evidence + exception queue, Router on expected values with timers and booked savings, re-home cohort, Audit tab. **Default pilot now says GO (+13.6); P(GO) at +12 is about 58%; smallest effect it can see about 4 per 100 (simulation has no month-to-month rider luck, so a real pilot is noisier).** Live WhatsApp is out (Twilio trial), Demo mode is the product. **Next: deck numbers to the teammate, code/security review, freeze Fri 3 pm (screenshots, QR, 90 s video).** Run instructions: `prototype/README.md` |
+| Research | Real Meesho order observed · Flipkart WhatsApp flow captured · 1-minute Hindi/English survey live · rider/hub calls pending |
+
+## 2. Rules that never change
+1. **Enhance, don't pivot.** The R1 hero (₹15 risk-weighted rider bonus, now called the **Rescue Bonus**) and the Prevent / Rescue / Recover framing stay.
+2. **The brief's constraint:** reduce RTO "without hurting delivery cost, rider earnings, or the speed and ease of ordering". So there are no checkout-friction ideas (partial COD, COD restriction, fees).
+3. **How Gaurav works:** strategise in **plan mode** and explain plans in **simple language**. **Never start building (code, installs, PPTX) until he explicitly says "start".** Approving a plan is not a go-ahead.
+4. Every number needs a source (`work/10-sources.md`). Nothing from the do-not-use list.
+5. Log each session at the bottom of `work/R2-HANDOVER.md` and update `work/NEXT-SESSION.md`.
+
+---
+
+## 3. File map (what's current)
+
+Legend: ⭐ current, use it · 📚 background, still valid · ⚠️ partly superseded · 🗄️ old, reference only
+
+### Start-here files
+| File | Status | What it is |
+|---|---|---|
+| `00-MASTER.md` (this) | ⭐ | The index + master decisions |
+| [`work/NEXT-SESSION.md`](work/NEXT-SESSION.md) | ⭐ | Exactly where we left off + the next actions |
+| [`work/R2-HANDOVER.md`](work/R2-HANDOVER.md) | ⭐ running log | The full R2 history: R1 recap (§1), gaps (§2), decisions D1–D18, and **the session log at the bottom (the newest entries win)** |
+| [`CONTEXT.md`](CONTEXT.md) | ⭐ | Glossary: RTO, Rescue Bonus, Bonus-Eligible Order, Hold & Re-home, Refused-Parcel Router, Live/Demo mode |
+
+### Round 2 deck
+| File | Status | What it is |
+|---|---|---|
+| [`work/14-deck-handoff.md`](work/14-deck-handoff.md) | ⭐ **the deck source of truth** | Complete handoff for the deck teammate: story, R1 look rules, slides 0–9 content (v3), numbers cheat sheet, R1 fixes, do-not-use list, pending items, timeline. Same content: `work/14-deck-handoff.html` + artifact https://claude.ai/artifact/Gxp5kkpej7XvtMfYDUP3dQ (private; share from its menu) |
+| [`work/09-r2-slide-spec.md`](work/09-r2-slide-spec.md) | ⚠️ | Slide spec v2. **`14` overrides it where they differ** (14 adds the real-order strip, Flipkart table, Rescue Score, "Is it new?", Router v2 legal lanes; local disposal deferred; batched returns "up to 20–40%") |
+| [`work/10-sources.md`](work/10-sources.md) | ⭐ | Every figure with URL + quote, the Valmo rider-agreement clauses, the fact-check log (✅ / ❌ do not use) |
+
+### Solution depth
+| File | Status | What it is |
+|---|---|---|
+| [`work/13-refused-parcels.md`](work/13-refused-parcels.md) | ⭐ | Refused parcels: constraint stack C1–C11 (GST, e-way bill, non-GST sellers, FDI PN2, consumer rules, DPDP, custody, patents), precedents, **Router v2 design**, sizing, 30-day pilot |
+| [`work/06-solution-inventory-recovery.md`](work/06-solution-inventory-recovery.md) | 📚 | Earlier deep dive: GST statutory gap, Tier-2 agency model, the ₹145/₹8/5.5% economics, CEO asset-light objection, the Surat theft case |
+| [`work/07-problem-breakdown.md`](work/07-problem-breakdown.md) | 📚 | Solution-neutral problem breakdown with confidence marks |
+
+### Prototype
+| File | Status | What it is |
+|---|---|---|
+| [`work/08-prototype-spec.md`](work/08-prototype-spec.md) | ⭐ | **Prototype spec v3 (29 Sep).** Valmo ops console, hub only in the Refused-Parcel Desk, Rescue Score, Lucknow (UP), Router v2 lanes, WhatsApp failure check, and a build order re-cut around the 1 Oct mentor call (Demo mode first, Live after) |
+| `work/diagrams/` | ⭐ | Excalidraw diagrams of spec v3 (29 Sep): `1-high-level` (architecture), `2-sync-flow` (one order day, end to end), `3-plan-and-schedule` (scope, build order, guardrails, mentor questions). Open at excalidraw.com |
+| [`work/15-prototype-v2-handoff.md`](work/15-prototype-v2-handoff.md) | ⭐ **the prototype build plan now** | 30 Sep review of the suggested final plan + frozen specs A–D (lifecycle, events, ledger, verdict), tiers, 15 scenario tests, cut list. **Tier 0 (Session 8) and Tier 1 (Session 9) are done in `R2-HANDOVER.md`** |
+| [`work/18-simplify-pilot-plan.md`](work/18-simplify-pilot-plan.md) | ⭐ **built (Session 11)** | 1 Oct plan to simplify the pilot maths: riders paired on past rate, pair-by-pair range everywhere, fair-comparison check, 2 safety rules, Top 20/10% only, Pilot 2 loop. Built and deployed; what changed and the new numbers are in `R2-HANDOVER.md` Session 11 and at the bottom of `work/16` |
+| [`work/17-prototype-audit.md`](work/17-prototype-audit.md) | ⭐ | 1 Oct audit of the prototype: Live Close pilot messages real phones, fake-attempt guardrail reads 0%, no git, stale README, and more |
+| [`work/16-deck-changes-prototype-v2.md`](work/16-deck-changes-prototype-v2.md) | ⭐ send to the deck teammate | Deck edits caused by prototype v2 (headline, bonus lifecycle, Router EV) + pending number fixes. **The section added at the bottom on 1 Oct (Session 11) is the final pilot method, rule table and numbers for slide 5; its top part's old rule table is superseded** |
+| [`work/12-prototype-theme.md`](work/12-prototype-theme.md) | ⭐ | Colours, fonts and real UI patterns copied from Valmo's own apps (Valmo Pilot = rider, Valmo Operations = hub), plus the R1 deck palette |
+| `research/ui-refs/` | ⭐ | Play Store screenshots of Valmo Pilot + Valmo Operations |
+| `prototype/` | ⭐ built + deployed | Vite + React 19 + TS. Demo mode complete (Live mode coded, WhatsApp sending blocked by the Twilio trial). Engine in `src/engine/` (incl. `verdict.ts`, `headline.ts`, `pilot.ts`), the day as a pure reducer in `src/domain/` (`lifecycle.ts`), screens in `src/pages/`. `npm test`, `npx tsc -b`, `npx oxlint`, `npm run build`; deploy with `node scripts/build-api.mjs && npx vercel deploy --prod --yes` |
+
+### Research
+| File | Status | What it is |
+|---|---|---|
+| [`work/11-survey-r2.md`](work/11-survey-r2.md) | ⭐ | R2 buyer survey: the short 1-minute version, what each question feeds, the result that would count against us, share messages, distribution plan |
+| `work/survey-r2-script.gs` | ⭐ | **Current** Google Apps Script (short survey + `getLinks`). The copy in `research/survey-r2-script.gs` is the **old long version**; ignore it |
+| `research/order1-valmo-whatsapp.jpg` | ⭐ | Gaurav's real Meesho COD order, Valmo WhatsApp (28 Sep). **Redact the rider's number + AWB before use** |
+| [`research/flipkart-whatsapp-messages.md`](research/flipkart-whatsapp-messages.md) | ⭐ | A teammate's Flipkart WhatsApp flow (redacted) + Flipkart vs Valmo table |
+| [`work/03-interview-script.md`](work/03-interview-script.md), [`work/05-why-each-question.md`](work/05-why-each-question.md) | 📚 | R1 rider interview script + rationale (reuse for top-up calls) |
+| [`work/04-survey.md`](work/04-survey.md) | 🗄️ | R1 survey (its refusal questions pool with R2) |
+| [`work/01-valmo-research.md`](work/01-valmo-research.md) | 📚 | R1 background research on Valmo/RTO |
+
+### Case + Round 1
+| File | Status | What it is |
+|---|---|---|
+| [`work/00-case-digest.md`](work/00-case-digest.md) | 📚 | All 6 DICE case briefs condensed; Valmo R2 asks + data pack |
+| `Meesho/DICE Challenge S3  Valmo Case studies.pdf` | 📚 | The original case (data pack incl. **RTO by distance: 15/17/22%**) |
+| `C:\Users\gaura\Downloads\GPS_IIT Bombay.pptx` / `.pdf` | ⭐ | **The final R1 submission**, the base file for the R2 deck |
+| [`work/HANDOVER.md`](work/HANDOVER.md), [`work/02-decisions.md`](work/02-decisions.md) | 🗄️ | R1 handover/decisions. Superseded by `R2-HANDOVER.md` where they conflict |
+| `Meesho DICE R1 - ValMo RTO.pptx`, `Meesho DICE 3.0 - Valmo RTO - Round 1.pptx`, `round1-deck.html` | 🗄️ | Earlier R1 drafts, not the submitted version |
+
+---
+
+## 4. Master decisions (these override anything older)
+
+**Story**
+- Hypothesis: **two-sided friction.** The customer pays nothing upfront; the rider is paid flat and only on success, so gives up on hard stops.
+- Through-line: **"carry Meesho's risk signal (TrustMesh) to the door and beyond."**
+
+**Three moves**
+1. **Now: Rescue Bonus.** ₹15 on a delivered order from the riskiest 20%; the score is hidden from the rider. It's paid on Valmo's existing **"Additional Incentive"** line, direct to the rider (from Valmo's published Delivery Services Agreement).
+2. **Next: Refused-Parcel Router v2.**
+   - Second chance (clean)
+   - Hold & Re-home: **same state only**, seller opt-in per SKU, seal check, invoice outside the parcel or digital; start with **non-GST sellers** (intra-state by law) in **Uttar Pradesh**
+   - Batched return (clean)
+   - Local disposal is deferred (legally grey)
+3. **Long-term: pay by difficulty** and judge carriers on **cost per successful delivery** (₹84.8 → ₹77.7).
+
+**The pilot decision rule (simplified 1 Oct, Session 11, built):** riders (not orders) are paired on their **past delivery rate** and a coin decides who in each pair gets the bonus. For each pair: the Bonus rider's delivery rate minus their partner's; the effect is the **average of those gaps**, and the **95% range** is the average ± about 2 × (spread of the gaps ÷ √pairs). GO only if the **low end** of that range clears break-even (8.6 per 100 flagged on the case basis at a 60% baseline; 10.3 with the ₹18 rider fee shown as a caveat). Otherwise RE-PRICE; KILL on a broken **safety rule (only two: normal orders fall by more than 1 point; over 5% of Bonus riders' attempts look fake, once there are 30 attempts)** or an effect under +3; INCOMPLETE under 90% final orders or **6 pairs**; INVALID if the rule changed after planning. A ✔ "Fair comparison" line checks both groups have the same past rate and the same mix of three risk bands (warns over 5 points). The old rider-clustered range is kept only as a hidden cross-check in "How the maths works". If it doesn't pay we never re-read the data: we change one lever (Top 10% or a smaller bonus) and run **Pilot 2** with its rule fixed before it starts. **Simulated numbers (24 pairs):** default says GO (+13.6), smallest effect about 4 per 100, P(GO) is about 58% at +12 and 97% at +15; a real pilot will be noisier than the simulation. The headline is "the bonus caused X extra deliveries at ₹Y", never a raw delivery rate. This supersedes the deck's "GO at +9 or more" and the 30 Sep clustered rule (smallest effect 7.5, P(GO) 27%).
+
+**Risk score:** use TrustMesh, don't rebuild it. Add a thin **Rescue Score** with last-mile signals (distance, new/unclear address, phone reachability, past failures). Day 1 is rules; after the pilot, an uplift model (Meituan precedent).
+
+**Novelty:** partially exists. Nobody pays per order for the *successful delivery of risk-flagged orders* (Meituan and Uber are for acceptance; Ekart and Valmo's FAD incentive cover all orders).
+
+**Prevent levers, sharpened**
+- **P1 = two-way WhatsApp** (I'm home / Change time / Fix address / Pay now). Flipkart does it and Valmo doesn't, and Valmo already sends WhatsApp, so the effort is low.
+- **P2 = address confidence + fix before dispatch.**
+- **R2 proof-of-attempt** is folded into the bonus controls, plus a **customer WhatsApp check of reschedule/attempt claims** (a Flipkart precedent).
+
+**Deck:** 10 slides incl. cover (0 Cover · 1 Exec · 2 Where/why · 3 Prioritised · 4 Rescue Bonus · 5 Economics & pilot · 6 Refused parcels · 7 30-60-90 · 8 Risks · 9 10x), in R1's exact look (20×11.25 in, ~350–400 words/slide, R1 colours).
+
+**Prototype screens:**
+- Valmo ops console (central team)
+- Rider app (clone of Valmo Pilot + a green "₹ +15 Bonus Eligible" chip)
+- Customer WhatsApp (Valmo's real wording + buttons; Twilio sandbox live; Demo mode for judges)
+- Refused-Parcel Desk (a new item in the Valmo Operations app)
+- Pilot simulator (GO / RE-PRICE / KILL)
+
+**Rejected on purpose:** partial COD and COD restriction as our idea; "move RTO upstream" as the headline (a pivot); tiered bonuses in the pilot.
+
+## 5. Key numbers (full list with sources in `work/14-deck-handoff.md` §5)
+- Valmo RTO 17% (COD 20% / prepaid 5%); ₹50 forward / ₹120 reverse; distance effect 15/17/22%
+- Bonus: break-even +8.6 per 100 flagged (10.3 conservative); ₹62–184 cr/yr; −3 RTO pts
+- Hold & Re-home: ₹145 per match, ₹8 to hold, **break-even 5.5%**; ₹50/140/270 cr scenarios
+- 1 RTO pt ≈ ₹92 cr/yr · average order ₹265 · Valmo share ~50% (Q1 FY27) · prepaid shift explains ~70% of the RTO drop
+
+## 6. People
+- **Gaurav:** lead; prototype with Claude
+- **Deck teammate:** builds the PPTX from `14-deck-handoff.md`
+- **Research teammate:** survey, calls, cause-chart build-up
+- **Mentor:** Meesho, via Slack

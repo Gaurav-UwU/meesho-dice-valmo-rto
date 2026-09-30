@@ -1,0 +1,503 @@
+<title>Rescue the Risky Parcel</title>
+<meta name="description" content="Meesho DICE 3.0 Round 1 — Valmo RTO: sizing the market, the challenge stats, the rider's belief barrier, a Prevent/Rescue/Recover matrix, and a 30-day incentive pilot.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#FBF3E4; --surface:#FFFDF7; --surface-2:#F6EAD6;
+  --ink:#37132A; --ink-soft:#6E4A5E; --ink-faint:#9A7C8B;
+  --rule:rgba(91,16,57,.20); --rule-strong:rgba(91,16,57,.42);
+  --aubergine:#5B1039; --magenta:#D81E75; --amber:#B45309; --teal:#0E7C8B;
+  --coral:#EF5B6B;
+  --pursue:rgba(216,30,117,.11); --leak:rgba(239,91,107,.16);
+  --shadow:0 .5cqw 2cqw -1cqw rgba(60,12,36,.28);
+  --disp:'Poppins',system-ui,sans-serif;
+  --body:'IBM Plex Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#241019; --surface:#31141F; --surface-2:#3C1A29;
+    --ink:#F4E7DA; --ink-soft:#CDA9BA; --ink-faint:#9C7789;
+    --rule:rgba(244,231,218,.18); --rule-strong:rgba(244,231,218,.36);
+    --aubergine:#C77CA0; --magenta:#F5478F; --amber:#E5943D; --teal:#3BB8C9;
+    --coral:#F2707E;
+    --pursue:rgba(245,71,143,.16); --leak:rgba(242,112,126,.18);
+    --shadow:0 .5cqw 2cqw -1cqw rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#241019; --surface:#31141F; --surface-2:#3C1A29;
+  --ink:#F4E7DA; --ink-soft:#CDA9BA; --ink-faint:#9C7789;
+  --rule:rgba(244,231,218,.18); --rule-strong:rgba(244,231,218,.36);
+  --aubergine:#C77CA0; --magenta:#F5478F; --amber:#E5943D; --teal:#3BB8C9;
+  --coral:#F2707E;
+  --pursue:rgba(245,71,143,.16); --leak:rgba(242,112,126,.18);
+  --shadow:0 .5cqw 2cqw -1cqw rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);
+  -webkit-font-smoothing:antialiased;padding:24px 16px 40px}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
+.intro{font-family:var(--body);color:var(--ink-soft);font-size:14px;line-height:1.5;
+  border-left:3px solid var(--magenta);padding-left:12px}
+.intro b{color:var(--ink);font-weight:600}
+
+.slide{position:relative;width:100%;aspect-ratio:16/9;background:var(--surface);
+  border:1px solid var(--rule);border-radius:6px;overflow:hidden;
+  container-type:size;box-shadow:var(--shadow)}
+.pad{position:absolute;inset:0;padding:2.7cqw 3.4cqw 1.2cqw;display:flex;flex-direction:column}
+
+/* header */
+.shead{display:flex;justify-content:space-between;align-items:baseline;
+  border-bottom:.18cqw solid var(--rule-strong);padding-bottom:1cqw}
+.eyebrow{font-family:var(--mono);font-size:1.02cqw;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--magenta);font-weight:500}
+.eyebrow .n{color:var(--ink-faint)}
+.brandmark{font-family:var(--disp);font-weight:700;font-size:1.05cqw;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint)}
+.brandmark b{color:var(--aubergine)}
+h1{font-family:var(--disp);font-weight:700;font-size:2.35cqw;line-height:1.1;
+  letter-spacing:-.01em;margin:1.05cqw 0 .35cqw;text-wrap:balance}
+.dek{font-size:1.18cqw;color:var(--ink-soft);line-height:1.4;max-width:88cqw}
+.dek b{color:var(--ink);font-weight:600}
+
+/* generic bits */
+.cols{display:grid;gap:1.4cqw;margin-top:.95cqw;flex:0 1 auto}
+.panel{background:var(--surface-2);border:.14cqw solid var(--rule);
+  border-radius:.5cqw;padding:1.25cqw 1.3cqw;display:flex;flex-direction:column;gap:.7cqw}
+.panel.accent{border-left:.42cqw solid var(--magenta)}
+.panel.teal{border-left:.42cqw solid var(--teal)}
+.panel.amber{border-left:.42cqw solid var(--amber)}
+.ptitle{font-family:var(--disp);font-weight:600;font-size:1.14cqw;
+  letter-spacing:.02em;color:var(--ink);display:flex;align-items:center;gap:.5cqw;
+  justify-content:space-between}
+.ptitle .tag{font-family:var(--mono);font-size:.8cqw;font-weight:500;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
+ul{list-style:none;display:flex;flex-direction:column;gap:.5cqw}
+li{font-size:1cqw;line-height:1.32;color:var(--ink-soft);
+  padding-left:1.1cqw;position:relative}
+li::before{content:"";position:absolute;left:0;top:.5cqw;width:.42cqw;height:.42cqw;
+  border-radius:50%;background:var(--magenta)}
+li.t::before{background:var(--teal)} li.a::before{background:var(--amber)}
+li b{color:var(--ink);font-weight:600}
+.note{font-family:var(--mono);font-size:.85cqw;color:var(--ink-faint);line-height:1.4}
+
+.evidence{margin-top:auto;padding-top:.5cqw;border-top:.14cqw solid var(--rule);
+  font-family:var(--mono);font-size:.74cqw;color:var(--ink-faint);line-height:1.35}
+.evidence b{color:var(--ink-soft);font-weight:500}
+
+/* ---------- slide 1 ---------- */
+.s1 .cols{grid-template-columns:1.04fr .78fr 1.02fr;align-items:stretch}
+.s1 .panel{justify-content:flex-start}
+.chartcard{display:flex;flex-direction:column}
+.chartcard h3{font-family:var(--disp);font-weight:600;font-size:1cqw;color:var(--ink)}
+.chartcard .sub{font-size:.86cqw;color:var(--ink-soft);margin:.15cqw 0 .7cqw;line-height:1.3}
+.bars{display:flex;align-items:flex-end;gap:1cqw;height:8.1cqw;
+  padding-top:.35cqw;border-bottom:.16cqw solid var(--rule-strong)}
+.qtr{flex:1;display:flex;flex-direction:column;align-items:center;gap:.3cqw;height:100%;justify-content:flex-end}
+.stack{position:relative;width:74%;display:flex;flex-direction:column;justify-content:flex-end;height:var(--h,100%)}
+.seg-gap{background:var(--leak);border:.1cqw dashed var(--coral);border-bottom:none}
+.seg-nmv{background:var(--magenta);border-radius:.3cqw .3cqw 0 0}
+.seg-gap,.seg-nmv{width:100%}
+.qtr .lab{font-family:var(--mono);font-size:.78cqw;color:var(--ink-faint)}
+.qtr .val{font-family:var(--mono);font-size:.74cqw;color:var(--ink-soft);font-weight:500}
+.legend{display:flex;gap:1cqw;margin-top:.55cqw;flex-wrap:wrap}
+.legend span{font-family:var(--mono);font-size:.8cqw;color:var(--ink-soft);
+  display:flex;align-items:center;gap:.35cqw}
+.sw{width:.85cqw;height:.85cqw;border-radius:.15cqw;display:inline-block}
+.sw.nmv{background:var(--magenta)} .sw.gap{background:var(--leak);border:.1cqw dashed var(--coral)}
+.insset{display:flex;flex-direction:column;gap:.55cqw;margin-top:.7cqw}
+.ins{background:var(--surface);border:.14cqw solid var(--rule);border-left:.42cqw solid var(--aubergine);
+  border-radius:.35cqw;padding:.55cqw .75cqw}
+.ins .h{font-family:var(--disp);font-weight:600;font-size:.9cqw;color:var(--ink)}
+.ins p{font-size:.84cqw;color:var(--ink-soft);line-height:1.3;margin-top:.15cqw}
+.ins p b{color:var(--magenta);font-weight:600}
+
+.statlist{display:flex;flex-direction:column;gap:.5cqw}
+.stat{display:flex;gap:.8cqw;align-items:baseline}
+.stat .v{font-family:var(--disp);font-weight:700;font-size:1.72cqw;color:var(--ink);
+  line-height:1;flex:none;min-width:5.9cqw}
+.stat .v.m{color:var(--magenta)} .stat .v.t{color:var(--teal)} .stat .v.c{color:var(--coral)}
+.stat .k{font-size:.88cqw;color:var(--ink-soft);line-height:1.26}
+.stat .k b{color:var(--ink);font-weight:600}
+
+.belief{background:var(--surface);border:.14cqw solid var(--coral);border-radius:.4cqw;
+  padding:.75cqw .85cqw;display:flex;flex-direction:column;gap:.3cqw}
+.belief .h{font-family:var(--disp);font-weight:700;font-size:.96cqw;color:var(--coral);
+  letter-spacing:.02em}
+.belief p{font-size:.9cqw;color:var(--ink-soft);line-height:1.34}
+.belief p b{color:var(--ink);font-weight:600}
+.loop{display:flex;flex-direction:column;gap:.32cqw;margin-top:.3cqw}
+.loop .step{font-size:.88cqw;color:var(--ink-soft);display:flex;gap:.5cqw;align-items:flex-start;line-height:1.28}
+.loop .step i{font-family:var(--mono);color:var(--magenta);font-style:normal;font-weight:500}
+.loop .arw{color:var(--ink-faint);font-size:.85cqw;padding-left:1.3cqw;line-height:.9}
+.fix{font-size:.92cqw;color:var(--ink);line-height:1.36;border-left:.42cqw solid var(--magenta);
+  padding-left:.7cqw;margin-top:.15cqw}
+.fix b{color:var(--magenta);font-weight:600}
+
+/* ---------- slide 2 ---------- */
+.s2 .cols{grid-template-columns:.82fr 1.18fr;align-items:stretch}
+.three{display:flex;flex-direction:column;gap:.8cqw;justify-content:space-between}
+.three .rrr{flex:1}
+.rrr{background:var(--surface-2);border:.14cqw solid var(--rule);border-radius:.45cqw;
+  padding:.8cqw .9cqw;display:flex;flex-direction:column;gap:.35cqw}
+.rrr .k{font-family:var(--disp);font-weight:700;font-size:1.08cqw;letter-spacing:.02em;
+  display:flex;align-items:center;gap:.5cqw}
+.rrr .k .dot{width:.9cqw;height:.9cqw;display:inline-block;flex:none}
+.dot.circle{background:var(--magenta);border-radius:50%}
+.dot.tri{width:0;height:0;background:none;border-left:.52cqw solid transparent;
+  border-right:.52cqw solid transparent;border-bottom:.9cqw solid var(--teal)}
+.dot.sq{background:var(--amber);border-radius:.1cqw}
+.rrr .stage{font-family:var(--mono);font-size:.76cqw;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-faint)}
+.rrr ul{gap:.3cqw}
+.rrr li{font-size:.86cqw;line-height:1.28;padding-left:.95cqw}
+.rrr li::before{top:.42cqw;width:.36cqw;height:.36cqw}
+.rrr.hero{border:.16cqw solid var(--magenta);background:var(--pursue)}
+
+.mxwrap{display:flex;flex-direction:column;gap:1.2cqw;margin-left:2.2cqw}
+.matrix{position:relative;background:var(--surface-2);border:.16cqw solid var(--rule-strong);
+  border-radius:.5cqw;flex:1;min-height:21cqw}
+.quad{position:absolute;width:50%;height:50%;display:flex;padding:.6cqw .75cqw}
+.quad span{font-family:var(--disp);font-weight:700;font-size:.94cqw;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-faint);opacity:.72}
+.q-pursue{left:0;top:0;background:var(--pursue);align-items:flex-start;justify-content:flex-start}
+.q-pursue span{color:var(--magenta);opacity:1}
+.q-assess{right:0;top:0;align-items:flex-start;justify-content:flex-end}
+.q-consider{left:0;bottom:0;align-items:flex-end;justify-content:flex-start}
+.q-defer{right:0;bottom:0;align-items:flex-end;justify-content:flex-end}
+.midline{position:absolute;background:var(--rule-strong)}
+.midline.v{left:50%;top:0;bottom:0;width:.12cqw}
+.midline.h{top:50%;left:0;right:0;height:.12cqw}
+.axis-x{position:absolute;left:0;right:0;bottom:-1.75cqw;text-align:center;
+  font-family:var(--mono);font-size:.82cqw;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+.axis-y{position:absolute;top:50%;left:-2.3cqw;transform:translateY(-50%) rotate(-90deg);
+  transform-origin:center;font-family:var(--mono);font-size:.82cqw;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-soft);white-space:nowrap}
+.pt{position:absolute;transform:translate(-50%,50%);
+  left:calc(var(--x)*1%);bottom:calc(var(--y)*1%);display:flex;align-items:center;gap:.38cqw;z-index:2}
+.pt .mk{flex:none}
+.pt.circle .mk{width:1cqw;height:1cqw;border-radius:50%;background:var(--magenta);border:.14cqw solid var(--surface)}
+.pt.tri .mk{width:0;height:0;border-left:.58cqw solid transparent;border-right:.58cqw solid transparent;
+  border-bottom:1cqw solid var(--teal)}
+.pt.sq .mk{width:.95cqw;height:.95cqw;background:var(--amber);border:.14cqw solid var(--surface)}
+.pt .pl{font-size:.8cqw;line-height:1.13;color:var(--ink);background:var(--surface);
+  border:.1cqw solid var(--rule);border-radius:.28cqw;padding:.16cqw .34cqw;max-width:12cqw}
+.pt.left .pl{order:-1}
+.pt.forbidden .mk{opacity:.4;filter:grayscale(1)}
+.pt.forbidden .pl{color:var(--ink-faint);text-decoration:line-through;text-decoration-thickness:.08cqw}
+.effbox{background:var(--surface);border:.14cqw solid var(--rule);border-radius:.4cqw;
+  padding:.5cqw .7cqw;font-size:.8cqw;color:var(--ink-soft);line-height:1.36}
+.effbox b{color:var(--ink);font-weight:600;font-family:var(--disp)}
+.effbox .tags{display:flex;flex-wrap:wrap;gap:.3cqw .55cqw;margin-top:.25cqw}
+.effbox .tags span{font-family:var(--mono);font-size:.78cqw;color:var(--ink-soft);
+  background:var(--surface-2);border:.1cqw solid var(--rule);border-radius:.5cqw;padding:.08cqw .4cqw}
+
+/* ---------- slide 3 ---------- */
+.s3 .cols{grid-template-columns:.92fr .8fr 1.05fr;align-items:stretch}
+.s3 .panel{gap:.7cqw}
+.flow{display:flex;flex-direction:column;gap:.36cqw}
+.fstep{background:var(--surface-2);border:.14cqw solid var(--rule);border-radius:.4cqw;
+  padding:.55cqw .75cqw;font-size:.9cqw;color:var(--ink-soft);line-height:1.3}
+.fstep b{color:var(--ink);font-weight:600}
+.fstep.hi{border-left:.42cqw solid var(--magenta)}
+.farrow{align-self:center;color:var(--ink-faint);font-size:.95cqw;line-height:.35}
+.split{display:flex;flex-direction:column;gap:.28cqw;margin-top:.25cqw}
+.split .bar{display:flex;height:1.5cqw;border-radius:.22cqw;overflow:hidden;border:.12cqw solid var(--rule)}
+.split .bar .hub{background:var(--magenta);display:flex;align-items:center;justify-content:center;
+  color:#fff;font-family:var(--mono);font-size:.74cqw;flex:0 0 60%}
+.split .bar .rider{background:var(--amber);display:flex;align-items:center;justify-content:center;
+  color:#fff;font-family:var(--mono);font-size:.74cqw;flex:1}
+.split .cap{font-family:var(--mono);font-size:.76cqw;color:var(--ink-faint)}
+.tl{display:flex;flex-direction:column;gap:.5cqw}
+.wk{display:grid;grid-template-columns:5.4cqw 1fr;gap:.6cqw;align-items:start}
+.wk .d{font-family:var(--mono);font-size:.8cqw;color:var(--magenta);font-weight:500;
+  border-right:.14cqw solid var(--rule);padding-right:.45cqw;line-height:1.24}
+.wk .c{font-size:.88cqw;color:var(--ink-soft);line-height:1.3}
+.wk .c b{color:var(--ink);font-weight:600}
+.kline{font-family:var(--disp);font-weight:600;font-size:1cqw;color:var(--ink);
+  line-height:1.32;border-left:.42cqw solid var(--magenta);padding-left:.65cqw}
+.kline b{color:var(--magenta)}
+.econ{display:flex;flex-direction:column;gap:.4cqw}
+.eqbar{display:grid;grid-template-columns:5cqw 1fr;align-items:center;gap:.55cqw}
+.eqbar .lab{font-family:var(--mono);font-size:.8cqw;color:var(--ink-soft);text-align:right}
+.eqbar .track{position:relative;height:1.4cqw;background:var(--surface);border:.12cqw solid var(--rule);border-radius:.2cqw}
+.eqbar .fill{position:absolute;top:0;bottom:0;border-radius:.15cqw}
+.eqbar .fill.pos{background:var(--teal)}
+.eqbar .zero{position:absolute;top:-.22cqw;bottom:-.22cqw;width:.12cqw;background:var(--rule-strong);left:38%}
+.eqbar .v{position:absolute;font-family:var(--mono);font-size:.74cqw;color:var(--ink);top:.16cqw}
+.measure{display:grid;grid-template-columns:1fr 1fr;gap:.4cqw .75cqw}
+.measure div{font-size:.83cqw;color:var(--ink-soft);line-height:1.24;padding-left:.85cqw;position:relative}
+.measure div::before{content:"";position:absolute;left:0;top:.4cqw;width:.34cqw;height:.34cqw;
+  background:var(--teal);border-radius:50%}
+.measure b{color:var(--ink);font-weight:600}
+.risk{font-size:.82cqw;color:var(--ink-soft);line-height:1.32}
+.risk b{color:var(--ink);font-weight:600}
+
+@media (max-width:820px){
+  body{padding:12px 8px 28px}
+  .slide{aspect-ratio:auto}
+  .pad{position:static;padding:20px}
+  .evidence{margin-top:14px}
+  .s1 .cols,.s2 .cols,.s3 .cols{grid-template-columns:1fr}
+  .mxwrap{margin-left:0}
+  h1{font-size:24px}
+  .slide *{font-size:13px!important}
+  h1{font-size:24px!important}.stat .v{font-size:22px!important}
+  .bars{height:150px}.matrix{min-height:340px}
+}
+@media print{
+  body{background:#fff;padding:0}
+  .intro{display:none}.wrap{gap:0}
+  .slide{border:none;border-radius:0;box-shadow:none;page-break-after:always;width:100%}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <p class="intro"><b>Meesho DICE 3.0 · Business Track · Round 1.</b> Case: Valmo — reduce Return-to-Origin.
+  Slide 1 sizes the market and finds the opening; slide 2 prioritises; slide 3 ships one 30-day pilot.
+  Every figure is sourced in the strip beneath each slide.</p>
+
+  <!-- ============ SLIDE 1 ============ -->
+  <section class="slide s1">
+   <div class="pad">
+    <div class="shead">
+      <span class="eyebrow"><span class="n">01 /</span> Sizing · Challenge · Opportunity</span>
+      <span class="brandmark">Meesho <b>DICE</b> · Valmo RTO</span>
+    </div>
+    <h1>The orders keep growing. The deliveries don’t keep up — the rider has written off cash-on-delivery.</h1>
+    <p class="dek">Every quarter Meesho wins more demand and a wider slice never becomes a delivered sale. Almost all the loss is CoD — and the person at the door has stopped trying for it.</p>
+
+    <div class="cols">
+      <!-- LEFT: sizing -->
+      <div class="panel teal">
+        <div class="ptitle">Sizing the opportunity <span class="tag">Meesho market</span></div>
+        <div class="chartcard">
+          <h3>Placed value (GMV) vs. realised value (NMV)</h3>
+          <p class="sub">Full bar = GMV (all orders placed). Solid = NMV (orders <b>delivered</b>). The gap = cancellations + RTO + returns + discount. ₹ crore / quarter.</p>
+          <div class="bars">
+            <div class="qtr"><span class="val">15.1k</span>
+              <div class="stack" style="--h:79.4%"><div class="seg-gap" style="height:42.7%"></div><div class="seg-nmv" style="height:57.3%"></div></div>
+              <span class="lab">Q1FY26</span></div>
+            <div class="qtr"><span class="val">18.3k</span>
+              <div class="stack" style="--h:96.3%"><div class="seg-gap" style="height:42.7%"></div><div class="seg-nmv" style="height:57.3%"></div></div>
+              <span class="lab">Q2FY26</span></div>
+            <div class="qtr"><span class="val">18.3k</span>
+              <div class="stack" style="--h:95.9%"><div class="seg-gap" style="height:39.9%"></div><div class="seg-nmv" style="height:60.1%"></div></div>
+              <span class="lab">Q3FY26</span></div>
+            <div class="qtr"><span class="val">18.9k</span>
+              <div class="stack" style="--h:99.4%"><div class="seg-gap" style="height:40.0%"></div><div class="seg-nmv" style="height:60.0%"></div></div>
+              <span class="lab">Q4FY26</span></div>
+            <div class="qtr"><span class="val">19.1k</span>
+              <div class="stack" style="--h:100%"><div class="seg-gap" style="height:39.0%"></div><div class="seg-nmv" style="height:61.0%"></div></div>
+              <span class="lab">Q1FY27</span></div>
+          </div>
+          <div class="legend">
+            <span><span class="sw nmv"></span>Realised — NMV</span>
+            <span><span class="sw gap"></span>Lost pre-doorstep — cancel + RTO + returns + discount</span>
+          </div>
+        </div>
+        <div class="insset">
+          <div class="ins"><div class="h">≈ ₹7,400 cr slips away every quarter</div>
+            <p>Only <b>~61%</b> of placed value became a delivered sale in Q1 FY27 — roughly <b>₹30,000 cr/year</b>
+              of demand Meesho already won, then lost.</p></div>
+          <div class="ins"><div class="h">Cutting RTO converts straight to revenue</div>
+            <p>Q1 FY27 NMV grew <b>+34% YoY</b> vs orders <b>+29%</b>. Meesho credits the gap to
+              “lower Cancellations and RTO rates.” <b>RTO down = top line up, ~1:1.</b></p></div>
+        </div>
+      </div>
+
+      <!-- MIDDLE: challenge -->
+      <div class="panel accent">
+        <div class="ptitle">The challenge <span class="tag">5 stats</span></div>
+        <div class="statlist">
+          <div class="stat"><span class="v m">1 in 6</span><span class="k">parcels shipped never reach the buyer — <b>blended ≈17% RTO</b>, ~136 mn Valmo parcels/yr</span></div>
+          <div class="stat"><span class="v">20% <span style="font-size:.62em;color:var(--ink-faint)">vs</span> 5%</span><span class="k">CoD vs prepaid RTO. <b>CoD is 4× worse</b> — and CoD is <b>80%</b> of Valmo orders</span></div>
+          <div class="stat"><span class="v c">₹170</span><span class="k">an RTO costs ₹170 vs <b>₹50</b> for a good delivery. Last mile = <b>42%</b> of forward cost</span></div>
+          <div class="stat"><span class="v c">75.85%</span><span class="k">CoD success after the mix was cut 78.5%→72% (was 78.05%) — <b>the prepaid push made CoD worse</b></span></div>
+          <div class="stat"><span class="v">4.5</span><span class="k">handovers per Valmo order — a fragmented, asset-light chain; <b>each one a failure surface</b></span></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: opportunity -->
+      <div class="panel amber">
+        <div class="ptitle">Where the opportunity is <span class="tag">field · n=8 riders</span></div>
+        <p class="note">Every other node just moves boxes. The <b style="color:var(--ink)">rider is the only person who meets the customer</b> — so that is where the intervention has to land.</p>
+        <div class="belief">
+          <span class="h">The rider’s rule: “CoD = the customer will cancel”</span>
+          <p>For a <b>prepaid</b> order he makes <b>2–3 calls</b> to reach the customer. For a <b>CoD</b> order he makes
+            <b>none</b> — he has decided it will fail. The odds it actually cancels are low, but the belief has hardened into a rule.</p>
+        </div>
+        <div class="loop">
+          <div class="step"><i>1</i><span>Order is CoD &amp; looks risky → “this one’s dead”</span></div>
+          <div class="arw">↓</div>
+          <div class="step"><i>2</i><span>He skips the calls, the wait, the neighbour-ask</span></div>
+          <div class="arw">↓</div>
+          <div class="step"><i>3</i><span>It fails → belief confirmed → the next CoD gets even less</span></div>
+        </div>
+        <p class="fix">The opening isn’t “make him try harder.” It’s <b>remove the barrier</b> — get a CoD order the same
+          2–3 calls a prepaid order already gets. Close the effort gap, don’t raise the ceiling.</p>
+      </div>
+    </div>
+
+    <div class="evidence">
+      <b>Sources —</b> Meesho Q1 FY27 Shareholders’ Letter (GMV/NMV, YoY, RTO) · Meesho RHP prospectus pp. 96–97 (CoD/prepaid success) · DICE Valmo case data pack · Field: 8 Valmo riders, Mumbai, Sep 2026.
+    </div>
+   </div>
+  </section>
+
+  <!-- ============ SLIDE 2 ============ -->
+  <section class="slide s2">
+   <div class="pad">
+    <div class="shead">
+      <span class="eyebrow"><span class="n">02 /</span> Prevent · Rescue · Recover</span>
+      <span class="brandmark">Meesho <b>DICE</b> · Valmo RTO</span>
+    </div>
+    <h1>Three ways to fight RTO. Plot them on impact vs effort — one move is cheap and hits hardest.</h1>
+    <p class="dek">The brief bars checkout-side friction, so we worked the parcel’s journey instead. <b>Effort</b> is a composite — the six parameters are in the box below the matrix.</p>
+
+    <div class="cols">
+      <div class="three">
+        <div class="rrr teal">
+          <div class="k"><span class="dot tri"></span>Prevent</div>
+          <div class="stage">before the parcel leaves the hub</div>
+          <ul>
+            <li class="t">Confirm customer availability / preferred slot</li>
+            <li class="t">Clean &amp; geo-locate the address</li>
+            <li class="t"><b>Risk-score both prepaid &amp; CoD</b>, act on the flag pre-dispatch</li>
+          </ul>
+        </div>
+        <div class="rrr hero">
+          <div class="k"><span class="dot circle"></span>Rescue</div>
+          <div class="stage">parcel in the field, flagged risky</div>
+          <ul>
+            <li>Carry the risk flag to the hub + rider</li>
+            <li><b>Incentivise the hub</b> for flagged orders <b>delivered</b> → hub shares with the rider</li>
+            <li>Proof-of-visit to kill fake “attempted”</li>
+          </ul>
+        </div>
+        <div class="rrr amber">
+          <div class="k"><span class="dot sq"></span>Recover</div>
+          <div class="stage">customer has refused it</div>
+          <ul>
+            <li class="a">Resell locally / hold in a local buffer, redeploy to nearby demand</li>
+            <li class="a">Short hold-and-retry before the ₹120 haul-back</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mxwrap">
+        <div class="matrix">
+          <div class="axis-y">Impact  →</div>
+          <div class="axis-x">Effort  →</div>
+          <div class="midline v"></div><div class="midline h"></div>
+          <div class="quad q-pursue"><span>Pursue</span></div>
+          <div class="quad q-assess"><span>Assess</span></div>
+          <div class="quad q-consider"><span>Consider</span></div>
+          <div class="quad q-defer"><span>Defer</span></div>
+
+          <!-- Rescue (circle, magenta) -->
+          <div class="pt circle" style="--x:24;--y:78"><span class="mk"></span><span class="pl"><b>Incentivise hub for flagged orders delivered</b></span></div>
+          <div class="pt circle" style="--x:34;--y:60"><span class="mk"></span><span class="pl">Carry the risk flag to hub + rider</span></div>
+          <div class="pt circle" style="--x:19;--y:45"><span class="mk"></span><span class="pl">Proof-of-visit vs fake “attempted”</span></div>
+          <!-- Prevent (triangle, teal) -->
+          <div class="pt tri" style="--x:24;--y:29"><span class="mk"></span><span class="pl">Dual-mode risk scoring pre-dispatch</span></div>
+          <div class="pt tri left" style="--x:70;--y:56"><span class="mk"></span><span class="pl">Address clean-up / geocoding</span></div>
+          <div class="pt tri left" style="--x:82;--y:68"><span class="mk"></span><span class="pl">Confirm availability / slot</span></div>
+          <div class="pt tri forbidden left" style="--x:80;--y:36"><span class="mk"></span><span class="pl">Force prepaid / CoD gating — brief forbids</span></div>
+          <!-- Recover (square, amber) -->
+          <div class="pt sq left" style="--x:85;--y:83"><span class="mk"></span><span class="pl">Local resell / inventory buffer</span></div>
+          <div class="pt sq left" style="--x:52;--y:18"><span class="mk"></span><span class="pl">Hold-and-retry window</span></div>
+        </div>
+        <div class="effbox">
+          <b>Effort =</b> weighted blend of —
+          <span class="tags">
+            <span>engineering lift</span><span>per-parcel cost</span><span>time-to-live (≤30d?)</span>
+            <span>brief-permissibility</span><span>network disruption</span><span>behaviour / pass-through risk</span>
+          </span>
+          <div style="margin-top:.3cqw">The <b style="color:var(--magenta)">hub incentive</b> scores lowest on every one: the score exists, the payout rail
+            exists, no new infra, brief-clean (no cut to pay, no checkout friction) — and it lands exactly where the parcel fails. → <b style="color:var(--magenta)">Pursue.</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="evidence">
+      <b>Method —</b> impact = evidenced effect on the 20%-vs-5% CoD–prepaid RTO gap (payment mode is dominant in Meesho’s filings) · effort = the six parameters above · Prevent scored on <b>incremental</b> impact (TrustMesh &amp; predictive routing already live) · Recover effort reflects GST place-of-supply + anti-pilferage controls · “brief forbids” = no hit to cost, rider pay, or ordering speed.
+    </div>
+   </div>
+  </section>
+
+  <!-- ============ SLIDE 3 ============ -->
+  <section class="slide s3">
+   <div class="pad">
+    <div class="shead">
+      <span class="eyebrow"><span class="n">03 /</span> 30-Day Pilot</span>
+      <span class="brandmark">Meesho <b>DICE</b> · Valmo RTO</span>
+    </div>
+    <h1>Pay the hub for rescued orders — and make sure the rider shares the win.</h1>
+    <p class="dek">Not paying for a second trip — <b>paying to break the “CoD is dead” reflex</b>, so a flagged order gets the
+      rider’s normal prepaid playbook: 2–3 calls, a short wait, ask a neighbour.</p>
+
+    <div class="cols">
+      <!-- mechanism -->
+      <div class="panel accent">
+        <div class="ptitle">How the money moves <span class="tag">mechanism</span></div>
+        <div class="flow">
+          <div class="fstep hi">Risk score flags the riskiest <b>~20% of all orders</b> — <b>both payment modes</b>. CoD is weighted higher, but a prepaid buyer with a flagged history can outscore a clean CoD one</div>
+          <div class="farrow">↓</div>
+          <div class="fstep">Flag rides with the parcel → hub queue + rider app: “high-risk · bonus on delivery”</div>
+          <div class="farrow">↓</div>
+          <div class="fstep hi">Meesho pays the <b>hub ₹15</b> per flagged order <b>delivered</b> — never for “attempted”, never on total volume</div>
+          <div class="farrow">↓</div>
+          <div class="fstep">Hub <b>splits it with the delivering rider</b>, same day, via the app — attributable, auditable</div>
+        </div>
+        <div class="split">
+          <div class="bar"><span class="hub">Hub ~60%</span><span class="rider">Rider ~40%</span></div>
+          <span class="cap">₹15 per rescued order · ratio tunable · both sides profit from a delivery that would have been an RTO</span>
+        </div>
+        <p class="note">Field finding (flag as assumption): the hub pays the rider today, not Meesho — so the incentive must route hub→rider. Keeps Valmo asset-light; no new employment relationship.</p>
+      </div>
+
+      <!-- timeline -->
+      <div class="panel">
+        <div class="ptitle">The 30 days <span class="tag">1 cluster · 3–5 hubs</span></div>
+        <div class="tl">
+          <div class="wk"><div class="d">Day 1–5</div><div class="c"><b>Set up.</b> Wire the risk score → hub app. Fix “flagged” = riskiest 20% of orders (~100k/mo). Baseline the prior 8 weeks of RTO for these hubs.</div></div>
+          <div class="wk"><div class="d">Day 6–19</div><div class="c"><b>Run live.</b> ₹15 bonus, split hub/rider, paid daily in-app. Hub dashboard shows bonus per rider.</div></div>
+          <div class="wk"><div class="d">Day 20–24</div><div class="c"><b>Mid-read.</b> Flagged-delivered vs baseline; check the four guardrail metrics for gaming.</div></div>
+          <div class="wk"><div class="d">Day 25–30</div><div class="c"><b>Readout + go / no-go.</b> Rule: ≥ 9 extra deliveries per 100 flagged → self-funding → widen.</div></div>
+        </div>
+        <p class="kline" style="font-size:.9cqw;font-weight:600">If it works → widen to the cluster, then the zone. If it <b>doesn’t</b> → the barrier wasn’t effort, and we’ve learned that for the price of one pilot.</p>
+        <p class="note">Honest test: the <b style="color:var(--ink)">unflagged orders in the same hubs are the control</b> — if their delivery rate is flat while flagged rises, the lift is real, not effort borrowed from elsewhere.</p>
+      </div>
+
+      <!-- economics + guardrails -->
+      <div class="panel amber">
+        <div class="ptitle">Why it works <span class="tag">unit economics</span></div>
+        <p class="kline">₹<b>120</b> to haul a parcel back.<br>₹<b>15</b> to reset the reflex that sent it there.</p>
+        <div class="econ">
+          <div class="eqbar"><span class="lab">69 / 100</span><div class="track"><span class="zero"></span><span class="v" style="left:40%">break-even</span></div></div>
+          <div class="eqbar"><span class="lab">75 / 100</span><div class="track"><span class="zero"></span><span class="fill pos" style="left:38%;width:14%"></span><span class="v" style="left:54%">+₹675</span></div></div>
+          <div class="eqbar"><span class="lab">80 / 100</span><div class="track"><span class="zero"></span><span class="fill pos" style="left:38%;width:26%"></span><span class="v" style="left:66%">+₹1,200</span></div></div>
+        </div>
+        <p class="note">Per 100 flagged orders (baseline ≈60 delivered), bonus ₹15 each. Break-even ≈ <b>9 extra deliveries</b>.
+          At scale (riskiest 20% of ≈587 mn CoD orders/yr) ≈ <b>₹80–140 cr/yr</b> net, plus recovered sales.</p>
+        <div class="ptitle" style="margin-top:.2cqw">Measure four things <span class="tag">it’s an experiment</span></div>
+        <div class="measure">
+          <div><b>Flagged delivered</b> — did the barrier lift?</div>
+          <div><b>Unflagged delivered</b> — did effort just move?</div>
+          <div><b>Returns after delivery</b> — was anyone pressured?</div>
+          <div><b>Net cost / order</b> — does it pay?</div>
+        </div>
+        <p class="risk"><b>Gaming —</b> pays on <b>delivered only</b> → cuts against fake attempts · rider-attributed in-app payout + audit → hub can’t skim · complaint tracking → no coercion · cap flagged at 20%, watch unflagged rate · the score stays Meesho’s, not the hub’s.</p>
+      </div>
+    </div>
+
+    <div class="evidence">
+      <b>Sources —</b> economics from DICE case data pack (₹120 rev, ₹50 fwd) + rider base pay ≈₹20/delivery (reported) · break-even = 9 × ₹120 ÷ (100 × ₹15) · risk-scoring per Meesho Q1 FY27 letter, extended here to both modes · Caveat: riders may be partly reading real customer behaviour — the control metrics above test that. Pilot, not rollout.
+    </div>
+   </div>
+  </section>
+</div>

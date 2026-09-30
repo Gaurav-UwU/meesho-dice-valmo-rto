@@ -1,0 +1,218 @@
+/* Customer phone: a stand-in for real WhatsApp. Tokens come from ui/tokens.css. */
+.cust-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--wa-chat-bg);
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+.cust-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--wa-header);
+  color: #fff;
+}
+.cust-header h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+.cust-header p {
+  margin: 1px 0 0;
+  font-size: 12px;
+  opacity: 0.85;
+}
+.cust-verified {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #25d366;
+  color: #fff;
+  font-size: 10px;
+  vertical-align: 1px;
+}
+.cust-avatar {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--valmo-navy);
+  color: var(--valmo-cyan);
+  font-weight: 700;
+  font-size: 18px;
+  display: grid;
+  place-items: center;
+}
+.cust-banner {
+  padding: 6px 12px;
+  background: #fff3d7;
+  color: #6b4a00;
+  font-size: 12px;
+  text-align: center;
+}
+.cust-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.7);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.cust-selector select {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 1px solid #c8ccd0;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+}
+.cust-link {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--wa-button);
+  font-size: 12px;
+  text-align: left;
+  text-decoration: underline;
+}
+.cust-chat {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cust-day {
+  align-self: center;
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: #fff;
+  color: #54656f;
+  font-size: 12px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+}
+.cust-row {
+  display: flex;
+  flex-direction: column;
+  max-width: 86%;
+}
+.cust-row.theirs {
+  align-self: flex-start;
+}
+.cust-row.mine {
+  align-self: flex-end;
+}
+.cust-bubble {
+  padding: 7px 9px 5px;
+  border-radius: 8px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.13);
+  color: #111b21;
+}
+.cust-bubble.theirs {
+  background: var(--wa-in);
+  border-top-left-radius: 0;
+}
+.cust-bubble.mine {
+  background: var(--wa-out);
+  border-top-right-radius: 0;
+}
+.cust-text {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.cust-time {
+  display: block;
+  margin-top: 2px;
+  text-align: right;
+  font-size: 11px;
+  color: #667781;
+}
+.cust-ticks {
+  color: #53bdeb;
+}
+.cust-otp {
+  margin-bottom: 6px;
+  padding: 8px 0;
+  border-radius: 8px;
+  background: #f0f2f5;
+  text-align: center;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  padding-left: 0.35em;
+  color: var(--wa-header);
+}
+.cust-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+}
+.cust-btn {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--wa-button);
+  font-size: 14.5px;
+  font-weight: 500;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.13);
+}
+.cust-btn:hover:not(:disabled) {
+  background: #f5f6f6;
+}
+.cust-btn:disabled {
+  color: #9aa5ab;
+  cursor: default;
+}
+.cust-composer {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 8px 12px 12px;
+  background: #f0f2f5;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+.cust-share {
+  min-height: 48px;
+  border: 0;
+  border-radius: 24px;
+  background: var(--wa-header);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+.cust-share:disabled {
+  opacity: 0.6;
+}
+.cust-composer-note {
+  text-align: center;
+  font-size: 11px;
+  color: #667781;
+}
+.cust-empty {
+  align-self: center;
+  margin: 24px 0 0;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: #fff;
+  color: #54656f;
+  font-size: 13px;
+  text-align: center;
+}
+.cust-root .proto-footer {
+  margin-top: auto;
+}
