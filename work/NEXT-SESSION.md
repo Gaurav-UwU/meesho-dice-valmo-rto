@@ -2,6 +2,8 @@
 
 **Last updated at the end of Session 12 (1 Oct): the multi-device sync and "new day" reset bug is FIXED in code (tests and a real-browser check pass) but NOT yet deployed.** Read [`../00-MASTER.md`](../00-MASTER.md) first, then this file, then the Session 12 entry at the bottom of `R2-HANDOVER.md`.
 
+> **Update (1 Oct, Session 13): the sync fix is merged into main (834 tests) and DEPLOYED to https://valmo-rescue-console.vercel.app. Vercel already has VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (checked with vercel env ls), and the live landing page offers "Several devices (shared day)". Steps 1 and 2 below are done; do steps 3 to 5 (the real-phone run, press Reset once with the admin token for an old-shape Supabase day).**
+
 ## ⭐ FIRST: deploy and try it on real phones
 1. `cd prototype && npx vitest run && npx tsc -b && npx oxlint && npm run build`, then `node scripts/build-api.mjs && npx vercel deploy --prod --yes` (needs Gaurav's Vercel login; none in the cloud session). Check `https://valmo-rescue-console.vercel.app/api/health`.
 2. Confirm the Vercel build has `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`; otherwise the landing page says the shared day is "not set up" and phones can only be ALONE (honest, but not what the demo needs). `LIVE_KEY` and `ADMIN_TOKEN` must be known to the team. No manual Reset is needed after this deploy: the server replaces the old-shape day by itself.
