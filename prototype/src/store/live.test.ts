@@ -353,3 +353,74 @@ describe('live store: it always says where this device stands', () => {
     expect(store.getInfo('lucknow')).toBe(a)
   })
 })
+
+describe('live store: recovery paths', () => {
+  it('when the server says the tap was on a reset day, it takes the server\'s day even if its day number is LOWER (row recreated)', async () => {
+    const f = fake()
+    f.state.day = nextDay(nextDay(day(9), 10), 11) // this device holds day 3
+    const store = createLiveStore(f.opts)
+    await store.ensureDay('lucknow')
+    expect(store.getState('lucknow')?.dayNo).toBe(3)
+    f.state.day = { ...day(12), dayId: 'recreated', dayNo: 1 } // the server lost its row and started again at day 1
+    f.state.respond = { ok: false, status: 409, body: { ok: false, code: 'day_reset', error: DAY_RESET_MESSAGE } }
+    await store.send('lucknow', { type: 'startDay' })
+    expect(store.getState('lucknow')?.dayId).toBe('recreated')
+  })
+
+  it('a damaged shared day is reported as a problem, not left on Loading', async () => {
+    const f = fake()
+    f.state.day = { ...day(3), stops: [] } as unknown as DayState
+    const store = createLiveStore(f.opts)
+    await store.ensureDay('lucknow')
+    expect(store.getInfo('lucknow')).toMatchObject({ link: 'problem', problem: 'unreadable' })
+    f.state.push?.(day(4))
+    expect(store.getInfo('lucknow').link).toBe('synced')
+  })
+
+  it('a refused join key on a TAP (key rotated, wrong key typed) also shows JOIN KEY REFUSED', async () => {
+    const f = fake()
+    const store = createLiveStore(f.opts)
+    await store.ensureDay('lucknow')
+    f.state.respond = { ok: false, status: 401, body: { ok: false, error: 'Not allowed' } }
+    await store.send('lucknow', { type: 'startDay' })
+    expect(store.getInfo('lucknow')).toMatchObject({ link: 'problem', problem: 'bad-key' })
+    f.state.respond = { ok: true, status: 200, body: { ok: true } }
+    await store.send('lucknow', { type: 'startDay' })
+    expect(store.getInfo('lucknow').link).toBe('synced')
+  })
+
+  it('reset tells the caller whether it worked (so a screen never claims a reset that failed)', async () => {
+    const f = fake()
+    const store = createLiveStore(f.opts)
+    expect(await store.reset('lucknow')).toBe(true)
+    f.state.respond = { ok: false, status: 401, body: { error: 'Not allowed' } }
+    expect(await store.reset('lucknow')).toBe(false)
+    const none = createLiveStore(fake({ getAdminToken: () => undefined }).opts)
+    expect(await none.reset('lucknow')).toBe(false)
+  })
+
+  it('does not poll while the tab is hidden, and polls again when it is shown', async () => {
+    vi.useFakeTimers()
+    try {
+      let hidden = true
+      const f = fake({ pollMs: 1000, isHidden: () => hidden })
+      const store = createLiveStore(f.opts)
+      await store.ensureDay('lucknow')
+      f.state.day = day(9)
+      await vi.advanceTimersByTimeAsync(3100)
+      expect(store.getState('lucknow')?.version).toBe(1)
+      hidden = false
+      await vi.advanceTimersByTimeAsync(1100)
+      expect(store.getState('lucknow')?.version).toBe(9)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('a Realtime subscription that fails does not stop the store from starting (the poll still works)', async () => {
+    const f = fake()
+    const store = createLiveStore({ ...f.opts, feed: { fetchDay: async () => f.state.day, watch: () => { throw new Error('ws blocked') } } })
+    await expect(store.ensureDay('lucknow')).resolves.toBeUndefined()
+    expect(store.getState('lucknow')).toBeDefined()
+  })
+})

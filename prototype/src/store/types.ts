@@ -41,6 +41,8 @@ export type SyncProblem =
   | 'bad-key'
   /** The shared day is newer than this page understands: reload to get the new version of the app */
   | 'app-too-old'
+  /** The shared day is there but damaged, so it cannot be read. A reset replaces it. */
+  | 'unreadable'
 
 export type SyncWarning =
   /** Private tab or blocked storage: the day is not kept if this tab is closed */
@@ -77,6 +79,6 @@ export interface Store {
   autopilot(hubId: HubId, count: number): Promise<boolean>
   /** Look again right now for a newer day (the tab woke up, the phone came back online). Safe to call any time. */
   resync(): Promise<void>
-  /** Throw the day away and start a fresh one (a new day id that every device switches to) */
-  reset(hubId: HubId, seed?: number): Promise<void>
+  /** Throw the day away and start a fresh one (a new day id that every device switches to). Resolves false when it did not happen (no admin token, server said no). */
+  reset(hubId: HubId, seed?: number): Promise<boolean>
 }

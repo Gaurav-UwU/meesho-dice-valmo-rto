@@ -111,7 +111,11 @@ export function createLocalStore(opts: LocalStoreOptions): Store {
     }
   }
 
+  /** The version of the day this tab last wrote to, or read from, storage: if storage holds something else at flush time, another tab wrote in between */
+  const syncedVersion = new Map<HubId, number>()
+
   const write = (hubId: HubId, state: DayState): void => {
+    syncedVersion.set(hubId, state.version)
     try {
       opts.storage?.setItem(STORAGE_PREFIX + hubId, JSON.stringify(state))
     } catch {
@@ -125,7 +129,12 @@ export function createLocalStore(opts: LocalStoreOptions): Store {
     if (mine && !isNewerDay(incoming, mine)) return false
     const newDay = mine !== undefined && mine.dayId !== incoming.dayId
     setDay(hubId, incoming)
-    if (persistIt) write(hubId, incoming) // this tab may outlive the one that sent it
+    syncedVersion.set(hubId, incoming.version)
+    // The sender already saved it; this tab only saves a copy if storage has nothing as new (it may outlive the sender). Never over a newer day.
+    if (persistIt) {
+      const stored = readStored(hubId).state
+      if (!stored || isNewerDay(incoming, stored)) write(hubId, incoming)
+    }
     if (newDay) meta.set(hubId, { ...meta.get(hubId), notice: { seq: ++noticeSeq, text: TAKEN_OVER } })
     touch(hubId)
     notify()
@@ -149,6 +158,13 @@ export function createLocalStore(opts: LocalStoreOptions): Store {
         const sameDay = stored.dayId === state.dayId
         adoptIfNewer(hubId, stored, false)
         if (sameDay) setNotice(hubId, LOST_TAP)
+        continue
+      }
+      if (stored && stored.dayId === state.dayId && stored.version >= state.version && stored.version !== syncedVersion.get(hubId)) {
+        // Another tab saved a change at the same version while this one was making its own: theirs is already saved, so keep it.
+        setDay(hubId, stored)
+        syncedVersion.set(hubId, stored.version)
+        setNotice(hubId, LOST_TAP)
         continue
       }
       write(hubId, state)
@@ -213,6 +229,7 @@ export function createLocalStore(opts: LocalStoreOptions): Store {
         if (!state) state = build(await loadGeoSafe(hubId), DEFAULT_DAY.seed, 1)
         if (!days.has(hubId)) {
           setDay(hubId, state)
+          syncedVersion.set(hubId, state.version)
           if (saved.old) meta.set(hubId, { ...meta.get(hubId), notice: { seq: ++noticeSeq, text: OLD_SAVED_DAY } })
           touch(hubId)
           notify()
@@ -261,13 +278,14 @@ export function createLocalStore(opts: LocalStoreOptions): Store {
     return true
   }
 
-  const reset = async (hubId: HubId, seed: number = DEFAULT_DAY.seed): Promise<void> => {
+  const reset = async (hubId: HubId, seed: number = DEFAULT_DAY.seed): Promise<boolean> => {
     const geo = await loadGeoSafe(hubId)
     syncFromStorage(hubId) // build on the newest day number, even if this tab missed the last reset
     const prev = days.get(hubId)
     const dayNo = (prev?.dayNo ?? 0) + 1
     // The version keeps climbing across resets: it is a counter, not a day age.
     commit(hubId, { ...build(geo, seed, dayNo), version: (prev?.version ?? 0) + 1 })
+    return true
   }
 
   const resync = async (): Promise<void> => {

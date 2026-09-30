@@ -10,8 +10,20 @@ interface Listens {
  * another tab of this browser saves something (the `storage` event, which also works in browsers with no BroadcastChannel),
  * ask the store to look for the newest day.
  */
-export function wireResync(store: Pick<Store, 'resync'>, win: Listens, doc: Listens & { readonly visibilityState: string }): void {
+export function wireResync(
+  store: Pick<Store, 'resync'>,
+  win: Listens,
+  doc: Listens & { readonly visibilityState: string },
+  options: { readonly minGapMs?: number; readonly now?: () => number } = {},
+): void {
+  const minGap = options.minGapMs ?? 1000
+  const now = options.now ?? Date.now
+  let last = Number.NEGATIVE_INFINITY
   const look = (): void => {
+    // Focus, pageshow and visibilitychange often arrive together: one look is enough.
+    const t = now()
+    if (t - last < minGap) return
+    last = t
     store.resync().catch(() => undefined)
   }
   doc.addEventListener('visibilitychange', () => {

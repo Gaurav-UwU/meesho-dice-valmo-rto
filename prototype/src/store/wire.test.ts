@@ -11,10 +11,14 @@ const fakeEnv = () => {
 }
 
 describe('wireResync: a device that woke up, came back online or saw another tab write looks for the newest day', () => {
+  const eachTimeRunning = (e: ReturnType<typeof fakeEnv>, resync: () => Promise<void>): void => {
+    wireResync({ resync }, e.win, e.doc, { minGapMs: 0 })
+  }
+
   it('resyncs when the tab becomes visible, gets focus, is restored from the back/forward cache, comes back online, or another tab saved', () => {
     const e = fakeEnv()
     const resync = vi.fn(async () => undefined)
-    wireResync({ resync }, e.win, e.doc)
+    eachTimeRunning(e, resync)
     for (const type of ['visibilitychange', 'focus', 'pageshow', 'online', 'storage']) {
       resync.mockClear()
       e.handlers.get(type)!()
@@ -36,5 +40,21 @@ describe('wireResync: a device that woke up, came back online or saw another tab
     wireResync({ resync: async () => Promise.reject(new Error('down')) }, e.win, e.doc)
     expect(() => e.handlers.get('focus')!()).not.toThrow()
     await new Promise((r) => setTimeout(r, 0))
+  })
+})
+
+describe('wireResync: bursts of wake-up events cause one look, not many', () => {
+  it('ignores events that come within the minimum gap of the last look', () => {
+    let t = 1000
+    const e = fakeEnv()
+    const resync = vi.fn(async () => undefined)
+    wireResync({ resync }, e.win, e.doc, { minGapMs: 1000, now: () => t })
+    e.handlers.get('focus')!()
+    e.handlers.get('storage')!()
+    e.handlers.get('pageshow')!()
+    expect(resync).toHaveBeenCalledTimes(1)
+    t += 1200
+    e.handlers.get('focus')!()
+    expect(resync).toHaveBeenCalledTimes(2)
   })
 })

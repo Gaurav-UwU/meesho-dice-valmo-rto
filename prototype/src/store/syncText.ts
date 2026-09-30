@@ -83,7 +83,16 @@ export function describeSync(info: SyncInfo, hubName: string, now: number): Sync
         label: 'NEEDS RESET',
         headline: `Shared day · ${hubName}`,
         detail: 'The saved shared day was made by an older version of the app, so this page cannot read it. The server replaces it when a page loads; if this stays, it needs one reset.',
-        howToJoin: 'On the Ops screen press Reset day (it asks for the admin token once).',
+        howToJoin: 'Press Reset day (it asks for the admin token once).',
+        warnings,
+      }
+    case 'unreadable':
+      return {
+        tone: 'bad',
+        label: 'NEEDS RESET',
+        headline: `Shared day · ${hubName}`,
+        detail: 'The saved shared day is damaged, so this page cannot read it. One reset replaces it with a fresh day.',
+        howToJoin: 'Press Reset day (it asks for the admin token once).',
         warnings,
       }
     case 'bad-key':

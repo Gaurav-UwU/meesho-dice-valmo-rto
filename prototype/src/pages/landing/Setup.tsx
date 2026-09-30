@@ -40,8 +40,9 @@ export function Setup() {
   const deep = (route: string): string => joinUrl({ origin: '', route, hub: DEFAULT_HUB, live: shared, liveKey })
 
   const startFresh = (): void => {
-    setState('done')
-    void reset()
+    setState('idle')
+    // Only say "Done" when the reset really happened (a missing admin token or a server refusal leaves the day as it was).
+    void reset().then((ok) => setState(ok ? 'done' : 'idle'))
   }
 
   return (

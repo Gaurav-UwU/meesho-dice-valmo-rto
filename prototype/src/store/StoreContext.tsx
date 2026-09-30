@@ -39,7 +39,7 @@ export function useSend(hubId: HubId): (input: ActionInput) => Promise<void> {
 /** Autopilot and reset controls for the ops console. */
 export function useDayControls(hubId: HubId): {
   readonly autopilot: (count: number) => Promise<boolean>
-  readonly reset: () => Promise<void>
+  readonly reset: () => Promise<boolean>
 } {
   const store = useStore()
   return {

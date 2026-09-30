@@ -116,6 +116,13 @@ describe('a Live-mode device', () => {
     expect(screen.getByRole('alert').textContent).toMatch(/Reset day/)
   })
 
+  it('offers the Reset day button right there, because the Ops dashboard is not shown without a day', async () => {
+    const { store } = fakeLive({ ...liveDay(), schema: 5 } as DayState)
+    await store.ensureDay('lucknow')
+    mount(store, <DayLoading hubId="lucknow" />)
+    expect(screen.getByRole('button', { name: /Reset day/ })).toBeTruthy()
+  })
+
   it('says OFFLINE when it cannot reach the shared day instead of pretending to load', async () => {
     const f = fakeLive(null)
     f.state.day = null

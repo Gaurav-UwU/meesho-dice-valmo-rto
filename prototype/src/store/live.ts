@@ -29,6 +29,8 @@ export interface LiveStoreOptions {
   /** Safety net if Realtime is slow or blocked: re-read the day this often (ms). 0 turns it off. */
   readonly pollMs?: number
   readonly now?: () => number
+  /** True while the tab is in the background: the poll then sleeps (waking the tab triggers a read through resync) */
+  readonly isHidden?: () => boolean
 }
 
 const errorBody = async (r: CallResult): Promise<{ error?: string; code?: string }> => {
@@ -116,10 +118,18 @@ export function createLiveStore(opts: LiveStoreOptions): Store {
   /** A good read of the day fixes a shape problem, but not a refused key (reading is open to everyone; only taps need the key) */
   const readProblem = (hubId: HubId): SyncProblem | undefined => (metaOf(hubId).problem === 'bad-key' ? 'bad-key' : undefined)
 
-  const adopt = (hubId: HubId, incoming: unknown): void => {
+  /**
+   * `force` = the server itself just told us our day is gone (a tap was refused as "day reset"): take its day whatever the numbers say.
+   * That covers a server row that was deleted and started again at day 1 while this device still held day 4.
+   */
+  const adopt = (hubId: HubId, incoming: unknown, force = false): void => {
     // Whatever arrives from the network is untrusted: a malformed day would crash every screen.
     const shape = dayShape(incoming)
-    if (shape === 'invalid') return
+    if (shape === 'invalid') {
+      // With a good day already on screen, ignore junk. With none, say so instead of sitting on "Loading".
+      if (!days.has(hubId)) patch(hubId, { checkedAt: now(), failures: 0, problem: 'unreadable' })
+      return
+    }
     if (shape === 'old') {
       // One of our days, but from another version of the app. Say so instead of leaving the screen on "Loading".
       const older = (incoming as { schema: number }).schema < DAY_SCHEMA
@@ -128,7 +138,7 @@ export function createLiveStore(opts: LiveStoreOptions): Store {
     }
     const state = incoming as DayState
     const cur = days.get(hubId)
-    if (cur && !isNewerDay(state, cur)) {
+    if (cur && !(force && cur.dayId !== state.dayId) && !isNewerDay(state, cur)) {
       patch(hubId, { checkedAt: now(), failures: 0, problem: readProblem(hubId) })
       return
     }
@@ -143,10 +153,10 @@ export function createLiveStore(opts: LiveStoreOptions): Store {
     })
   }
 
-  const refresh = async (hubId: HubId): Promise<void> => {
+  const refresh = async (hubId: HubId, force = false): Promise<void> => {
     try {
       const s = await opts.feed.fetchDay(hubId)
-      if (s) adopt(hubId, s)
+      if (s) adopt(hubId, s, force)
       else confirmed(hubId)
     } catch {
       // A missed read is fixed by the next update or poll; two in a row mark the device offline.
@@ -163,6 +173,7 @@ export function createLiveStore(opts: LiveStoreOptions): Store {
       }
       const { error, code } = await errorBody(res)
       if (code === 'day_reset') return 'day_reset'
+      if (res.status === 401) patch(hubId, { problem: 'bad-key' })
       if (code === 'old_shape') patch(hubId, { problem: 'old-shape' })
       opts.onError(error ?? `The server said no (${res.status})`)
       return 'failed'
@@ -180,7 +191,7 @@ export function createLiveStore(opts: LiveStoreOptions): Store {
     setNotice(hubId, DAY_RESET_MESSAGE)
     quiet.add(hubId)
     try {
-      await refresh(hubId)
+      await refresh(hubId, true)
     } finally {
       quiet.delete(hubId)
     }
@@ -207,9 +218,13 @@ export function createLiveStore(opts: LiveStoreOptions): Store {
         // The server may be asleep; the read below still tells us what exists.
       }
       await refresh(hubId)
-      opts.feed.watch(hubId, (s) => adopt(hubId, s))
+      try {
+        opts.feed.watch(hubId, (s) => adopt(hubId, s))
+      } catch {
+        // Realtime blocked or unavailable: the poll below still keeps the day fresh.
+      }
       const every = opts.pollMs ?? DEFAULT_POLL_MS
-      if (every > 0) setInterval(() => void refresh(hubId), every)
+      if (every > 0) setInterval(() => void (opts.isHidden?.() ? undefined : refresh(hubId)), every)
     })()
     started.set(hubId, p)
     return p
@@ -250,10 +265,10 @@ export function createLiveStore(opts: LiveStoreOptions): Store {
     return (await admin(hubId, { op: 'autopilot', count, dayId: seen.dayId })) === 'ok'
   }
 
-  const reset = async (hubId: HubId, seed?: number): Promise<void> => {
+  const reset = async (hubId: HubId, seed?: number): Promise<boolean> => {
     quiet.add(hubId)
     try {
-      await admin(hubId, seed === undefined ? { op: 'reset' } : { op: 'reset', seed })
+      return (await admin(hubId, seed === undefined ? { op: 'reset' } : { op: 'reset', seed })) === 'ok'
     } finally {
       quiet.delete(hubId)
     }

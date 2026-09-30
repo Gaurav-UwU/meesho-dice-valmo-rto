@@ -121,6 +121,10 @@ async function deliver(deps: Deps, prev: DayState, next: DayState, phoneByOrder:
  * Internal callers (the WhatsApp webhook) pass none: a customer's reply always belongs to whatever day is current.
  */
 async function mutate(deps: Deps, hubId: HubId, change: (s: DayState) => DayState | Refusal, dayId?: string): Promise<Result> {
+  // Phone links change rarely, so read them once per request rather than on every retry.
+  const bindings = await deps.db.bindingsFor(hubId)
+  const bound = new Set(bindings.map((b) => b.orderId))
+  const phoneByOrder = new Map(bindings.map((b) => [b.orderId, b.phone]))
   for (let attempt = 0; attempt < MAX_SAVE_ATTEMPTS; attempt++) {
     const stored = await deps.db.loadDay(hubId)
     if (stored && dayShape(stored) !== 'ok') return fail(OLD_SHAPE_TEXT, 'old_shape')
@@ -132,12 +136,11 @@ async function mutate(deps: Deps, hubId: HubId, change: (s: DayState) => DayStat
     const out = change(base)
     if ('refuse' in out) return fail(out.refuse, out.code)
     if (out === base && stored) return { ok: true, version: base.version, sent: 0, warnings: [] }
-    const bindings = await deps.db.bindingsFor(hubId)
-    const storable = toStorable(out, deps.pepper, new Set(bindings.map((b) => b.orderId)))
+    const storable = toStorable(out, deps.pepper, bound)
     const saved = await deps.db.saveDay(hubId, storable, stored ? stored.version : null)
     if (!saved) continue
     // Send only after the write succeeded, so a conflict retry never messages the customer twice.
-    const { sent, warnings } = await deliver(deps, base, out, new Map(bindings.map((b) => [b.orderId, b.phone])))
+    const { sent, warnings } = await deliver(deps, base, out, phoneByOrder)
     return { ok: true, version: storable.version, sent, warnings }
   }
   return fail('The day is busy, please try again')
@@ -219,6 +222,15 @@ export async function bindPhone(deps: Deps, binding: Binding): Promise<Result> {
   const day = await deps.db.loadDay(binding.hubId)
   if (!day || dayShape(day) !== 'ok' || !day.stops[binding.orderId]) return fail('Unknown order for this hub')
   await deps.db.saveBinding(binding)
+  // An OTP message stored before the link was made is readable in the public day; mask it now that the order belongs to a real phone.
+  for (let attempt = 0; attempt < MAX_SAVE_ATTEMPTS; attempt++) {
+    const current = await deps.db.loadDay(binding.hubId)
+    if (!current || dayShape(current) !== 'ok') break
+    const masked = toStorable(current, deps.pepper, await boundOrders(deps, binding.hubId))
+    if (JSON.stringify(masked.messages) === JSON.stringify(current.messages)) return { ok: true, version: current.version, sent: 0, warnings: [] }
+    const next = { ...masked, version: current.version + 1 }
+    if (await deps.db.saveDay(binding.hubId, next, current.version)) return { ok: true, version: next.version, sent: 0, warnings: [] }
+  }
   return { ok: true, version: day.version, sent: 0, warnings: [] }
 }
 

@@ -81,6 +81,7 @@ function chooseStore(): Store {
       getLiveKey: () => askOnce(tabSecrets, (q) => window.prompt(q), LIVE_KEY_STORAGE, 'Live key (ask the team, or scan the QR code on the landing page)'),
       getAdminToken: () => askOnce(tabSecrets, (q) => window.prompt(q), 'rescue-admin-token', 'Admin token (ask the team)'),
       onError: (message) => showToast(message),
+      isHidden: () => document.visibilityState === 'hidden',
     })
   }
   return createLocalStore({ loadGeo, storage: safeStorage(), channel: safeChannel(), ...(choice.aloneReason ? { aloneReason: choice.aloneReason } : {}) })

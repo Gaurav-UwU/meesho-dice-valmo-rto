@@ -417,3 +417,61 @@ describe('local store: it always says whether this device is alone', () => {
     expect(store.getInfo('powai').day).toBeUndefined()
   })
 })
+
+describe('local store: concurrent tabs never silently lose the newer write', () => {
+  it('a late broadcast of an older version does not overwrite a newer saved day', async () => {
+    const storage = memoryStorage()
+    let toB: ((data: unknown) => void) | undefined
+    const a: ChannelLike = { postMessage: (m) => toB?.(m), listen: () => undefined }
+    const b: ChannelLike = { postMessage: () => undefined, listen: (h) => void (toB = h) }
+    const tabA = createLocalStore({ ...small, storage, channel: a })
+    const tabB = createLocalStore({ ...small, storage, channel: b })
+    await tabA.ensureDay('powai')
+    await tabB.ensureDay('powai')
+    await tabA.send('powai', { type: 'startDay' })
+    await tick()
+    const v1 = tabA.getState('powai')!
+    // a third writer saves something newer straight into storage while the broadcast of v1 is still in flight
+    const newer = { ...v1, version: v1.version + 2 }
+    storage.setItem('rescue-console-day-v6:powai', JSON.stringify(newer))
+    toB?.({ hubId: 'powai', state: { ...v1, version: v1.version + 1 } })
+    await tick()
+    expect(JSON.parse(storage.data.get('rescue-console-day-v6:powai')!).version).toBe(newer.version)
+  })
+
+  it('two tabs that act at the same version: the second writer notices, keeps the first one\'s saved change and says its own tap was not kept', async () => {
+    const storage = memoryStorage()
+    const tabA = createLocalStore({ ...small, storage, channel: deaf })
+    const tabB = createLocalStore({ ...small, storage, channel: deaf })
+    await tabA.ensureDay('powai')
+    await tabB.ensureDay('powai')
+    await tabA.send('powai', { type: 'startDay' })
+    await tick()
+    await tabB.resync()
+    // both tabs tap before either has flushed
+    await Promise.all([tabA.send('powai', { type: 'advanceClock', minutes: 30 }), tabB.send('powai', { type: 'advanceClock', minutes: 60 })])
+    await tick()
+    const saved = JSON.parse(storage.data.get('rescue-console-day-v6:powai')!)
+    const told = [tabA, tabB].filter((t) => /tap again/i.test(t.getInfo('powai').notice?.text ?? ''))
+    expect(told).toHaveLength(1) // exactly one tab lost its tap, and it knows
+    const loser = told[0]
+    expect(loser.getState('powai')!.version).toBe(saved.version) // it now shows what is saved
+    expect(loser.getState('powai')!.started).toBe(saved.started)
+  })
+
+  it('a tab that keeps acting on its own does not raise that notice', async () => {
+    const storage = memoryStorage()
+    const store = createLocalStore({ ...small, storage, channel: deaf })
+    await store.send('powai', { type: 'startDay' })
+    await store.send('powai', { type: 'advanceClock', minutes: 30 })
+    await tick()
+    await store.send('powai', { type: 'advanceClock', minutes: 30 })
+    await tick()
+    expect(store.getInfo('powai').notice).toBeUndefined()
+  })
+
+  it('reset returns true', async () => {
+    const store = createLocalStore(small)
+    expect(await store.reset('powai')).toBe(true)
+  })
+})

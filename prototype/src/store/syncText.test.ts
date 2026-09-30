@@ -68,6 +68,7 @@ describe('describeSync: every screen says, in plain words, whether it is on a sh
     expect(off.detail).toMatch(/Day 3/)
     expect(describeSync(live({ link: 'problem', problem: 'old-shape', day: undefined }), 'Lucknow', NOW)).toMatchObject({ tone: 'bad', label: 'NEEDS RESET' })
     expect(describeSync(live({ link: 'problem', problem: 'old-shape', day: undefined }), 'Lucknow', NOW).howToJoin).toMatch(/Reset day/)
+    expect(describeSync(live({ link: 'problem', problem: 'unreadable', day: undefined }), 'Lucknow', NOW)).toMatchObject({ tone: 'bad', label: 'NEEDS RESET' })
     expect(describeSync(live({ link: 'problem', problem: 'bad-key' }), 'Lucknow', NOW)).toMatchObject({ tone: 'bad', label: 'JOIN KEY REFUSED' })
     expect(describeSync(live({ link: 'problem', problem: 'app-too-old', day: undefined }), 'Lucknow', NOW)).toMatchObject({ tone: 'bad', label: 'PAGE OUT OF DATE' })
   })

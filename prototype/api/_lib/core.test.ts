@@ -403,3 +403,23 @@ describe('the OTP on a demo phone', () => {
     expect(h.sent.at(-1)!.body).toContain('4321') // the real phone still gets the real code
   })
 })
+
+describe('binding a real phone after the OTP message was stored', () => {
+  it('re-masks that order\'s OTP message at once, so the code does not stay public', async () => {
+    const { h, orderId } = await started()
+    await runAction(h.deps, HUB, { type: 'riderDeliver', orderId })
+    expect(h.db.days.get(HUB)!.messages.filter((m) => m.kind === 'delivery_otp').at(-1)!.text).toContain('4321')
+    const before = h.db.days.get(HUB)!.version
+    await bindPhone(h.deps, { phone: PHONE, hubId: HUB, orderId })
+    const day = h.db.days.get(HUB)!
+    expect(day.messages.filter((m) => m.kind === 'delivery_otp').at(-1)!.text).not.toContain('4321')
+    expect(day.version).toBe(before + 1)
+  })
+
+  it('does not write the day when nothing needs masking', async () => {
+    const { h, orderId } = await started()
+    const before = h.db.days.get(HUB)!.version
+    await bindPhone(h.deps, { phone: PHONE, hubId: HUB, orderId })
+    expect(h.db.days.get(HUB)!.version).toBe(before)
+  })
+})
