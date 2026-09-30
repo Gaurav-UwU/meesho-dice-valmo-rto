@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createDay } from '../../domain/day.ts'
 import { getHub } from '../../engine/hubs.ts'
 import { syntheticGeo } from '../../engine/synthetic-geo.ts'
@@ -22,10 +22,20 @@ const show = (store: Store) =>
     </MemoryRouter>,
   )
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.unstubAllEnvs()
+})
+
+/** Whether the site has the shared day built in comes from the build environment (a developer's .env.local has it), so each test sets it. */
+const siteHasSharedDay = (has: boolean): void => {
+  vi.stubEnv('VITE_SUPABASE_URL', has ? 'https://example.supabase.co' : '')
+  vi.stubEnv('VITE_SUPABASE_ANON_KEY', has ? 'anon-key' : '')
+}
 
 describe('Setup: phones can join the same day without typing keys', () => {
   it('in Demo mode it says ALONE, offers the shared day only if the site has it, and opens plain links', () => {
+    siteHasSharedDay(false)
     show(createLocalStore({ loadGeo: async (id) => syntheticGeo(getHub(id)) }))
     expect(screen.getByText('ALONE')).toBeTruthy()
     const share = screen.getByRole('button', { name: 'Several devices (shared day)' })
@@ -34,6 +44,14 @@ describe('Setup: phones can join the same day without typing keys', () => {
     const setup = screen.getByRole('region', { name: /Open three windows/ })
     for (const a of within(setup).getAllByRole('link')) expect(a.getAttribute('href')).not.toMatch(/mode=live|#k=/)
     expect(screen.getByText(/keeps its own separate day/i)).toBeTruthy()
+  })
+
+  it('in Demo mode it offers the shared day when the site has it built in', () => {
+    siteHasSharedDay(true)
+    show(createLocalStore({ loadGeo: async (id) => syntheticGeo(getHub(id)) }))
+    expect(screen.getByText('ALONE')).toBeTruthy()
+    expect((screen.getByRole('button', { name: 'Several devices (shared day)' }) as HTMLButtonElement).disabled).toBe(false)
+    expect(screen.queryByText(/shared day is not set up on this site/i)).toBeNull()
   })
 
   it('on the shared day it says SYNCED, and every link and QR code opens the same mode and carries the join key after the #', async () => {
