@@ -140,3 +140,18 @@ describe('desk: skip the second chance', () => {
     expect(within(card).queryByRole('button', { name: 'Skip second chance' })).toBeNull()
   })
 })
+
+describe('desk: the forecast and the backtest', () => {
+  it('every card shows its forecast, and the backtest panel sits folded in the side column', async () => {
+    await refuse()
+    showDesk()
+    const card = await screen.findByRole('article', { name: /Refused parcel/ })
+    const block = within(card).getByRole('region', { name: 'Match forecast' })
+    expect(within(block).getByText(/chance of a buyer in 48 h/)).toBeTruthy()
+    expect(within(block).getByText(/confidence$/)).toBeTruthy()
+    // The demo parcel replays a busy listing: a clear hold on the low end.
+    expect(within(block).getByText(/Low end clears break-even/)).toBeTruthy()
+    const panel = screen.getByRole('group', { name: 'Backtest of the match forecast' }) as HTMLDetailsElement
+    expect(panel.open).toBe(false)
+  })
+})

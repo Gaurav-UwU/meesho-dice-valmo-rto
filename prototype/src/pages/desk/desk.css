@@ -756,3 +756,120 @@
     width: auto;
   }
 }
+
+/* Step 3: the forecast block and the backtest */
+.desk-forecast {
+  background: #f4f8fd;
+  border: 1px solid #cfdcf0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.desk-forecast p {
+  margin: 0;
+  font-size: 13px;
+}
+.desk-forecast h4 {
+  margin: 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--valmo-muted);
+}
+.desk-forecast small {
+  color: var(--valmo-muted);
+  font-size: 12px;
+}
+.desk-forecast-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.desk-forecast-num strong {
+  font-size: 20px;
+}
+.desk-forecast-bar {
+  position: relative;
+  height: 14px;
+  border-radius: 7px;
+  background: #e3e8f2;
+  margin: 4px 0;
+}
+.desk-forecast-range {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  background: #6f9bd6;
+  border-radius: 5px;
+}
+.desk-forecast-mean {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--valmo-navy-ops);
+  transform: translateX(-1px);
+}
+.desk-forecast-be {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  border-left: 2px dashed var(--danger);
+}
+.desk-forecast-legend {
+  color: var(--valmo-muted);
+}
+.desk-forecast-verdict.is-ok {
+  color: #1a7a47;
+  font-weight: 600;
+}
+.desk-forecast-verdict.is-no {
+  color: var(--danger);
+  font-weight: 600;
+}
+.desk-forecast-chips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 2px 0;
+  padding: 0;
+}
+.desk-conf {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #e8ecf5;
+}
+.desk-conf--high {
+  background: #d8f0e2;
+  color: #1a7a47;
+}
+.desk-conf--low {
+  background: #fdeaea;
+  color: var(--danger);
+}
+.desk-backtest summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.desk-backtest table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.desk-backtest th,
+.desk-backtest td {
+  text-align: left;
+  padding: 4px 6px;
+  border-bottom: 1px solid #e3e8f2;
+}
+.desk-backtest thead th {
+  color: var(--valmo-muted);
+  font-weight: 600;
+}

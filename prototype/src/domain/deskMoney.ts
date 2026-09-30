@@ -1,5 +1,5 @@
 import { ROUTER } from '../engine/economics.ts'
-import { pMatchWithin } from '../engine/router.ts'
+import { matchBelief, pointForecast } from '../engine/demand.ts'
 import { laneEv } from '../engine/whatif.ts'
 import { HOUR_MS } from './clock.ts'
 import { WHATSAPP_COST, REVERSE_COST } from './helpers.ts'
@@ -45,7 +45,8 @@ export function deskMoney(s: DayState): DeskMoney {
     } else if (rec.state === 'held' && rec.heldSim !== undefined) {
       // The ₹8 is already spent (it is in the costs), so only the chance of a buyer in the hours left is still in play.
       const hoursLeft = (rec.heldSim + s.router.holdHours * HOUR_MS - s.simNow) / HOUR_MS
-      inPlay += pMatchWithin(rec.parcel.demandRate, hoursLeft, s.router) * ROUTER.savedPerMatch
+      const left = matchBelief(rec.parcel.forecast ?? pointForecast(rec.parcel.demandRate), { holdHours: Math.max(0, hoursLeft), conversion: s.router.conversion })
+      inPlay += left.mean * ROUTER.savedPerMatch
       inPlayCount++
     }
   }

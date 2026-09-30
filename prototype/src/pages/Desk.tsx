@@ -14,6 +14,7 @@ import { DeskSummary } from './desk/DeskSummary.tsx'
 import { isDone } from './desk/lanes.ts'
 import { ParcelCard } from './desk/ParcelCard.tsx'
 import { RouterAssumptions } from './desk/RouterAssumptions.tsx'
+import { BacktestPanel } from './desk/BacktestPanel.tsx'
 import { BatchList, DoneList, EconomicsNote, LaneFour, type DoneEntry } from './desk/SidePanels.tsx'
 import './desk/desk.css'
 
@@ -108,6 +109,7 @@ export default function Desk() {
                     <DoneList entries={doneEntries(day, items)} />
                     <BatchList batches={batches} />
                     <RouterAssumptions day={day} send={send} />
+                    <BacktestPanel />
                     <LaneFour />
                   </aside>
                 </div>

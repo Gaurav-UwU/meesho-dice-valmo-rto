@@ -1,3 +1,4 @@
+import { breakEvenMatch, clearsBreakEven, matchBelief, pointForecast, type Confidence, type DemandForecast, type MatchBelief } from './demand.ts'
 import { DEFAULTS, ROUTER } from './economics.ts'
 import type { HubId } from './types.ts'
 
@@ -96,8 +97,13 @@ export interface RefusedParcel {
   readonly sellerOptedIn: boolean
   /** Invoice is in an outside pouch or digital, so the seal never has to be broken */
   readonly invoiceOutside: boolean
-  /** Buyers of this SKU appearing per hour in the hub catchment (synthetic). Feeds P(match in 48 h). */
+  /**
+   * HIDDEN TRUE buyers per hour for this listing in the hub catchment (synthetic). Only the simulation reads it, to time the simulated buyer.
+   * The Router decides on `forecast`, never on this. Without a forecast (engine-only use) the rate is taken as known exactly.
+   */
   readonly demandRate: number
+  /** What the Router believes about the listing's demand, from its own and similar listings' 14-day order history */
+  readonly forecast?: DemandForecast
 }
 
 /** What the hub operator found when they opened the refusal and looked at the parcel (nothing is uploaded: the photo is a note). */
@@ -140,7 +146,15 @@ export interface RouteDecision {
   readonly effect: Effect
   readonly ev: LaneEv
   /** The numbers behind the decision, for the audit trail */
-  readonly inputs: { readonly pAccept: number; readonly pMatch: number; readonly demandRate: number; readonly refusalReason: RefusalReason }
+  readonly inputs: {
+    readonly pAccept: number
+    /** The forecast: mean chance of a buyer in the hold window, and the low and high end of the range */
+    readonly pMatch: number
+    readonly pMatchLow: number
+    readonly pMatchHigh: number
+    readonly confidence: Confidence | 'Known'
+    readonly refusalReason: RefusalReason
+  }
 }
 
 export interface RouteOptions {
@@ -201,11 +215,18 @@ export const secondChanceEv = (reason: RefusalReason, params: RouterParams = DEF
 
 export const holdEv = (demandRate: number, params: RouterParams = DEFAULT_ROUTER_PARAMS): number => pMatch(demandRate, params) * ROUTER.savedPerMatch - ROUTER.holdCost
 
+/** What the Router believes about a parcel's chance of a buyer: its forecast, or the rate taken as known exactly when there is none. */
+export const beliefOf = (p: RefusedParcel, params: RouterParams = DEFAULT_ROUTER_PARAMS): MatchBelief => matchBelief(p.forecast ?? pointForecast(p.demandRate), params)
+
+/** Expected ₹ of holding, on the mean forecast (the hold RULE uses the low end; the ₹ shown uses the mean). */
+export const holdEvOf = (p: RefusedParcel, params: RouterParams = DEFAULT_ROUTER_PARAMS): number => beliefOf(p, params).mean * ROUTER.savedPerMatch - ROUTER.holdCost
+
 export function holdGates(p: RefusedParcel, opts: RouteOptions = {}): readonly Gate[] {
   const params = opts.params ?? DEFAULT_ROUTER_PARAMS
   const sameState = p.sellerState === p.hubState && p.buyerState === p.hubState
   const shelfUsed = opts.shelfUsed ?? 0
-  const ev = holdEv(p.demandRate, params)
+  const belief = beliefOf(p, params)
+  const ev = belief.mean * ROUTER.savedPerMatch - ROUTER.holdCost
   const pending = opts.inspection === null
   const facts = factsOf(p, opts)
   const wait = 'Waiting for the inspection'
@@ -256,9 +277,9 @@ export function holdGates(p: RefusedParcel, opts: RouteOptions = {}): readonly G
       note: opts.riderHasSpace === false ? 'No rider has room in the bag for a re-homed parcel' : 'A rider has room for the re-homed parcel',
     },
     {
-      name: 'Expected value',
-      pass: ev > 0,
-      note: `P(match in ${params.holdHours} h) ${(pMatch(p.demandRate, params) * 100).toFixed(1)}% x ₹${ROUTER.savedPerMatch} - ₹${ROUTER.holdCost} = ${ev >= 0 ? '+' : '−'}₹${Math.abs(ev).toFixed(1)}`,
+      name: 'Match forecast clears break-even (low end)',
+      pass: clearsBreakEven(belief),
+      note: `P(match in ${params.holdHours} h) ${(belief.mean * 100).toFixed(1)}% on average, ${(belief.p10 * 100).toFixed(1)}% at the low end to ${(belief.p90 * 100).toFixed(1)}% at the high end, against ${(breakEvenMatch() * 100).toFixed(1)}% break-even. Hold only if the low end clears it. Expected value ${ev >= 0 ? '+' : '−'}₹${Math.abs(ev).toFixed(1)} (${(belief.mean * 100).toFixed(1)}% x ₹${ROUTER.savedPerMatch} − ₹${ROUTER.holdCost})`,
     },
   ]
 }
@@ -270,10 +291,11 @@ export function routeParcel(p: RefusedParcel, opts: RouteOptions = {}): RouteDec
   const failing = gates.filter((g) => !g.pass)
   const ev: LaneEv = {
     secondChance: scEv,
-    hold: failing.length === 0 ? holdEv(p.demandRate, params) : null,
+    hold: failing.length === 0 ? holdEvOf(p, params) : null,
     consolidated: DEFAULTS.reverseCost * BATCH_SAVING_SHARE,
   }
-  const inputs = { pAccept: pAccept(p.reason, params), pMatch: pMatch(p.demandRate, params), demandRate: p.demandRate, refusalReason: p.reason }
+  const belief = beliefOf(p, params)
+  const inputs = { pAccept: pAccept(p.reason, params), pMatch: belief.mean, pMatchLow: belief.p10, pMatchHigh: belief.p90, confidence: p.forecast?.confidence ?? 'Known', refusalReason: p.reason } as const
   const tried = opts.secondChanceDeclined === true || opts.secondChanceExpired === true || opts.secondChanceSkipped === true
   if (!tried && scEv > 0) {
     return {

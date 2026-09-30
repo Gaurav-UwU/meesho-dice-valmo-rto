@@ -1,11 +1,12 @@
 import type { DeskItem } from '../../domain/selectors.ts'
 import { useState } from 'react'
 import type { ActionInput } from '../../store/types.ts'
-import { factsOf, REFUSAL_LABEL, SKIP_LABEL } from '../../engine/router.ts'
+import { DEFAULT_ROUTER_PARAMS, factsOf, REFUSAL_LABEL, SKIP_LABEL } from '../../engine/router.ts'
 import { whatIf, type WhatIfFlips, type WhatIfGate } from '../../engine/whatif.ts'
 import { rupees, signedRupees } from '../../ui/format.ts'
 import { GateList } from './GateList.tsx'
 import { effectRange, LANE_LABEL, STATE_LABEL } from './lanes.ts'
+import { ForecastBlock } from './ForecastBlock.tsx'
 import { InspectBlock } from './InspectBlock.tsx'
 import { ParcelActions } from './ParcelActions.tsx'
 
@@ -71,13 +72,15 @@ export function ParcelCard({ item, send, simNow, secondChanceHours, holdHours }:
 
       <p className="desk-ev" aria-label="Expected values of each lane">
         Expected value: second chance <strong>{signedRupees(decision.ev.secondChance)}</strong> ({(decision.inputs.pAccept * 100).toFixed(0)}% accept) · hold{' '}
-        <strong>{decision.ev.hold === null ? 'not allowed' : signedRupees(decision.ev.hold)}</strong> ({(decision.inputs.pMatch * 100).toFixed(0)}% chance of a buyer in {holdHours} h) ·
+        <strong>{decision.ev.hold === null ? 'not allowed' : signedRupees(decision.ev.hold)}</strong> ({(decision.inputs.pMatch * 100).toFixed(0)}% on average, {(decision.inputs.pMatchLow * 100).toFixed(0)}% at the low end, for a buyer in {holdHours} h) ·
         batched <strong>{signedRupees(decision.ev.consolidated)}</strong>
       </p>
       <p className="desk-effect">
         <strong>{effectRange(decision.effect.min, decision.effect.max)}</strong> vs sending it back
         <span>{decision.effect.label}</span>
       </p>
+
+      <ForecastBlock parcel={parcel} params={item.options.params ?? DEFAULT_ROUTER_PARAMS} />
 
       <GateList
         gates={decision.gates}

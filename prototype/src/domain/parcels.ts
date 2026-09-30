@@ -1,3 +1,5 @@
+import { catalogueFor, skuIdFor, SKUS_PER_HUB } from '../engine/catalogue.ts'
+import { forecastFor } from '../engine/demand.ts'
 import { createRng, hashSeed, type Rng } from '../engine/rng.ts'
 import { REFUSAL_REASONS, type RefusalReason, type RefusedParcel } from '../engine/router.ts'
 import type { Hub } from '../engine/types.ts'
@@ -15,14 +17,9 @@ export const PARCEL_ASSUMPTIONS = {
   invoiceOutsideShare: 0.7,
   optedInNonGst: 0.5,
   optedInGst: 0.3,
-  /** Share of SKUs with real demand in the catchment, and the buyers-per-hour range for those and for the rest (synthetic) */
-  highDemandShare: 0.35,
-  highDemandRate: [0.03, 0.08],
-  lowDemandRate: [0, 0.004],
 } as const
 
 const SELLERS_PER_HUB = 40
-const SKUS_PER_HUB = 60
 
 function drawReason(rng: Rng): RefusalReason {
   let u = rng.next()
@@ -52,14 +49,14 @@ export function buildParcel(stop: StopRecord, hub: Hub, showcaseIndex?: number, 
   const rng = createRng(hashSeed(`parcel-${stop.order.id}`))
   const a = PARCEL_ASSUMPTIONS
   const sellerId = `${stop.order.sellerState}-S${String(rng.int(SELLERS_PER_HUB) + 1).padStart(2, '0')}`
-  const skuId = `SKU-${String(rng.int(SKUS_PER_HUB) + 1).padStart(3, '0')}`
+  const skuId = skuIdFor(rng.int(SKUS_PER_HUB) + 1)
   const drawn = drawReason(rng)
   const unopened = rng.chance(a.unopenedShare)
   const sealOk = rng.chance(a.sealOkShare)
   const sellerOptedIn = rng.chance(stop.order.sellerGst ? a.optedInGst : a.optedInNonGst)
   const invoiceOutside = rng.chance(a.invoiceOutsideShare)
-  const [lo, hi] = rng.chance(a.highDemandShare) ? a.highDemandRate : a.lowDemandRate
-  const demandRate = lo + rng.next() * (hi - lo)
+  // The listing's hidden true buyer rate is the simulation's truth; the Router gets only the forecast built from the listing's 14-day history.
+  const demandRate = catalogueFor(hub.id).find((x) => x.skuId === skuId)?.trueRate ?? 0
   const base: RefusedParcel = {
     id: `P-${stop.order.id}`,
     awb: stop.order.awb,
@@ -77,8 +74,12 @@ export function buildParcel(stop: StopRecord, hub: Hub, showcaseIndex?: number, 
     sellerOptedIn,
     invoiceOutside,
     demandRate,
+    forecast: forecastFor(hub.id, skuId),
   }
   const show = showcaseIndex === undefined ? undefined : SHOWCASE[showcaseIndex]
+  if (!show) return base
   // The showcase fixes the gates and the demand of the four demo parcels; a reason the rider actually recorded always wins.
-  return show ? { ...base, ...show(hub), ...(reason ? { reason } : {}) } : base
+  const shown = { ...base, ...show(hub), ...(reason ? { reason } : {}) }
+  // A demo parcel with its own hidden rate replays that listing with a matching history, so its forecast agrees with the story.
+  return shown.demandRate === demandRate ? shown : { ...shown, forecast: forecastFor(hub.id, skuId, { rate: shown.demandRate }) }
 }

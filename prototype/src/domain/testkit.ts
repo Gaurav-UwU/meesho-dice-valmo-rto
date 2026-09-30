@@ -46,7 +46,8 @@ export const setPayment = (s: DayState, id: string, payment: Payment): DayState 
 /** Change what the Desk sees about the parcel of a refused order (reason, gates, demand). */
 export const forceParcel = (s: DayState, orderId: string, patch: Partial<RefusedParcel>): DayState => ({
   ...s,
-  parcels: s.parcels.map((p) => (p.orderId === orderId ? { ...p, parcel: { ...p.parcel, ...patch } } : p)),
+  // Forcing a demand rate means "this rate is known": the forecast is dropped so the Router works from the rate itself.
+  parcels: s.parcels.map((p) => (p.orderId === orderId ? { ...p, parcel: { ...p.parcel, ...('demandRate' in patch && !('forecast' in patch) ? { forecast: undefined } : {}), ...patch } } : p)),
 })
 
 /** The hub operator inspects the parcel of a refused order and records what is really there (by default the parcel's own seeded facts). */

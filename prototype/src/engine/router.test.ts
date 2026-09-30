@@ -13,6 +13,7 @@ import {
   summariseDay,
   type RefusedParcel,
 } from './router.ts'
+import { matchBelief, pointForecast, posterior, type DemandForecast } from './demand.ts'
 
 const parcel = (o: Partial<RefusedParcel> = {}): RefusedParcel => ({
   id: 'p1',
@@ -225,6 +226,67 @@ describe('Router v3: the inspection, the item-condition gate and skipping the se
     expect(names.slice(0, 4)).toEqual(['Inspected', 'Unopened', 'Seal intact', 'Same state'])
     expect(names).toContain('Item condition OK')
     expect(names.indexOf('Item condition OK')).toBeGreaterThan(names.indexOf('Invoice outside the parcel'))
+  })
+})
+
+describe('Router v3: the hold rule reads the match forecast and its LOW end', () => {
+  const forecastOf = (priorRate: number, strength: number, orders: number): DemandForecast => ({ ...pointForecast(priorRate), ...posterior(priorRate, strength, orders, 336), exactOrders: orders, confidence: 'Medium' })
+  // The plan's example: 3 orders against a prior worth 10 pseudo-orders at 0.006/h -> mean 14.3%, low end 9.8%.
+  const clear = forecastOf(0.006, 10, 3)
+  // Thin evidence (a prior worth 2 pseudo-orders, 1 order): the mean is above 5.5% but the low end is not.
+  const thin = forecastOf(0.006, 2, 1)
+
+  it('holds when the low end clears 5.5%, and shows the mean, the range and the ₹ on the gate', () => {
+    const d = routeParcel(parcel({ forecast: clear, demandRate: 0 }))
+    expect(d.lane).toBe('hold_rehome')
+    const g = d.gates.find((x) => x.name === 'Match forecast clears break-even (low end)')!
+    expect(g.pass).toBe(true)
+    expect(g.note).toMatch(/14\.3%/)
+    expect(g.note).toMatch(/9\.8%/)
+    expect(g.note).toMatch(/5\.5%/)
+    // The expected value shown uses the mean: 0.1435 x 145 - 8 = +12.8
+    expect(d.ev.hold).toBeCloseTo(0.14345 * 145 - 8, 1)
+  })
+
+  it('does not hold when only the average clears it: thin evidence is not enough', () => {
+    const b = matchBelief(thin, { holdHours: 48, conversion: 0.5 })
+    expect(b.mean).toBeGreaterThan(8 / 145)
+    expect(b.p10).toBeLessThan(8 / 145)
+    const d = routeParcel(parcel({ forecast: thin, demandRate: 0.3 }))
+    expect(d.lane).toBe('consolidated_return')
+    expect(d.ev.hold).toBeNull()
+    expect(d.reason).toMatch(/low end/i)
+  })
+
+  it('never reads the hidden true rate when there is a forecast: the decision is identical whatever it is', () => {
+    const a = routeParcel(parcel({ forecast: clear, demandRate: 0 }))
+    const b = routeParcel(parcel({ forecast: clear, demandRate: 0.5 }))
+    expect(b).toEqual(a)
+  })
+
+  it('without a forecast (engine-only use) the parcel\'s own rate is treated as known exactly, as before', () => {
+    expect(routeParcel(parcel({ demandRate: 0.05 })).lane).toBe('hold_rehome')
+    expect(routeParcel(parcel({ demandRate: 0.001 })).lane).toBe('consolidated_return')
+  })
+
+  it('holds right at the boundary: a known rate just above break-even holds, just below does not', () => {
+    const rate = -Math.log(1 - 8 / 145) / (48 * 0.5)
+    expect(routeParcel(parcel({ forecast: pointForecast(rate * 1.02) })).lane).toBe('hold_rehome')
+    expect(routeParcel(parcel({ forecast: pointForecast(rate * 0.98) })).lane).toBe('consolidated_return')
+  })
+
+  it('follows the editable assumptions: a lower conversion can close the hold lane', () => {
+    const params = { ...DEFAULT_ROUTER_PARAMS, conversion: 0.1 }
+    expect(routeParcel(parcel({ forecast: clear }), { params }).lane).toBe('consolidated_return')
+  })
+
+  it('reports the forecast behind the decision for the audit trail (belief only, never the hidden rate)', () => {
+    const d = routeParcel(parcel({ forecast: clear, demandRate: 0.123 }))
+    expect(d.inputs.pMatch).toBeCloseTo(0.1435, 3)
+    expect(d.inputs.pMatchLow).toBeCloseTo(0.0984, 3)
+    expect(d.inputs.pMatchHigh).toBeGreaterThan(d.inputs.pMatch)
+    expect(d.inputs.confidence).toBe('Medium')
+    expect(JSON.stringify(d.inputs)).not.toContain('0.123')
   })
 })
 
