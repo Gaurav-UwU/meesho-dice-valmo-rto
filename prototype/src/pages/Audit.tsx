@@ -11,7 +11,7 @@ import { useHubParam } from '../ui/hub.ts'
 import './ops/ops.css'
 import './audit.css'
 
-/** Twelve checks on the day's own record, each green or red. Read from the event log and the lifecycle, so a screen that lies turns a check red. */
+/** Fourteen checks on the day's own record, each green or red. Read from the event log and the lifecycle, so a screen that lies turns a check red. */
 export default function Audit() {
   const { hub } = useHubParam()
   const day = useDay(hub.id)

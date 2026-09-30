@@ -182,7 +182,7 @@ describe('Audit: no parcel held without an inspection, no gate overridden', () =
     expect(check(forged, 'gates-not-overridden').ok).toBe(false)
   })
 
-  it('the audit now has twelve checks', () => {
-    expect(runAudit(day)).toHaveLength(12)
+  it('the audit now has fourteen checks', () => {
+    expect(runAudit(day)).toHaveLength(14)
   })
 })

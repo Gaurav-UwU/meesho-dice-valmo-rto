@@ -439,7 +439,7 @@ describe('the Audit is green after a full Autopilot day and Close pilot', () => 
 
   it('every check passes', () => {
     const checks = runAudit(closed)
-    expect(checks).toHaveLength(12)
+    expect(checks).toHaveLength(14)
     const red = checks.filter((c) => !c.ok)
     expect(red.map((c) => `${c.id}: ${c.detail}`)).toEqual([])
   })

@@ -125,7 +125,8 @@ export function deskHold(s: S, a: Extract<Action, { type: 'deskHold' }>): S {
   if (d.lane !== 'hold_rehome') return s
   let next = laneLogged(s, a.at, p, d)
   next = patchParcel(next, p.id, { state: 'held', heldSim: s.simNow, matchAt: drawMatchAt(s, p) })
-  next = emit(next, a.at, 'HELD', {}, { orderId: p.orderId })
+  // The slot this hold takes and the capacity at this moment: the Audit checks the shelf was never over capacity when a slot was taken.
+  next = emit(next, a.at, 'HELD', { slot: shelfUsed(next), capacity: s.router.shelfCapacity }, { orderId: p.orderId })
   next = bookCost(next, a.at, 'Hold on shelf (48h)', HOLD_COST, 'Valmo', 'router', p.orderId)
   return feedAdd(next, a.at, 'desk', `${p.parcel.awb} held ${s.router.holdHours}h for a same-state match (about ₹${HOLD_COST})`, p.orderId)
 }

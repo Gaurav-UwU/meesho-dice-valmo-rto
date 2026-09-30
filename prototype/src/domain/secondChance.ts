@@ -58,7 +58,7 @@ function reservePickup(s: S, p: ParcelRecord, at: number): S {
   const code = pickupCodeFor(s, p)
   const deadline = s.simNow + s.router.pickupHours * HOUR_MS
   let next = patchParcel(s, p.id, { state: 'pickup_reserved', choice: 'pickup', awaiting: undefined, pickup: { code, deadline, reservedSim: s.simNow, tries: 0 } })
-  next = emit(next, at, 'PICKUP_RESERVED', { deadline }, { orderId: p.orderId })
+  next = emit(next, at, 'PICKUP_RESERVED', { deadline, slot: shelfUsed(next), capacity: s.router.shelfCapacity }, { orderId: p.orderId })
   next = bookCost(next, at, 'Hub pickup shelf slot (48h)', HOLD_COST, 'Valmo', 'router', p.orderId)
   // The instructions and the code are the reply to the customer's own tap, so this is not one of the four proactive messages.
   next = msgAdd(next, { orderId: p.orderId, at, direction: 'out', kind: 'pickup_code', text: pickupText(code, hubName(s), s.router.pickupHours) })

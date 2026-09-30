@@ -148,3 +148,17 @@ describe('a reset day clears the pickup shelf and its timers (the sync session\'
     expect(overdueTimers(fresh)).toEqual([])
   })
 })
+
+describe('the pilot KPI panel on the Desk', () => {
+  it('shows this day\'s sample sizes and holds every number back as "too early" until a lane has 30 parcels', async () => {
+    const id = await offerSecondChance()
+    await store.send('lucknow', { type: 'customerSecondChance', parcelId: id, accept: true, option: 'pickup' })
+    show('desk')
+    const panel = await screen.findByRole('region', { name: 'Pilot KPIs' })
+    const row = within(panel).getByText('Pickup rate').closest('li')!
+    expect(within(row).getByText(/n = 1/)).toBeTruthy()
+    expect(within(row).getByText(/too early/i)).toBeTruthy()
+    expect(within(row).getByText(/1 waiting/)).toBeTruthy()
+    expect(within(panel).getByText(/not simulated/i)).toBeTruthy()
+  })
+})

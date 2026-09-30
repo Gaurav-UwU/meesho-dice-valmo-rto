@@ -19,7 +19,7 @@ export interface AuditCheck {
 const list = (items: readonly string[], max = 5): string => `${items.slice(0, max).join('; ')}${items.length > max ? `; and ${items.length - max} more` : ''}`
 
 /**
- * The twelve checks on the day's own record (prototype spec, Audit tab). Each is green or red. They read the event log and the
+ * The fourteen checks on the day's own record (prototype spec, Audit tab). Each is green or red. They read the event log and the
  * lifecycle, so an action that forgot to log itself, or a screen that shows a different ₹ figure, turns a check red.
  */
 export function runAudit(s: DayState): readonly AuditCheck[] {
@@ -80,6 +80,16 @@ export function runAudit(s: DayState): readonly AuditCheck[] {
     .filter((p): p is NonNullable<typeof p> => p !== undefined)
     .filter((p) => holdGates(p.parcel, { params: s.router, inspection: p.inspection ?? null }).some((g) => PARCEL_GATES.includes(g.name) && !g.pass))
 
+  const reservedEvents = eventsOf(s, 'PICKUP_RESERVED')
+  const collectedEvents = eventsOf(s, 'PICKUP_COLLECTED')
+  const pickupOrders = stops.filter((x) => x.status === 'hub_pickup')
+  const badPickup = [
+    ...collectedEvents.filter((c) => c.data.codeVerified !== true || !reservedEvents.some((r) => r.orderId === c.orderId && r.seq < c.seq)).map((c) => c.orderId ?? '?'),
+    ...pickupOrders.filter((x) => !collectedEvents.some((c) => c.orderId === x.order.id)).map((x) => x.order.id),
+    ...s.parcels.filter((p) => p.state === 'picked_up' && s.stops[p.orderId]?.status !== 'hub_pickup').map((p) => p.orderId),
+  ]
+  const overCapacity = [...eventsOf(s, 'HELD'), ...reservedEvents].filter((e) => typeof e.data.slot !== 'number' || typeof e.data.capacity !== 'number' || e.data.slot > e.data.capacity)
+
   return [
     { id: 'orders-balance', label: 'Orders = terminal + open', ok: terminal.length + open === stops.length && missing.length === 0, detail: missing.length === 0 ? `${stops.length} orders = ${terminal.length} in a terminal state + ${open} still open` : `orders with no record: ${list(missing)}` },
     { id: 'one-terminal', label: 'Every order has exactly one terminal state (or is open)', ok: wrongTerminal.length === 0, detail: wrongTerminal.length === 0 ? `${terminal.length} terminal orders each ended once; ${open} are open` : `wrong for ${list(wrongTerminal.map((x) => x.order.id))}` },
@@ -114,6 +124,18 @@ export function runAudit(s: DayState): readonly AuditCheck[] {
       label: 'No gate was overridden',
       ok: overridden.length === 0,
       detail: overridden.length === 0 ? `${heldEvents.length} held parcels, each passing inspection, same state, seller opt-in, invoice and item condition` : `held although a gate fails: ${list(overridden.map((p) => p.orderId))}`,
+    },
+    {
+      id: 'pickup-verified',
+      label: 'No pickup handed over without a verified code',
+      ok: badPickup.length === 0,
+      detail: badPickup.length === 0 ? (collectedEvents.length === 0 ? 'no pickup has been collected yet' : `${collectedEvents.length} collected, each after a reservation and a verified code, each ending as a hub pickup (never a delivery)`) : `pickup records that do not add up: ${list(badPickup)}`,
+    },
+    {
+      id: 'shelf-capacity',
+      label: 'The shelf was never above capacity',
+      ok: overCapacity.length === 0,
+      detail: overCapacity.length === 0 ? `${eventsOf(s, 'HELD').length + reservedEvents.length} shelf slots taken (holds and pickups share them), each within the capacity at that moment` : `slot taken beyond capacity: ${list(overCapacity.map((e) => `${e.orderId ?? '?'} (slot ${String(e.data.slot)} of ${String(e.data.capacity)})`))}`,
     },
   ]
 }

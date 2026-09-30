@@ -139,9 +139,9 @@ describe('ops: the sim clock, Close pilot and the Audit', () => {
     await waitFor(() => expect(state().simNow).toBeGreaterThan(SIM_START + 7 * DAY_MS))
 
     show('/audit?hub=lucknow', 'audit')
-    expect(await screen.findByText('All 12 checks are green')).toBeTruthy()
+    expect(await screen.findByText('All 14 checks are green')).toBeTruthy()
     const list = screen.getByRole('list', { name: 'Audit checks' })
-    expect(within(list).getAllByRole('listitem')).toHaveLength(12)
+    expect(within(list).getAllByRole('listitem')).toHaveLength(14)
     expect(within(list).getByText(/Nothing delivered without a verified OTP/)).toBeTruthy()
   })
 

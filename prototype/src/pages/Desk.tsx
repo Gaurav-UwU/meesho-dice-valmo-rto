@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { deskKpis } from '../domain/deskKpis.ts'
 import { deskMoney } from '../domain/deskMoney.ts'
 import { deskItems, deskSummary } from '../domain/selectors.ts'
 import type { DayState } from '../domain/types.ts'
@@ -11,6 +12,7 @@ import { SyncBadge } from '../ui/SyncBadge.tsx'
 import { useHubParam } from '../ui/hub.ts'
 import { DeskDrawer } from './desk/DeskDrawer.tsx'
 import { DeskSummary } from './desk/DeskSummary.tsx'
+import { KpiPanel } from './desk/KpiPanel.tsx'
 import { isDone } from './desk/lanes.ts'
 import { ParcelCard } from './desk/ParcelCard.tsx'
 import { RouterAssumptions } from './desk/RouterAssumptions.tsx'
@@ -106,6 +108,7 @@ export default function Desk() {
                     ))}
                   </section>
                   <aside className="desk-side">
+                    <KpiPanel kpis={deskKpis(day)} />
                     <DoneList entries={doneEntries(day, items)} />
                     <BatchList batches={batches} />
                     <RouterAssumptions day={day} send={send} />
