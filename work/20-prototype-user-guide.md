@@ -44,17 +44,38 @@ Top bar: hub switcher, links to Desk, Pilot, Audit, Demo guide, and the SYNCED/A
 - Choose a rider (**Demo Bonus rider** shows the green **₹ +15 Bonus Eligible** chip; **Demo Control rider** does not). Hindi toggle in the header. The rider never sees a score.
 - **Deliver** → the OTP sheet: type the code from the customer screen. Success: Bonus rider's ₹15 shows as pending (COD waits for cash). Wrong code: 5 tries, 10-minute expiry.
 - **Attempted** → "Why could you not deliver?" (Customer unavailable / asked to reschedule / Address not found) and the **Proof you tried**: **I'm at the door** (good GPS), **Call customer** (count), **Waited 5 more min**, or **Demo: log it from far away** (fake attempt, low confidence). The customer is asked on WhatsApp to confirm.
-- **Refused** → "Why is the customer refusing?" (7 reasons; try **Didn't order it** for Hold & Re-home, **Not home** for second chance), then the refusal code/OTP.
+- **Refused** → "Why is the customer refusing?" (7 reasons; try **Didn't order it** for Hold & Re-home, **Not home** for second chance, **Damaged or wrong item** for the Seller claim chip), then the refusal code/OTP.
 - **Earnings card**: pending, released, clawed back, blocked. A rider with the reserved demo stops gets the full story; others are worked by Autopilot.
 
 ## 4. Refused-Parcel Desk (`/desk`): the hub operator
-- Each refused parcel is a card with the Router's expected value per lane: **second chance**, **hold & re-home**, **batched return**. The lane chosen is shown with its countdown (second chance 24 h, hold 48 h).
-- Actions: **Hold** a parcel, then **Simulate a buyer now (demo)** to match and deliver it (the ₹145 saving books only when the new buyer's order is delivered). Consolidate into a batched return.
-- **Gate checklist** toggles (unopened, seal intact, invoice outside/digital) are what-ifs for the demo; a seller who did not opt in can never be overridden.
-- **Assumptions panel**: change acceptance chances, conversion and shelf capacity (30) and watch the EV move.
+*Rebuilt in Session 14 (Desk v3). Everything here is a demo on synthetic data; every number that is a model or an assumption says so on screen.*
+
+**The flow for one refused parcel**
+1. A rider refuses a parcel and records why (7 reasons). It lands in the **Queue** as a card.
+2. **Inspect parcel** (the box at the bottom of the card, hub operator). Tick what you actually see: **Unopened**, **Seal intact**, **Invoice outside the parcel**, add a **Photo note** (a note only, nothing is uploaded) and press **Record inspection**. It is stored with the time and who did it. **Required before Hold only**; a second chance or a consolidated return does not need it. Until it is done the card says "Inspect the parcel to unlock Hold & Re-home". Simulated riders' parcels are inspected for you (**Bot (synthetic)**); the four live-demo parcels wait for you. **Change inspection** while the parcel is still queued.
+3. The **Router** recommends a lane, in order: **second chance**, **Hold & Re-home**, **consolidated return**, and shows the **expected value** of each (chance × saving − cost).
+4. A **damaged or wrong item** fails the **Item condition OK** gate: it is never re-homed, goes back, and carries a red **Seller claim / QC needed** chip.
+
+**Reading a card**
+- **Match forecast (model)**: the chance that a buyer for **the same listing** turns up within 48 h, as a range (low end, average, high end) on a bar with a dashed **5.5% break-even** line, a **confidence** chip (High = 5+ orders of this exact listing in 14 days; Medium = 1 to 4 of its own or 10+ of similar ones; Low otherwise), one evidence sentence ("3 exact-SKU orders and 41 similar (kurti, cotton, blue) in 14 days") and the shared **keyword chips**. **Hold is allowed only when the low end clears 5.5%.** The ₹ shown uses the average. A similar listing is evidence of demand, never a substitute for the parcel (the seller issues the new invoice). History is synthetic: it shows the mechanism; real calibration comes from the pilot.
+- **Gate checklist**: each legal and practical gate with a green tick or red cross. The three switches (Unopened, Seal intact, Invoice outside) are **Try a what-if: a preview only**. Flip one and a yellow line says what would happen ("Seal broken: Hold lane closed, now Consolidated return, EV +₹136 → +₹36"). Nothing is saved; **Clear what-if** removes it. The switches are off until the parcel is inspected. Seller opt-in, same state, item condition, shelf capacity, rider bag space and the forecast are facts and cannot be flipped; **a seller who has not opted in can never be overridden**.
+
+**Lanes and actions**
+- **Second chance**: **Send second-chance WhatsApp** (24 h to answer). The customer phone (`/customer`) offers **Deliver again**, **Different time** (then **Tomorrow** or **Day after tomorrow**), **Pay now by UPI** (COD orders only), **Pick up at hub** (only while a shelf slot is free) and **Cancel order**. All answers after the first message are replies, so the **4 proactive messages per order** cap holds.
+  - *Deliver again / Different time / Pay now* send the order out again as attempt 2; the ₹99 saving books only if it is delivered. A failed UPI payment still goes out as cash on delivery.
+  - ***Pick up at hub***: the parcel waits on the shelf for **48 h**. The customer's WhatsApp reply holds the **pickup code**. At the counter the operator types it in **Pickup code from the customer** and presses **Customer collected** (5 tries; for a COD parcel tick **Cash collected at the hub**, a flag only). The sale is kept: ₹8 shelf cost booked on reserve, **₹120 saving booked only when collected**. A no-show goes back in a batched return (the ₹8 stays). A pickup uses a slot of the **same 30-slot shelf as Hold**.
+  - **Skip second chance**: pick one of four reasons (customer already refused firmly at the door, not reachable, seller wants it back, other) and press it. It is logged and counted, sends no message and moves the parcel to the next lane. Gates are never overridden.
+- **Hold 48 h**, then **Simulate a buyer now (demo)** to match and deliver it (the ₹145 saving books only when the new buyer's order is delivered). **Add to consolidated return** batches it by seller.
+- A pickup is **never a delivery**: the order ends as **Collected at hub**, stays the rider's failed attempt in the pilot, and pays **no bonus**.
+
+**The top of the page**
+- **Three money tiles:** **Booked so far (net)** (real outcomes only, less what the Router really spent, gross shown small), **Still in play (expected)** (open parcels at their current lane's expected value; an assumption), **Cost of sending everything back** (refused parcels × ₹120).
+- **Side column:** **Pilot KPIs (simulated)**: sales saved, second-chance accept rate, re-home match rate against the 5.5% break-even and against what the forecast said, pickup rate and no-shows, average dwell, ₹ booked per refused parcel, skips and their reasons, and the **kill rule** (match rate below 3% after 30 days). Every line shows its **n** and **too early (needs 30)** until a lane has 30 parcels; an empty lane shows a dash, never 0. Custody incidents and complaints are **not simulated**, and the panel says so. **Done today**, **Consolidated return batches**, **Router assumptions** and the folded **Backtest of the match forecast** follow.
+- **Router assumptions:** three headline numbers: **Soft-refusal accept rate** (sets no cash, wants it later and not home together; it reads "mixed" if the three differ), **Share of nearby demand that converts to a re-home**, **Shelf capacity**. **More: the seven accept rates** folds the individual rows.
+- **Backtest (open the fold):** replays 160 synthetic histories and shows the forecast against what happened in bins, the Brier score, and three hold rules side by side (low end, average, hold everything). History is synthetic: it shows the mechanism only.
 
 ## 5. Audit (`/audit`)
-Ten checks, each green or red, on the day's own record (one final state per order, nothing delivered without a verified OTP, ledger equals every screen, and so on). Run Autopilot + Close pilot first, then open it: it should be all green.
+Fourteen checks, each green or red, on the day's own record (one final state per order, nothing delivered without a verified OTP, ledger equals every screen, **no parcel held without an inspection, no gate overridden, no pickup handed over without a verified code, the shelf never above capacity**, and so on). Run Autopilot + Close pilot first, then open it: it should be all green.
 
 ## 6. Pilot (`/pilot`): the decision question
 1. **Your assumptions**: **Who gets the bonus** (Top 10% / Top 20%), **How much the bonus helps** (+12 per 100 by default), **Bonus per delivery** (₹15). **Try:** Deck assumption, It works well, It does nothing, It hurts normal orders, Fake attempts rise.
@@ -71,7 +92,7 @@ Ten checks, each green or red, on the day's own record (one final state per orde
 4. **Rider:** choose **Demo Bonus rider** → **Deliver** → read OTP on Customer → type it. See ₹15 pending on Rider and Ops.
 5. **Rider:** choose **Demo Control rider** → deliver one: no bonus chip, no ₹15.
 6. **Fake attempt:** Rider **Attempted** → **Demo: log it from far away**. Customer: **No, the agent never came**. Ops: **Exception queue** → **Free re-attempt** (then try **Strike** on a second one).
-7. **Refusal:** Rider **Refused** → **Didn't order it**. Desk: **Hold** → **Simulate a buyer now**. Also refuse a **Not home** one and see second chance.
+7. **Refusal:** Rider **Refused** → **Didn't order it**. Desk: read the **Match forecast**, **Record inspection**, then **Hold** → **Simulate a buyer now**. Flip a what-if switch (nothing changes). Also refuse a **Not home** one: **Send second-chance WhatsApp**, then on Customer try **Pick up at hub**, copy the code into the Desk and press **Customer collected** (Booked so far shows +₹111). Open the **Backtest** fold and the **Pilot KPIs**.
 8. **Ops:** **Reconcile cash**, **+1 h**, **+1 day** (watch timers, rescheduled orders, the ledger).
 9. **Return:** open a delivered order on Ops → **Customer returned this order (demo)** → the ₹15 is clawed back.
 10. **Ops: Autopilot** a while, then **Close pilot** → read **Bonus vs Control** and the money ledger.

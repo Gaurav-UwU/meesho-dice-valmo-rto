@@ -4,6 +4,21 @@ import { DEMO_STEPS, REAL_VS_SIMULATED } from './content.ts'
 const pilotRow = REAL_VS_SIMULATED.find((r) => r.layer === 'Pilot A/B')!
 const pilotStep = DEMO_STEPS.find((s) => s.id === 'pilot')!
 
+const refuseStep = DEMO_STEPS.find((s) => s.id === 'refuse')!
+
+describe('landing copy walks the Desk in the order it now works', () => {
+  it('the refusal step says to inspect the parcel before Hold, because Hold needs an inspection', () => {
+    expect(refuseStep.doThis).toMatch(/Record inspection/)
+    expect(refuseStep.doThis.indexOf('Record inspection')).toBeLessThan(refuseStep.doThis.indexOf('Hold'))
+    expect(refuseStep.doThis).toMatch(/Simulate a buyer now/)
+  })
+
+  it('mentions the match forecast the hold rule reads', () => {
+    expect(refuseStep.see).toMatch(/forecast/i)
+    expect(refuseStep.see).toMatch(/low end/i)
+  })
+})
+
 describe('landing copy describes the paired pilot, not the old clustered one', () => {
   it('the real-vs-simulated pilot row names pairs on past delivery rate, the pair-by-pair range, the fair check and two safety rules', () => {
     expect(pilotRow.real).toMatch(/paired on past delivery rate/)

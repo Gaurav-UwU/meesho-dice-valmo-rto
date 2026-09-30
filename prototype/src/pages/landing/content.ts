@@ -53,8 +53,8 @@ export const DEMO_STEPS: readonly DemoStep[] = [
   {
     id: 'refuse',
     title: 'Refuse a parcel and follow it on the Desk',
-    doThis: 'On the rider app tap Refused, choose “Didn’t order it” and finish the code. On the Desk press Hold, then “Simulate a buyer now”.',
-    see: 'The Router shows the expected value of each lane. The ₹145 saving is booked only when the new buyer’s order is delivered, not when it is matched.',
+    doThis: 'On the rider app tap Refused, choose “Didn’t order it” and finish the code. On the Desk press “Record inspection”, then Hold, then “Simulate a buyer now”.',
+    see: 'The Router shows the expected value of each lane and a match forecast: Hold is allowed only when the low end of the forecast clears the 5.5% break-even. The ₹145 saving is booked only when the new buyer’s order is delivered, not when it is matched.',
     links: [
       { route: '/rider', label: 'Open Rider' },
       { route: '/desk', label: 'Open Desk' },

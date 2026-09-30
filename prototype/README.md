@@ -10,7 +10,7 @@ Specs: `../work/08-prototype-spec.md` (plan), `../work/12-prototype-theme.md` (l
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # 800+ tests
+npm test           # 1,000+ tests
 npm run test:coverage
 npx tsc -b && npx oxlint && npx vite build
 ```
@@ -23,9 +23,9 @@ npx tsc -b && npx oxlint && npx vite build
 | `/ops` | Valmo ops team | Live map, KPIs, Bonus vs Control, suspect attempts, feed. Start day / Autopilot / Reset |
 | `/rider` | Rider | Clone of Valmo Pilot with the green ₹+15 chip (Bonus riders only). Deliver, Attempted, Refused with OTP |
 | `/customer` | Customer | On-screen WhatsApp (Demo mode) with Valmo's wording and reply buttons |
-| `/desk` | Hub operator | Refused-Parcel Desk: second chance, Hold & Re-home, consolidated return |
+| `/desk` | Hub operator | Refused-Parcel Desk: inspect a parcel, second chance (deliver again, different time, pay now, pick up at hub), Hold & Re-home on a match forecast, consolidated return, pilot KPIs |
 | `/pilot` | Meesho decision-maker | 30-day A/B simulator (paired riders, pair-by-pair 95% range, fair-comparison check, two safety rules), GO / RE-PRICE / KILL, P&L, break-even |
-| `/audit` | Anyone | Ten checks on the day's own record, each green or red |
+| `/audit` | Anyone | Fourteen checks on the day's own record, each green or red |
 
 Add `?hub=lucknow|powai|whitefield|gaya` to any link. Open Ops, Rider and Customer in separate tabs of one browser and they move together; to use several phones, see "How to run the multi-phone demo" under Modes.
 
@@ -35,7 +35,7 @@ Add `?hub=lucknow|powai|whitefield|gaya` to any link. Open Ops, Rider and Custom
 3. `/rider` pick **Demo Bonus rider**. Green chip on flagged stops. Tap **Deliver**.
 4. `/customer` read the OTP, type it into the rider sheet. ₹15 shows as pending; ops updates live.
 5. `/rider` mark another stop **Attempted**, then on `/customer` answer **No, the agent never came**: it lands in the ops suspect queue and blocks the bonus.
-6. `/rider` **Refused** on demo stops. The first four give four different Router outcomes on `/desk`: Hold & Re-home, second chance, out-of-state seller, broken seal.
+6. `/rider` **Refused** on demo stops. The first four give four different Router outcomes on `/desk`: Hold & Re-home (press **Record inspection** first: Hold needs it), second chance, out-of-state seller, broken seal.
 7. `/pilot` move the uplift slider (riders are paired on past delivery rate, the range is worked out pair by pair): at the top 20%, +8 gives RE-PRICE, +12 or more gives GO, 0 gives KILL. Look for the ✔ Fair comparison line. The landing page (`/`) has the full walkthrough.
 
 ## Modes

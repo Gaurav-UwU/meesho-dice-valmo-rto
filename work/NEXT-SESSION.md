@@ -1,8 +1,32 @@
 # NEXT SESSION: pick up from here
 
-**Last updated at the end of Session 12 (1 Oct): the multi-device sync and "new day" reset bug is FIXED in code (tests and a real-browser check pass) but NOT yet deployed.** Read [`../00-MASTER.md`](../00-MASTER.md) first, then this file, then the Session 12 entry at the bottom of `R2-HANDOVER.md`.
+**Last updated at the end of Session 14 (1 Oct): the Refused-Parcel Desk v3 (plan 21) is BUILT, all 5 steps, 1,092 tests green, on branch `claude/blissful-cerf-94htkh`. It is NOT merged to `main` and NOT deployed** (the cloud session has no Vercel login). Read [`../00-MASTER.md`](../00-MASTER.md), then this file, then the Session 14 entry at the bottom of `R2-HANDOVER.md`.
 
-> **Update (1 Oct, Session 13): the sync fix is merged into main (834 tests) and DEPLOYED to https://valmo-rescue-console.vercel.app. Vercel already has VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (checked with vercel env ls), and the live landing page offers "Several devices (shared day)". Steps 1 and 2 below are done; do steps 3 to 5 (the real-phone run, press Reset once with the admin token for an old-shape Supabase day).**
+## ⭐ FIRST: deploy the Desk v3 and look at it yourself
+1. `git fetch && git checkout claude/blissful-cerf-94htkh && git pull` (or merge it into `main` if you are happy). Then in `prototype/`: `npm ci`, `npx vitest run && npx tsc -b && npx oxlint && npm run build`, then `node scripts/build-api.mjs && npx vercel deploy --prod --yes`. Check `https://valmo-rescue-console.vercel.app/api/health`. **No manual Reset is needed** (the server replaces the old-shape day by itself: schema 6 → 7). If a screen still says NEEDS RESET, press Reset day on Ops once.
+2. **Look at `/desk` on your own eyes, desktop and 375 px:** run Autopilot; the three money tiles; a card's forecast block (range against the dashed 5.5% line, confidence chip, keyword chips); flip a what-if switch (only a preview); the folded **Backtest** panel; the **Pilot KPIs** panel (dashes and "too early" on a small day).
+3. **The 90-second Demo path changed in one place:** on the Desk the first demo parcel needs **Record inspection** before **Hold** (the landing walkthrough and README say so). Then Hold → Simulate a buyer now. Also try a second chance on a "Not home" refusal: customer phone → **Pick up at hub** → code in the reply → Desk: type the code → Customer collected (Booked so far shows +₹111).
+4. Decisions for Gaurav: (a) **slide 6 message**: the low-end rule makes each held parcel pay more often and more, but in the synthetic backtest it earns slightly less in total than the average rule; say so, do not claim a bigger total (see `16-deck-changes-prototype-v2.md`, the section added in Session 14). (b) The four demo parcels replay a busy listing so the first one is a clear hold. (c) Shared-day decisions from Session 12 still wait for a real-phone run.
+
+## Then
+1. **Independent code-review + security-review agents** (not run in Sessions 8, 9, 11, 12 or 14). Session 14 touched the API validation (`deskInspect`, `deskSkipSecondChance`, `deskHandover`, option enum), the inbound numbered-reply parser (maps by button id) and the pickup-code hashing/masking (`sanitize.ts`, `core.ts`).
+2. **Real-phone multi-device run** (Session 12 list: real iPhone Safari, Android Chrome, WhatsApp in-app browser) and the new Live pickup path on two devices.
+3. **Deck:** send the teammate `16-deck-changes-prototype-v2.md` (new section at the bottom: slide 6, "hold only where the low end of the forecast clears break-even", the backtest numbers, hub pickup, what to say about the synthetic history).
+4. **Freeze Fri 2 Oct, 3 pm:** Ops, Desk, Rider, Audit and `/pilot` at desktop and phone width; screenshots for deck slides 4 and 6, the QR, the 90 s video (Demo mode, one browser), then redeploy.
+5. Still open: `17-prototype-audit.md` items 1 and 6 to 15 (Live `closePilot` messages bound phones is the important one), Hindi on the sheets, a "Plan Pilot 2" button, Playwright e2e in the repo.
+6. Mentor question to add (asked on 1 Oct or by Slack): *"Can hubs get SKU-level order history by pincode from Meesho, near real time?"* The match forecast needs it.
+
+**What the Desk v3 does now (one paragraph for the call):** a refused parcel is inspected by the hub operator (required before Hold only), then the Router picks the cheapest legal lane with the maths shown. Hold & Re-home is decided by a **keyword-matching demand forecast** (TF-IDF cosine on listing titles, Gamma-Poisson, range), and **holds only where the low end of the range clears the 5.5% break-even**; a similar listing is only evidence of demand, never the parcel. The second chance offers deliver again, a different time, pay now by UPI, or pick up at the hub (48 h, code, shares the shelf with Hold, never counts as a delivery or pays a bonus). Savings are booked only on real outcomes; every number is labelled; history is synthetic and says so.
+
+**The single most important thing to say before a judge does is unchanged:** the default pilot says GO (+13.6, range +11.1 to +16.2), smallest effect about 4 per 100, P(GO) at +12 about 58%, and a real pilot will be noisier than the simulation. **New, same spirit:** the Desk's match forecast runs on synthetic history, so it shows the mechanism; real calibration comes from the 30-day pilot against the 5.5% break-even.
+
+Paste to start the next session:
+> We're working on Meesho DICE 3.0 Round 2 (Team GPS, Valmo RTO case). Read `C:\Users\gaura\OneDrive\Desktop\Meesho DICE\00-MASTER.md`, then `work/NEXT-SESSION.md`, then the Session 14 entry at the bottom of `work/R2-HANDOVER.md` (the Refused-Parcel Desk v3 is built on branch `claude/blissful-cerf-94htkh`, tests green, not deployed). Tell me what you saw on the deployed Desk and at the mentor call, then do the next steps in NEXT-SESSION.md. Tests first for engine, reducer and API changes, update (don't delete) existing tests, keep Live mode compiling, deploy only when `npx vitest run && npx tsc -b && npx oxlint && npm run build` are clean (chained with `&&`), and ask me before cutting anything on the "never cut" list. Explain in simple language. Before we stop, log the session in R2-HANDOVER.md and update NEXT-SESSION.md and 00-MASTER.md.
+
+---
+
+## (Session 12/13 state, kept for reference)
+> **Session 13 update:** the sync fix is merged into `main` (834 tests) and DEPLOYED to https://valmo-rescue-console.vercel.app; Vercel already has `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, and the live landing page offers "Several devices (shared day)". Steps 1 and 2 below were done then; the real-phone run (steps 3 to 5) is still open.
 
 ## ⭐ FIRST: deploy and try it on real phones
 1. `cd prototype && npx vitest run && npx tsc -b && npx oxlint && npm run build`, then `node scripts/build-api.mjs && npx vercel deploy --prod --yes` (needs Gaurav's Vercel login; none in the cloud session). Check `https://valmo-rescue-console.vercel.app/api/health`.
@@ -134,5 +158,5 @@ Paste to start the next session:
 
 
 ## After the 1 Oct call
-- **Build the re-home matching engine** (design in `R2-HANDOVER.md`, "Re-home matching engine"). Start with the engine + tests, then Desk cards + backtest chart. Needs Gaurav's "start" and two answers: similarity by text/attributes vs AI embeddings; hold rule on the confidence lower bound.
+- ~~**Build the re-home matching engine**~~ **DONE in Session 14** (design in `R2-HANDOVER.md`, "Re-home matching engine"; what was built in Session 14). Start with the engine + tests, then Desk cards + backtest chart. Needs Gaurav's "start" and two answers: similarity by text/attributes vs AI embeddings; hold rule on the confidence lower bound.
 - Twilio trial cannot send free-text WhatsApp (error 21654); decide between upgrade, Meta test number, or Demo-mode-only for the video.
