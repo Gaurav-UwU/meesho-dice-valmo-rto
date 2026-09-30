@@ -43,7 +43,7 @@ Sales saved (second chances delivered ÷ sent) · second-chance accept rate · r
 "No parcel held without an inspection", "no gate was overridden", "no pickup handed over without a verified code", "shelf never above capacity".
 
 ## Engine and data changes (one schema bump)
-- **Parcel record:** inspection {unopened, sealOk, invoiceOutside, at, by, photoNote}, skipReason, chosen second-chance option, pickup state (reserved, collected, expired) with code and deadline, sellerClaim flag.
+- **Parcel record:** inspection {unopened, sealOk, invoiceOutside, at, by, photoNote}, skipReason, chosen second-chance option, pickup state (reserved, collected, expired) with code and deadline, sellerClaim flag, and the matching `forecast` {λ, mean P, P10, P90, confidence, evidence counts, keywords} next to the hidden true `demandRate`.
 - **Router:** new gates "Inspected" (hold only) and "Item condition OK"; `pickupHours` parameter; pickup slots counted in `shelfUsed`.
 - **Events:** PARCEL_INSPECTED, SECOND_CHANCE_SKIPPED, PICKUP_RESERVED, PICKUP_COLLECTED, PICKUP_EXPIRED (with required fields).
 - **Actions:** `deskInspect`, `deskSkipSecondChance`, `deskHandover {code}`, and `customerSecondChance` extended with the chosen option. `validate.ts` and the Live inbound parsing know them.
@@ -51,11 +51,37 @@ Sales saved (second chances delivered ÷ sent) · second-chance accept rate · r
 - **Timers:** pickup window expiry (48 h) goes to a batched return.
 - **`DAY_SCHEMA` bumped once**, with the local storage key. A shared Supabase day needs **one Reset** afterwards.
 
+## Keyword matching for the match rate (added; replaces the boolean "nearby demand" gate)
+**Adopted from the earlier recommendation (`R2-HANDOVER.md` Session 6, "Re-home matching engine"); confirm in the first message of the build session:** (1) similarity is **keyword / text-attribute matching (TF-IDF cosine), no AI embeddings, no API**, runs in the browser and is explainable; (2) the **hold rule uses the lower end of the confidence range**.
+
+**The one rule that never bends:** a re-home needs the **same seller and the same listing (exact SKU)**, because the seller issues the new invoice. A similar product can **never** be substituted for the refused parcel. Similar SKUs are used **only as evidence of demand** when the exact SKU's own history is thin.
+
+**How it works**
+1. **Synthetic catalogue per hub** (labelled synthetic): each SKU gets a title, category, colour/size/material words, price band and seller, for example "Women's cotton kurti, blue, L". Seeded and deterministic. Today a parcel only has `skuId: SKU-017`.
+2. **Hidden truth vs what the Router believes.** Each SKU has a hidden true buyer rate λ per hour in the catchment (the simulation's truth). A **14-day order history** per SKU is drawn from it (Poisson counts). The Router sees **only the history**. `RefusedParcel.demandRate` becomes the hidden truth (used to time the simulated buyer) and a new `forecast` holds the belief.
+3. **Keywords:** lower-case, remove stop words, light plural clean-up. Weight words by TF-IDF across the hub's catalogue. **Similar** = same category, price within ±30%, cosine ≥ 0.35. The Desk shows the shared words as chips ("cotton, kurti, blue").
+4. **Forecast (Gamma-Poisson, closed form).** Prior from similar SKUs: mean rate λ0 = similarity-weighted average of their rates, strength k = 10 pseudo-orders (α0 = k, β0 = k ÷ λ0). Add the exact SKU's n orders over T = 336 h: α = α0 + n, β = β0 + T. With s = 48 h × conversion (0.5) = 24:
+   - **mean P(match in 48 h) = 1 − (β ÷ (β + s))^α**
+   - the range: P at the 10th and 90th percentile of λ (Gamma quantile by the Wilson-Hilferty approximation): P_q = 1 − exp(−s × λ_q)
+   - If there are no similar SKUs: a weak hub-average prior (k = 2), so the label is Low.
+5. **Hold rule:** hold only if **P10 ≥ 5.5%** (the break-even = ₹8 ÷ ₹145). The expected-value gate becomes "Match forecast clears break-even (low end)" and its note shows the numbers. The EV shown still uses the mean.
+6. **Confidence label:** High = 5 or more exact-SKU orders in 14 days; Medium = 1 to 4 exact orders or at least 10 similar orders; Low = otherwise. One-line reason: "3 exact-SKU orders and 41 similar (kurti, cotton, blue) in 14 days".
+7. **Desk card:** a forecast block with P(match) and its range against a 5.5% line, the confidence chip, the evidence sentence and the keyword chips. Folded panel: **backtest** (predicted vs actual match rate in bins, plus the Brier score). Labelled: "history is synthetic, this shows the mechanism; real calibration comes from pilot data".
+8. **Outcome stays real:** the simulated buyer still arrives at a time drawn from the hidden truth; the **match rate in the KPI panel is the simulated outcome**, compared with 5.5% and with the forecast.
+9. **Not in this build:** the "Arrives tomorrow · already near you" badge, real SKU data, embeddings.
+
+**Hand-worked test (approximate):** prior λ0 = 0.006/h, k = 10 → α0 = 10, β0 = 1,667. Exact SKU: n = 3 orders in T = 336 h → α = 13, β = 2,003. s = 24. Mean P = 1 − (2003 ÷ 2027)^13 = **about 14.3%**. λ at the 10th percentile ≈ 8.65 ÷ 2,003 = 0.00432/h → P10 = 1 − exp(−0.1036) = **about 9.9%**, above 5.5%, so **hold**. The same parcel with n = 0 and only a weak prior must come out **Low** confidence and, if P10 is under 5.5%, **not hold**.
+
+**Files:** `src/engine/catalogue.ts` (titles, attributes, truth rates, history), `keywords.ts` (tokenise, TF-IDF, cosine, explain), `demand.ts` (posterior, closed-form P, quantiles, confidence label), `backtest.ts`, then `router.ts`, `domain/parcels.ts`, `pages/desk/ForecastBlock.tsx`, `BacktestPanel.tsx`. **Tests first:** tokeniser and stop words, a hand-worked TF-IDF and cosine, the similar-SKU gate (category, price band, threshold), the conjugate update and closed-form P against the example above, quantiles against a table, the hold rule at the exact boundary, confidence labels, determinism for a seed, "a similar SKU is never the parcel", the backtest's calibration within a tolerance, the router gate, and the parcel card text.
+
 ## Build order (tests first, one deploy at the end of each step if green)
 1. **Clarity only (no engine change):** the flip-feedback line with preview-only toggles, the three money tiles, the three headline assumptions. **Never dropped.**
-2. **Inspect step, damaged gate, skip second chance, the two Audit checks.** **Dropped last.**
-3. **Second-chance options:** Different time, Pay now, then **Pick up at hub**. Pickup is the heaviest piece and goes before the KPI panel.
-4. **Pilot KPI panel** and the pickup Audit checks. **Dropped first** if the Fri 2 Oct 3 pm freeze bites, then pickup.
+2. **Inspect step, damaged gate, skip second chance, the two Audit checks.** **Dropped last of the big pieces.**
+3. **Keyword matching engine (above), engine then Desk card, backtest panel last.** It is the core of slide 6 ("hold only where the low end clears break-even").
+4. **Second-chance options:** Different time, Pay now, then **Pick up at hub**.
+5. **Pilot KPI panel** and the pickup Audit checks.
+- **If the Fri 2 Oct 3 pm freeze bites, drop in this order:** the KPI panel → hub pickup → the backtest panel (the engine and card stay). Never drop steps 1 and 2 or the matching engine itself.
+- **Time is tight:** this is about five steps against one working day. Only deploy green steps; anything unfinished stays off the live site. The 90-second video uses the Demo path and must not depend on an unfinished step.
 
 ## Risks to watch
 - The pickup terminal state must not leak into the verdict's "delivered" or pay a bonus (scenario tests).
