@@ -171,6 +171,13 @@
   flex-wrap: wrap;
   gap: 6px;
 }
+.rider-ids {
+  margin: 2px 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--valmo-navy);
+  word-break: break-all;
+}
 .rider-stop-no {
   margin-left: auto;
   font-size: 12px;

@@ -715,3 +715,6 @@ Screenshot: `research/order1-valmo-whatsapp.jpg`. **Redact the rider's phone num
   - **Polling and Realtime:** the 5 s poll sleeps while a tab is hidden; a failing Realtime subscription no longer stops the store from starting; bursts of wake-up events cause one re-read (1 s gap).
   - **Fewer database reads per tap:** phone links are read once per request, not on every retry.
 - **Known and accepted (not changed):** the OTP text for orders not linked to a real phone is readable in the public day, by design (the in-app customer phone must show it), so a rider's screen could read a synthetic customer's code; this is fine for the demo and is not fine for real customers, who stay masked. Polling intervals are never cleared (the store lives as long as the page).
+
+### Session 12 (cont.): order id on the rider card
+- Gaurav found it hard to match an order on the rider phone with the same order on the customer phone. The rider card now shows **"Order lucknow-0289 · AWB SYN..."** under the customer name, and the customer phone's order picker lists **order id · AWB · payment**. The customer's chat text already showed the AWB. Test added in `flow.test.tsx` (fails without the change). 833 tests, gate clean. Not deployed yet.

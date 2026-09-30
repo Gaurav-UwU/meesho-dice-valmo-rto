@@ -48,6 +48,19 @@ describe('hero loop through the screens', () => {
     await waitFor(() => expect(state().stops[hero].replies).toEqual(['home']))
   })
 
+  it('the rider card and the customer phone show the same order id and AWB, so the two phones can be matched', async () => {
+    const rider = demoRiders(state()).bonus!
+    const hero = demoStops(state()).bonus[0]
+    const awb = state().stops[hero].order.awb
+    show(`/rider?hub=lucknow&rider=${rider.id}`, 'rider')
+    const card = (await screen.findAllByText(new RegExp(`Order ${hero}`)))[0]
+    expect(card.textContent).toContain(awb)
+    show(`/customer?hub=lucknow&order=${hero}`, 'customer')
+    const option = (await screen.findAllByRole('option')).find((o) => (o as HTMLOptionElement).value === hero)!
+    expect(option.textContent).toContain(hero)
+    expect(option.textContent).toContain(awb)
+  })
+
   it('a Bonus rider sees the ₹+15 chip, delivers with the OTP and earns ₹15 pending', async () => {
     const rider = demoRiders(state()).bonus!
     const hero = demoStops(state()).bonus[0]

@@ -78,6 +78,9 @@ export function TaskCard({ stop, hubName, showBonus, bonusAmount, hasOtp, t, onD
         </span>
       </div>
       <h3 className="rider-cust">{who.name}</h3>
+      <p className="rider-ids">
+        Order {order.id} · AWB {order.awb}
+      </p>
       <p className="rider-addr">{who.address}</p>
       <p className="rider-addr muted">
         {t('landmark')}: {who.landmark}

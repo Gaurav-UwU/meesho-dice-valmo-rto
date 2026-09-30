@@ -13,7 +13,7 @@ interface Props {
 const label = (state: DayState, id: string): string => {
   const o = state.stops[id]?.order
   if (!o) return id
-  return `${o.awb} · ${o.payment === 'COD' ? `COD ${rupees(o.value)}` : 'Prepaid'}`
+  return `${id} · ${o.awb} · ${o.payment === 'COD' ? `COD ${rupees(o.value)}` : 'Prepaid'}`
 }
 
 /** Demo helper: choose which customer's WhatsApp this phone shows. Lists only orders that have messages. */
