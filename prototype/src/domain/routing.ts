@@ -33,10 +33,14 @@ export function routeOptionsFor(s: S, rec: ParcelRecord): RouteOptions {
     riderHasSpace: s.riders.some((r) => openLoad(s, r.id) < RIDER_BAG_CAPACITY),
     secondChanceDeclined: rec.secondChanceDeclined,
     secondChanceExpired: rec.secondChanceExpired,
-    secondChanceSkipped: rec.skipReason !== undefined,
+    // Skipped by the operator, or no attempt is left (a second chance is attempt N+1 and may never exceed maxAttempts): the parcel moves to the next lane.
+    secondChanceSkipped: rec.skipReason !== undefined || !attemptLeft(s, rec),
     inspection: rec.inspection ?? null,
   }
 }
+
+/** A second chance sends the order out again as another attempt, so one must be left. */
+export const attemptLeft = (s: S, rec: ParcelRecord): boolean => (s.stops[rec.orderId]?.failedAttempts ?? 0) < s.config.maxAttempts
 
 export const decisionFor = (s: S, rec: ParcelRecord): RouteDecision => routeParcel(rec.parcel, routeOptionsFor(s, rec))
 
@@ -84,9 +88,9 @@ export function deskSkipSecondChance(s: S, a: Extract<Action, { type: 'deskSkipS
   return feedAdd(next, a.at, 'desk', `Second chance skipped for ${p.parcel.awb} (${a.reason.replace(/_/g, ' ')}): routed to the next lane`, p.orderId)
 }
 
-/** A second chance that ended in a delivery books its net saving, and only then. */
+/** A second chance that ended in a delivery books the gross ₹120 return avoided, and only then. The ₹21 leg was booked as a cost when the order went back out. */
 export function secondChanceDelivered(s: S, orderId: string, at: number): S {
-  return s.stops[orderId]?.viaSecondChance ? bookSaving(s, at, 'Second chance delivered (net of the ₹21 leg)', SECOND_CHANCE_SAVING, orderId) : s
+  return s.stops[orderId]?.viaSecondChance ? bookSaving(s, at, 'Second chance delivered (₹120 return avoided)', REVERSE_COST, orderId) : s
 }
 
 const SOFT_REASONS = REFUSAL_REASONS.filter(isSoftReason)
@@ -192,11 +196,12 @@ export function deskMatch(s: S, a: Extract<Action, { type: 'deskMatch' }>): S {
 }
 
 /** Send a parcel back in a consolidated return: the original order ends as an RTO at the batched price, and the batch saving books. */
-export function batchParcel(s: S, p: ParcelRecord, at: number, why: string): S {
+export function batchParcel(s: S, p: ParcelRecord, at: number, why: string, opts: { readonly saving?: boolean } = {}): S {
   let next = patchParcel(s, p.id, { state: 'batched' })
   next = moveOrder(next, p.orderId, 'rto', { at, reason: why, batched: true })
   next = emit(next, at, 'BATCHED', { batchId: p.parcel.sellerId }, { orderId: p.orderId })
-  next = bookSaving(next, at, 'Batched return', REVERSE_COST * 0.3, p.orderId)
+  // A failed re-home goes back in a batch too, but it is not a saving: the re-home that was meant to avoid the return did not happen.
+  if (opts.saving !== false) next = bookSaving(next, at, 'Batched return', REVERSE_COST * 0.3, p.orderId)
   return feedAdd(next, at, 'desk', `${p.parcel.awb} added to the consolidated return for seller ${p.parcel.sellerId}`, p.orderId)
 }
 
@@ -224,7 +229,7 @@ export function failRehome(s: S, rehomeOrderId: string, at: number): S {
   const rec = s.parcels.find((p) => p.rehomedStopId === rehomeOrderId)
   if (!st || !rec || st.rehomedFrom === undefined) return s
   let next = emit(s, at, 'REHOME_FAILED', {}, { orderId: st.rehomedFrom })
-  next = batchParcel(next, rec, at, 'a failed re-home goes back in a batched return')
+  next = batchParcel(next, rec, at, 'a failed re-home goes back in a batched return', { saving: false })
   return feedAdd(next, at, 'desk', `The re-homed parcel for ${rec.parcel.awb} failed: batched return, no saving booked`, st.rehomedFrom)
 }
 
@@ -242,9 +247,11 @@ export function parcelTimers(s: S, at: number): S {
       next = emit(next, at, 'PICKUP_EXPIRED', {}, { orderId: cur.orderId })
       next = batchParcel(next, cur, at, `not collected within ${next.router.pickupHours} h`)
     } else if (cur.state === 'held' && cur.heldSim !== undefined) {
-      if (cur.matchAt !== undefined && cur.matchAt <= next.simNow) {
-        next = createRehomeOrder(next, cur, at)
+      const matched = cur.matchAt !== undefined && cur.matchAt <= next.simNow ? createRehomeOrder(next, cur, at) : undefined
+      if (matched !== undefined && matched !== next) {
+        next = matched
       } else if (next.simNow - cur.heldSim >= next.router.holdHours * HOUR_MS) {
+        // No buyer, or a buyer appeared but no rider has room in the bag: either way the 48 h hold window still ends.
         next = emit(next, at, 'HOLD_EXPIRED', {}, { orderId: cur.orderId })
         next = batchParcel(next, cur, at, `no buyer in ${next.router.holdHours} h`)
       }

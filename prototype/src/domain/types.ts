@@ -36,6 +36,8 @@ export interface StopRecord {
   readonly confidence?: AttemptConfidence
   /** The rider who logged the last failed attempt (the one an exception is about) */
   readonly attemptRiderId?: string
+  /** Every rider whose own attempt on this order looked fake (the customer said nobody came). A later attempt never washes it out; a captain confirming the attempt valid clears that rider. */
+  readonly suspectRiderIds?: readonly string[]
   /** Sim time of the last failed attempt: a failed order is decided at the next day's start */
   readonly failedSim?: number
   readonly deliveredAt?: number

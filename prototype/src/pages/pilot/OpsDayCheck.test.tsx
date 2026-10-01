@@ -49,6 +49,16 @@ describe("Check today's Ops day", () => {
     expect(c.textContent).toMatch(/Provisional/)
   })
 
+  it('shows the returned share Bonus vs Control as WATCHED, with a dash before anything is delivered, and no stop rule', async () => {
+    await store.send('lucknow', { type: 'startDay' })
+    show()
+    const c = await screen.findByRole('region', { name: "Check today's Ops day" })
+    const row = await within(c).findByText('Returned (watched)')
+    expect(row.parentElement?.textContent).toMatch(/Bonus —/)
+    expect(row.parentElement?.textContent).toMatch(/Control —/)
+    expect(c.textContent).toMatch(/not a stop rule/i)
+  })
+
   it('compares the size of one day with the 30-day simulation', async () => {
     await store.send('lucknow', { type: 'startDay' })
     show()

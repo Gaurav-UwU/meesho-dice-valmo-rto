@@ -176,7 +176,7 @@ describe('handleInbound', () => {
   it('applies a second-chance answer for a refused parcel', async () => {
     const { h, orderId } = await started()
     await bindPhone(h.deps, { phone: PHONE, hubId: HUB, orderId })
-    await runAction(h.deps, HUB, { type: 'riderRefuse', orderId })
+    await runAction(h.deps, HUB, { type: 'riderRefuse', orderId, reason: 'not_home' })
     await runAction(h.deps, HUB, { type: 'submitOtp', orderId, code: '4321' })
     await runAction(h.deps, HUB, { type: 'deskSecondChance', parcelId: `P-${orderId}` })
     await handleInbound(h.deps, PHONE, '1')
@@ -439,7 +439,7 @@ describe('a day saved by an older version of the app', () => {
     const r = await runEnsure(h.deps, HUB)
     expect(r.ok).toBe(true)
     const day = h.db.days.get(HUB)!
-    expect(day.schema).toBe(7)
+    expect(day.schema).toBe(8)
     expect(day.dayNo).toBe(1)
     expect(day.version).toBe(42)
     expect(day.started).toBe(false)
@@ -471,7 +471,7 @@ describe('a day saved by an older version of the app', () => {
     h.db.days.set(HUB, OLD_SHAPE_V5(9))
     const r = await runReset(h.deps, HUB)
     expect(r.ok).toBe(true)
-    expect(h.db.days.get(HUB)).toMatchObject({ schema: 7, dayNo: 1, version: 10 })
+    expect(h.db.days.get(HUB)).toMatchObject({ schema: 8, dayNo: 1, version: 10 })
   })
 })
 

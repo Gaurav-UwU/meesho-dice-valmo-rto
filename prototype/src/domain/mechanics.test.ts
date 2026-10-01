@@ -269,9 +269,16 @@ describe('exceptions and the false-attempt record', () => {
     expect(dayVerdictData(two).readings?.falseAttemptRate).toBe(0.5)
   })
 
-  it('the verdict shows both fake-attempt numbers side by side: what looks fake, and what Ops confirmed', () => {
+  it('reads Control riders the same way, so the rule can compare the two arms', () => {
+    const { control } = heroStops(day)
+    const fakedControl = run(day, { type: 'riderAttempt', at: AT, orderId: control, claim: 'customer_unavailable', evidence: { gpsDistM: 900, calls: 0, waitMin: 0 } })
+    expect(dayVerdictData(fakedControl).readings).toMatchObject({ falseAttemptRate: 0, attempts: 0, controlFalseAttemptRate: 1, controlAttempts: 1 })
+    expect(dayVerdictData(faked).readings).toMatchObject({ falseAttemptRate: 1, attempts: 1, controlFalseAttemptRate: 0, controlAttempts: 0 })
+  })
+
+  it('the verdict shows the fake-attempt numbers side by side: Bonus, Control and the gap, and what a captain confirmed', () => {
     const v = dayVerdict(faked, { ...verdictConfigFor(faked.config) })
-    expect(v.fakeAttempts).toEqual({ suspectedRate: 1, strikes: 0, attempts: 1, enough: false })
+    expect(v.fakeAttempts).toEqual({ suspectedRate: 1, controlRate: 0, excessPts: 100, strikes: 0, attempts: 1, controlAttempts: 0, enough: false })
   })
 
   it('has no returns reading any more: returns are not one of the two safety rules', () => {

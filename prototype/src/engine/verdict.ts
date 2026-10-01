@@ -19,8 +19,11 @@ export type VerdictLabel = 'INVALID' | 'INCOMPLETE' | 'KILL' | 'GO' | 'RE-PRICE'
 export interface Guardrails {
   /** Bonus minus Control success on normal orders, in points. Below this is a breach. */
   readonly normalOrderDeltaPts: number
-  /** Share of the Bonus riders' attempts that look fake (far from the address, or the customer says nobody came). Above this is a breach. */
-  readonly falseAttemptRate: number
+  /**
+   * Bonus riders' suspected fake-attempt rate minus Control riders', in points. More than this is a breach.
+   * Relative on purpose: a fake rate both arms share is not something the bonus caused.
+   */
+  readonly fakeAttemptExcessPts: number
 }
 
 export interface VerdictConfig {
@@ -35,7 +38,7 @@ export interface VerdictConfig {
   readonly minTerminalShare: number
   /** Pairs of riders with finished flagged parcels that the rule needs before it says anything */
   readonly minPairs: number
-  /** The fake-attempt rule stays silent until Bonus riders have logged this many attempts (a rate from a dozen attempts is noise) */
+  /** The fake-attempt rule stays silent until EACH arm has logged this many attempts (a rate from a dozen attempts is noise) */
   readonly minFakeAttempts: number
   readonly alpha: number
   readonly guardrails: Guardrails
@@ -50,7 +53,7 @@ export const DEFAULT_VERDICT_CONFIG: VerdictConfig = {
   minPairs: 6,
   minFakeAttempts: 30,
   alpha: 0.05,
-  guardrails: { normalOrderDeltaPts: -1, falseAttemptRate: 0.05 },
+  guardrails: { normalOrderDeltaPts: -1, fakeAttemptExcessPts: 2 },
 }
 
 /** The rider fee in the conservative case, used only for the caveat on a GO. */
@@ -82,10 +85,13 @@ export interface ArmSample {
 }
 
 export interface GuardrailReadings {
-  /** Suspected fake attempts of Bonus riders: attempts flagged low-confidence / attempts logged. This is what the verdict judges. */
+  /** Suspected fake attempts of Bonus riders: attempts flagged low-confidence / attempts logged. Judged against Control's rate. */
   readonly falseAttemptRate?: number
-  /** Attempts the Bonus riders logged: the rate's denominator. Leave out when it is not known (the rule then always applies). */
+  /** Attempts the Bonus riders logged: the rate's denominator. Leave out when it is not known (the count is then not checked). */
   readonly attempts?: number
+  /** The same two numbers for Control riders. Without a Control rate the rule cannot compare, so it stays silent. */
+  readonly controlFalseAttemptRate?: number
+  readonly controlAttempts?: number
   /** Attempts Ops confirmed fake with a Strike. Shown next to the suspected rate; it is the stricter number and is not judged here. */
   readonly strikes?: number
 }
@@ -340,11 +346,24 @@ export interface VerdictResult {
   readonly normalDeltaPts: number
   readonly normalCi95: readonly [number, number]
   readonly breachedGuardrail?: string
-  /** The two fake-attempt numbers side by side: what looks fake (judged) and what Ops confirmed with a Strike */
-  readonly fakeAttempts?: { readonly suspectedRate: number; readonly strikes: number; readonly attempts?: number; readonly enough: boolean }
+  /** The fake-attempt numbers side by side: Bonus and Control suspected rates (judged, as a gap) and what Ops confirmed with a Strike */
+  readonly fakeAttempts?: {
+    /** Bonus riders' suspected rate (0 to 1) */
+    readonly suspectedRate: number
+    readonly controlRate?: number
+    /** Bonus minus Control, in points (only when both rates are known) */
+    readonly excessPts?: number
+    readonly strikes: number
+    readonly attempts?: number
+    readonly controlAttempts?: number
+    /** True when both arms have enough attempts and a Control rate exists, so the rule is really judging */
+    readonly enough: boolean
+  }
   /** The rule's own limits, so a screen can say where the lines are */
   readonly killFloor: number
   readonly normalOrderLimit: number
+  /** Bonus minus Control fake-attempt rate, in points, above which the pilot stops */
+  readonly fakeAttemptLimitPts: number
   readonly plannedHash: string
   readonly currentHash: string
 }
@@ -353,15 +372,26 @@ const fmt = (x: number, digits = 1): string => `${x < 0 ? '−' : ''}${Math.abs(
 const signed = (x: number): string => `${x < 0 ? '−' : '+'}${Math.abs(x).toFixed(1)}`
 const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? '' : 's'}`
 
-const hasEnoughAttempts = (readings: GuardrailReadings, config: VerdictConfig): boolean => readings.attempts === undefined || readings.attempts >= config.minFakeAttempts
+const hasEnoughAttempts = (readings: GuardrailReadings, config: VerdictConfig): boolean =>
+  readings.falseAttemptRate !== undefined &&
+  readings.controlFalseAttemptRate !== undefined &&
+  (readings.attempts === undefined || readings.attempts >= config.minFakeAttempts) &&
+  (readings.controlAttempts === undefined || readings.controlAttempts >= config.minFakeAttempts)
+
+const excessOf = (readings: GuardrailReadings): number | undefined =>
+  readings.falseAttemptRate === undefined || readings.controlFalseAttemptRate === undefined ? undefined : (readings.falseAttemptRate - readings.controlFalseAttemptRate) * 100
 
 function firstBreach(normalDeltaPts: number, hasNormal: boolean, readings: GuardrailReadings, config: VerdictConfig): { readonly name: string; readonly detail: string } | undefined {
   const g = config.guardrails
   if (hasNormal && normalDeltaPts < g.normalOrderDeltaPts) {
     return { name: 'normal orders', detail: `normal-order success is ${fmt(normalDeltaPts)} pts for Bonus riders, below the ${g.normalOrderDeltaPts} pt limit` }
   }
-  if (readings.falseAttemptRate !== undefined && readings.falseAttemptRate > g.falseAttemptRate && hasEnoughAttempts(readings, config)) {
-    return { name: 'false attempts', detail: `${(readings.falseAttemptRate * 100).toFixed(1)}% of attempts look fake, above the ${(g.falseAttemptRate * 100).toFixed(0)}% limit` }
+  const excess = excessOf(readings)
+  if (excess !== undefined && excess > g.fakeAttemptExcessPts + 1e-9 && hasEnoughAttempts(readings, config)) {
+    return {
+      name: 'false attempts',
+      detail: `${((readings.falseAttemptRate ?? 0) * 100).toFixed(1)}% of Bonus riders' attempts look fake against ${((readings.controlFalseAttemptRate ?? 0) * 100).toFixed(1)}% for Control: ${excess.toFixed(1)} points above Control, over the ${g.fakeAttemptExcessPts} point limit`,
+    }
   }
   return undefined
 }
@@ -427,13 +457,17 @@ export function verdict(data: VerdictData, config: VerdictConfig, plannedHash: s
       : {
           fakeAttempts: {
             suspectedRate: readings.falseAttemptRate,
+            ...(readings.controlFalseAttemptRate === undefined ? {} : { controlRate: readings.controlFalseAttemptRate }),
+            ...(excessOf(readings) === undefined ? {} : { excessPts: excessOf(readings) }),
             strikes: readings.strikes ?? 0,
             ...(readings.attempts === undefined ? {} : { attempts: readings.attempts }),
+            ...(readings.controlAttempts === undefined ? {} : { controlAttempts: readings.controlAttempts }),
             enough: hasEnoughAttempts(readings, config),
           },
         }),
     killFloor: config.killFloor,
     normalOrderLimit: config.guardrails.normalOrderDeltaPts,
+    fakeAttemptLimitPts: config.guardrails.fakeAttemptExcessPts,
     plannedHash,
     currentHash,
     ...extra,
@@ -455,6 +489,12 @@ export function verdict(data: VerdictData, config: VerdictConfig, plannedHash: s
       parts.push(`only ${plural(flagged.pairs, 'pair')} of riders with finished flagged parcels (need ${config.minPairs})${left}`)
     }
     return result('INCOMPLETE', `Too early to say: ${parts.join('; ')}.`)
+  }
+
+  // Normal-order data was supplied but no rider pair has finished normal orders: the normal-order safety rule cannot be judged, so say so
+  // rather than skipping it and showing a verdict that never looked at it.
+  if (data.normal !== undefined && !hasNormal) {
+    return result('INCOMPLETE', 'Too early to say: no rider pair has finished normal orders yet, so the normal-order safety rule cannot be judged.')
   }
 
   const breach = firstBreach(hasNormal ? normalCmp.diffPer100 : 0, hasNormal, readings, config)

@@ -274,6 +274,9 @@ function assess(s: S, orderId: string, at: number): S {
   const confidence = confidenceOf(next.stops[orderId])
   next = patchStop(next, orderId, { confidence })
   if (assessment.status === 'suspect') {
+    const who = st.attemptRiderId ?? st.riderId
+    const known = next.stops[orderId].suspectRiderIds ?? []
+    if (!known.includes(who)) next = patchStop(next, orderId, { suspectRiderIds: [...known, who] })
     next = feedAdd(next, at, 'suspect', `Suspect attempt by ${riderName(s, st.attemptRiderId ?? st.riderId)}: ${assessment.reason}. Bonus on this order is blocked`, orderId)
     return openException(next, orderId, at, confidence)
   }

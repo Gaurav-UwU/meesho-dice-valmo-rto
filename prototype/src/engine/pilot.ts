@@ -52,8 +52,13 @@ export interface PilotInput {
   readonly riderEffectSd: number
   /** Same, for normal orders: routine orders depend less on the rider. Assumption. */
   readonly normalRiderEffectSd: number
-  /** True share of Bonus riders' attempts that look fake (the second safety rule) */
-  readonly falseAttemptRate: number
+  /** Share of attempts that look fake with no bonus: Control riders' rate in the simulation. ASSUMED (4%), not measured: the 8-week baseline measures it. */
+  readonly fakeAttemptBaseline: number
+  /**
+   * How much higher Bonus riders' fake share is than Control's (0.03 = 3 points above). In the simulation riders' fake attempts do NOT respond to
+   * the bonus unless this is moved, so 0 is the default and the safety rule only shows what it does when you move it.
+   */
+  readonly fakeAttemptExtra: number
   /** The rule the result is judged by, and the hash of the rule as it was when the pilot was planned */
   readonly verdictConfig: VerdictConfig
   readonly plannedHash: string
@@ -73,7 +78,8 @@ export const DEFAULT_PILOT: PilotInput = {
   flaggedShare: FLAGGED_SHARE,
   riderEffectSd: 0.3,
   normalRiderEffectSd: 0.15,
-  falseAttemptRate: 0.02,
+  fakeAttemptBaseline: 0.04,
+  fakeAttemptExtra: 0,
   verdictConfig: DEFAULT_VERDICT_CONFIG,
   plannedHash: ruleHash(DEFAULT_VERDICT_CONFIG),
   seed: 2026,
@@ -298,8 +304,13 @@ export function simulatePilot(input: PilotInput): PilotResult {
     {
       flagged: { bonus: { riders: all.flagged.bonus, open: 0 }, control: { riders: all.flagged.control, open: 0 } },
       normal: { bonus: { riders: all.normal.bonus, open: 0 }, control: { riders: all.normal.control, open: 0 } },
-      // Bonus riders log an attempt for about every flagged parcel they fail to deliver.
-      readings: { falseAttemptRate: Math.max(0, input.falseAttemptRate + rng.normal() * FAKE_READING_NOISE), attempts: pooled.flagged.bonus.n - pooled.flagged.bonus.delivered },
+      // Each arm logs an attempt for about every flagged parcel it fails to deliver. Control sits at the baseline rate, Bonus at baseline + the slider.
+      readings: {
+        falseAttemptRate: Math.max(0, input.fakeAttemptBaseline + input.fakeAttemptExtra + rng.normal() * FAKE_READING_NOISE),
+        attempts: pooled.flagged.bonus.n - pooled.flagged.bonus.delivered,
+        controlFalseAttemptRate: Math.max(0, input.fakeAttemptBaseline + rng.normal() * FAKE_READING_NOISE),
+        controlAttempts: pooled.flagged.control.n - pooled.flagged.control.delivered,
+      },
     },
     input.verdictConfig,
     input.plannedHash,

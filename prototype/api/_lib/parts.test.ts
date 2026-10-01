@@ -49,8 +49,9 @@ describe('sanitize', () => {
   it('toStorable stores the pickup code as a peppered hash, once, and keeps the plain one only in memory', () => {
     let s = startedDay()
     const id = demoStops(s).bonus[0]
-    s = run(s, { type: 'riderRefuse', at: AT, orderId: id, code: '7777' }, { type: 'submitOtp', at: AT + 1, orderId: id, code: '7777' }, { type: 'deskSecondChance', at: AT + 2, parcelId: `P-${id}` })
+    s = run(s, { type: 'riderRefuse', at: AT, orderId: id, code: '7777' }, { type: 'submitOtp', at: AT + 1, orderId: id, code: '7777' })
     s = { ...s, parcels: s.parcels.map((p) => ({ ...p, parcel: { ...p.parcel, reason: 'not_home' as const } })) }
+    s = run(s, { type: 'deskSecondChance', at: AT + 2, parcelId: `P-${id}` })
     const reserved = run(s, { type: 'customerSecondChance', at: AT + 3, parcelId: `P-${id}`, accept: true, option: 'pickup' })
     const plain = reserved.parcels[0].pickup!.code
     expect(plain).toMatch(/^\d{4}$/)

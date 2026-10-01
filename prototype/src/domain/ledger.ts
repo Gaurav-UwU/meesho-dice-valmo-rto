@@ -1,7 +1,7 @@
 import { emit } from './events.ts'
 import { DAY_MS, codReconciliationTime, dayIndex } from './clock.ts'
 import { bookCost, feedAdd, riderName, WHATSAPP_COST, type S } from './helpers.ts'
-import { isDelivered, isTerminal } from './lifecycle.ts'
+import { isDelivered, isSettled } from './lifecycle.ts'
 import type { LedgerEntry, LedgerStatus, StopRecord } from './types.ts'
 
 /**
@@ -19,9 +19,9 @@ export const NORMAL_FLOOR_MIN_ORDERS = 10
 
 const stopsOf = (s: S): readonly StopRecord[] => s.stopOrder.map((id) => s.stops[id])
 
-/** Normal-order success of the orders a rider was first given (final outcomes only) */
+/** Normal-order success of the orders a rider was first given. Settled orders count: a failed order still waiting for its retry is a failure so far, not a missing one. */
 function normalRate(s: S, pick: (x: StopRecord) => boolean): { readonly n: number; readonly rate: number } {
-  const done = stopsOf(s).filter((x) => !x.flagged && x.rehomedFrom === undefined && isTerminal(x.status) && pick(x))
+  const done = stopsOf(s).filter((x) => !x.flagged && x.rehomedFrom === undefined && isSettled(x.status) && pick(x))
   return { n: done.length, rate: done.length === 0 ? 0 : done.filter((x) => isDelivered(x.status)).length / done.length }
 }
 
@@ -35,7 +35,7 @@ export function normalFloorBreached(s: S, riderId: string): boolean {
 /** Why a bonus that would otherwise accrue is blocked, if it is. */
 export function blockReason(s: S, orderId: string, riderId: string, at: number): string | undefined {
   const st = s.stops[orderId]
-  if (st.assessment?.bonusBlocked && st.attemptRiderId === riderId) return 'an earlier attempt by this rider on this order looked fake'
+  if (st.suspectRiderIds?.includes(riderId) || (st.assessment?.bonusBlocked && st.attemptRiderId === riderId)) return 'an earlier attempt by this rider on this order looked fake'
   if ((s.strikes[riderId] ?? 0) >= STRIKE_LIMIT) return `rider has ${STRIKE_LIMIT} confirmed fake attempts`
   const today = dayIndex(s.simNow)
   const earnedToday = s.ledger.filter((l) => l.riderId === riderId && l.status !== 'blocked' && l.status !== 'clawed_back' && dayIndex(l.deliveredSim) === today).reduce((t, l) => t + l.amount, 0)

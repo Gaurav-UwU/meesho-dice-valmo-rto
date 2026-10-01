@@ -56,6 +56,8 @@ export interface Kpis {
   /** What the day could pay if every Bonus-Eligible order on a Bonus rider were delivered */
   readonly bonusBudget: number
   readonly suspect: number
+  /** Returns are watched, Bonus vs Control (never a stop rule) */
+  readonly returns: { readonly bonus: ReturnShare; readonly control: ReturnShare }
 }
 
 const armRate = (inArm: readonly StopRecord[]): ArmRate => {
@@ -71,6 +73,26 @@ const armRate = (inArm: readonly StopRecord[]): ArmRate => {
     settled,
     settledRate: settled === 0 ? 0 : delivered / settled,
   }
+}
+
+/** Returned share of one arm's delivered flagged orders. `share` is undefined (a dash on screen), never 0, until something is delivered. */
+export interface ReturnShare {
+  readonly delivered: number
+  readonly returned: number
+  readonly share: number | undefined
+}
+
+/**
+ * Returns are WATCHED, not a stop rule: how many delivered flagged orders came back as a customer return, Bonus riders against Control riders.
+ * A bonus that pushed false deliveries would show up here before it shows up anywhere else; the pilot reads it but no KILL comes from it.
+ */
+export function returnShare(s: DayState): { readonly bonus: ReturnShare; readonly control: ReturnShare } {
+  const of = (arm: Arm): ReturnShare => {
+    const done = flaggedInArm(stopsOf(s), arm).filter((x) => isDelivered(x.status))
+    const returned = done.filter((x) => x.returned === true).length
+    return { delivered: done.length, returned, share: done.length === 0 ? undefined : returned / done.length }
+  }
+  return { bonus: of('bonus'), control: of('control') }
 }
 
 export const stopsOf = (s: DayState): readonly StopRecord[] => s.stopOrder.map((id) => s.stops[id])
@@ -141,6 +163,7 @@ export function kpis(s: DayState): Kpis {
     bonusBlocked: totals.blocked,
     bonusBudget: flaggedInArm(stops, 'bonus').length * s.config.bonus,
     suspect: stops.filter((x) => x.assessment?.status === 'suspect').length,
+    returns: returnShare(s),
   }
 }
 

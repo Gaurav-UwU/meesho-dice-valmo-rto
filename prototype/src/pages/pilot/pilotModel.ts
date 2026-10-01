@@ -25,8 +25,8 @@ export interface Controls {
   readonly days: number
   readonly flaggedPerDay: number
   readonly ridersPerHub: number
-  /** Share of the Bonus riders' attempts that look fake, in % (the second safety rule) */
-  readonly falseAttempts: number
+  /** Extra fake attempts for Bonus riders, in points above Control (the second safety rule is relative to Control) */
+  readonly fakeExtra: number
   /** Demo of pre-registration: loosen the kill floor AFTER planning, and watch the verdict go INVALID */
   readonly ruleChanged: boolean
   readonly seed: number
@@ -41,7 +41,7 @@ export const DEFAULT_CONTROLS: Controls = {
   days: DEFAULT_PILOT.days,
   flaggedPerDay: DEFAULT_PILOT.flaggedPerDayPerHub,
   ridersPerHub: DEFAULT_PILOT.ridersPerHub,
-  falseAttempts: DEFAULT_PILOT.falseAttemptRate * 100,
+  fakeExtra: DEFAULT_PILOT.fakeAttemptExtra * 100,
   ruleChanged: false,
   seed: DEFAULT_PILOT.seed,
 }
@@ -71,7 +71,7 @@ export function toPilotInput(c: Controls): PilotInput {
     ...DEFAULT_PILOT,
     ridersPerHub: c.ridersPerHub,
     flaggedShare: c.flaggedShare / 100,
-    falseAttemptRate: c.falseAttempts / 100,
+    fakeAttemptExtra: c.fakeExtra / 100,
     verdictConfig: judged,
     plannedHash: ruleHash(planned),
     trueUplift: c.uplift / 100,

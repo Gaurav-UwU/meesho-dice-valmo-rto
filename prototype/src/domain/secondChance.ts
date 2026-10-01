@@ -1,8 +1,8 @@
 import { hashSeed } from '../engine/rng.ts'
 import { DAY_MS, HOUR_MS, nextDayStart } from './clock.ts'
 import { emit } from './events.ts'
-import { bookCost, feedAdd, moveOrder, msgAdd, patchParcel, patchStop, REVERSE_COST, sendProactive, tap, bookSaving, type S } from './helpers.ts'
-import { HOLD_COST, decisionFor, findParcel, laneLogged, shelfUsed } from './routing.ts'
+import { bookCost, bookSecondChanceLeg, feedAdd, moveOrder, msgAdd, patchParcel, patchStop, proactiveCount, REVERSE_COST, sendProactive, tap, bookSaving, type S } from './helpers.ts'
+import { HOLD_COST, attemptLeft, decisionFor, findParcel, laneLogged, shelfUsed } from './routing.ts'
 import { WHEN_BUTTONS, laterAck, pickupFullAck, pickupText, secondChanceButtons, secondChanceText, whenText, PAY_BUTTONS, replyAck } from './messages.ts'
 import type { Action, ParcelRecord, SecondChanceChoice } from './types.ts'
 
@@ -15,12 +15,13 @@ const hubName = (s: S): string => s.hub.name.split('·').pop()?.trim() ?? s.hub.
 export function deskSecondChance(s: S, a: Extract<Action, { type: 'deskSecondChance' }>): S {
   const p = findParcel(s, a.parcelId)
   if (!p || p.state !== 'queued') return s
+  // Only while the second chance is the lane on offer: not after a decline, an expiry, a skip, or when no attempt is left.
+  const decision = decisionFor(s, p)
+  if (decision.lane !== 'second_chance') return s
   const st = s.stops[p.orderId]
   const pickupOffered = shelfUsed(s) < s.router.shelfCapacity
-  let next = laneLogged(s, a.at, p, decisionFor(s, p))
-  next = patchParcel(next, p.id, { state: 'second_chance_sent', secondChanceSentSim: s.simNow, pickupOffered })
-  next = emit(next, a.at, 'SECOND_CHANCE_SENT', {}, { orderId: p.orderId })
-  next = sendProactive(next, {
+  // The message goes first. If the 4-message cap rejects it, nothing is marked as sent (the parcel stays in the queue).
+  const sent = sendProactive(s, {
     orderId: p.orderId,
     at: a.at,
     direction: 'out',
@@ -28,19 +29,36 @@ export function deskSecondChance(s: S, a: Extract<Action, { type: 'deskSecondCha
     text: secondChanceText(st.order.awb),
     buttons: secondChanceButtons({ pay: st.order.payment !== 'PREPAID', pickup: pickupOffered }),
   })
+  if (proactiveCount(sent, p.orderId) === proactiveCount(s, p.orderId)) {
+    return feedAdd(sent, a.at, 'desk', `Second chance not sent for ${st.order.awb}: the order already had ${proactiveCount(s, p.orderId)} WhatsApp messages (the cap). Skip it with a reason to move to the next lane`, p.orderId)
+  }
+  let next = laneLogged(sent, a.at, p, decision)
+  next = patchParcel(next, p.id, { state: 'second_chance_sent', secondChanceSentSim: s.simNow, pickupOffered })
+  next = emit(next, a.at, 'SECOND_CHANCE_SENT', {}, { orderId: p.orderId })
   return feedAdd(next, a.at, 'desk', `Second-chance WhatsApp sent for ${st.order.awb}. The customer has ${s.router.secondChanceHours} h to answer`, p.orderId)
 }
 
-/** The refusal stays on the record (failedAttempts = 1); the order goes out again as attempt 2 in the same arm. The ₹99 books only if it is delivered. */
+/** The refusal stays on the record (failedAttempts = 1); the order goes out again as attempt 2 in the same arm. The ₹21 leg books now, the ₹120 saving only if it is delivered. */
 function deliverAgain(s: S, p: ParcelRecord, at: number, choice: SecondChanceChoice, why: string): S {
+  // A second chance is another attempt: it may never exceed maxAttempts. The parcel goes to the next lane instead.
+  if (!attemptLeft(s, p)) return noAttemptLeft(s, p, at)
   let next = patchParcel(s, p.id, { state: 'recovered', choice, awaiting: undefined })
   next = moveOrder(next, p.orderId, 'out_for_delivery', { at, reason: why, patch: { viaSecondChance: true, paymentPending: false } })
   next = emit(next, at, 'SECOND_CHANCE_ACCEPTED', {}, { orderId: p.orderId })
-  return feedAdd(next, at, 'desk', 'Customer accepted the second chance: back in the bag as attempt 2 (the ₹120 return is avoided only if it is delivered)', p.orderId)
+  // The ₹21 leg is spent now; the ₹120 return avoided books only if the order is delivered, so a failed second chance shows its cost.
+  next = bookSecondChanceLeg(next, p.orderId, at)
+  return feedAdd(next, at, 'desk', 'Customer accepted the second chance: back in the bag as attempt 2 (the ₹21 leg is booked now; the ₹120 return is avoided only if it is delivered)', p.orderId)
+}
+
+/** The customer said yes but no attempt is left: the parcel goes back to the queue and the Router offers the next lane. */
+function noAttemptLeft(s: S, p: ParcelRecord, at: number): S {
+  const next = patchParcel(s, p.id, { state: 'queued', awaiting: undefined })
+  return feedAdd(next, at, 'desk', `No attempt left for ${p.parcel.awb} (the cap is ${s.config.maxAttempts}): routed to the next lane instead of going out again`, p.orderId)
 }
 
 /** A different time: parked until 08:00 on the chosen day, then out as attempt 2. This is not a customer reschedule, so it never counts toward the reschedule cap. */
 function deliverLater(s: S, p: ParcelRecord, at: number, day: 'tomorrow' | 'day_after'): S {
+  if (!attemptLeft(s, p)) return noAttemptLeft(s, p, at)
   const to = nextDayStart(s.simNow) + (day === 'day_after' ? DAY_MS : 0)
   let next = patchParcel(s, p.id, { state: 'recovered', choice: 'later', awaiting: undefined })
   next = moveOrder(next, p.orderId, 'rescheduled', { at, reason: 'second chance: a different time', patch: { viaSecondChance: true, rescheduledTo: to } })

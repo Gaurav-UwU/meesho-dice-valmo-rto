@@ -220,11 +220,12 @@ describe('scenario 6: a soft refusal accepted as a second chance is delivered, a
     expect(savingsLedger(accepted).total).toBe(0)
   })
 
-  it('delivery on attempt 2 books ₹120 - ₹21 = ₹99', () => {
+  it('delivery on attempt 2 books the gross ₹120 return avoided; the ₹21 leg was booked as a cost when the order went back out (net ₹99)', () => {
     const s = deliverOrder(accepted, bonusId)
     expect(s.stops[bonusId].status).toBe('delivered_a2')
-    expect(eventsOf(s, 'SAVING_BOOKED', bonusId)[0].data).toMatchObject({ line: 'Second chance delivered (net of the ₹21 leg)', amount: 99 })
-    expect(savingsLedger(s).total).toBe(99)
+    expect(eventsOf(s, 'SAVING_BOOKED', bonusId)[0].data).toMatchObject({ line: 'Second chance delivered (₹120 return avoided)', amount: 120 })
+    expect(savingsLedger(s).total).toBe(120)
+    expect(costLedger(s).find((c) => c.line === 'Second-chance re-attempt leg')).toMatchObject({ amount: 21, stream: 'router' })
   })
 
   it('if attempt 2 fails, no saving is ever booked', () => {

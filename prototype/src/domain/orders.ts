@@ -88,7 +88,8 @@ export function resolveExceptionFor(s: S, orderId: string, action: ExceptionActi
   let next = markResolved(s, orderId, action, at, auto)
   if (action === 'confirm') {
     const assessment = st.assessment ? { ...st.assessment, status: 'verified' as const, reason: 'Ops confirmed the attempt was valid', bonusBlocked: false } : undefined
-    next = patchStop(next, orderId, { assessment, confidence: 'medium' })
+    const cleared = (st.suspectRiderIds ?? []).filter((id) => id !== (st.attemptRiderId ?? st.riderId))
+    next = patchStop(next, orderId, { assessment, confidence: 'medium', suspectRiderIds: cleared })
     return feedAdd(next, at, 'attempt', `Ops confirmed the attempt on ${st.order.awb} was valid`, orderId)
   }
   const faker = st.attemptRiderId ?? st.riderId

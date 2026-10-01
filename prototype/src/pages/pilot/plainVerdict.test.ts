@@ -26,7 +26,7 @@ describe('plain-language verdict', () => {
 
   it('KILL on a safety rule names it in words', () => {
     expect(judge({ trueUplift: 0.2, normalSpillover: -0.03 }).sentence).toMatch(/normal orders get worse/)
-    expect(judge({ trueUplift: 0.2, falseAttemptRate: 0.12 }).sentence).toMatch(/too many fake attempts/)
+    expect(judge({ trueUplift: 0.2, fakeAttemptExtra: 0.12 }).sentence).toMatch(/too many fake attempts/)
   })
 
   it('KILL when it barely helps', () => {

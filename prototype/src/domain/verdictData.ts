@@ -25,14 +25,26 @@ function armSample(s: DayState, stops: readonly StopRecord[]): ArmSample {
 }
 
 /**
- * The fake-attempt safety rule reads what LOOKS fake: attempts of Bonus riders that opened an exception (the phone was far from the address, or the
- * customer said nobody came) over all attempts they logged. It does not wait for Ops to press Strike, because a dispute nobody reviews still
- * resolves by itself after 24 h. Confirmed strikes are returned as a separate, stricter number.
+ * The fake-attempt safety rule reads what LOOKS fake: attempts that opened an exception (the phone was far from the address, or the customer said
+ * nobody came) over all attempts logged, for Bonus riders AND for Control riders. The rule compares the two (Bonus no more than 2 points above
+ * Control), because a fake rate both arms share is not something the bonus caused. It does not wait for a captain to press Strike, because a
+ * dispute nobody reviews still resolves by itself after 24 h. Confirmed strikes (Bonus arm) are returned as a separate, stricter number.
  */
 function guardrailReadings(s: DayState): GuardrailReadings {
-  const ofBonus = (type: string): number => s.events.filter((e) => e.type === type && e.arm === 'bonus').length
-  const attempts = ofBonus('ATTEMPT_LOGGED')
-  return { falseAttemptRate: attempts === 0 ? 0 : ofBonus('EXCEPTION_OPENED') / attempts, attempts, strikes: ofBonus('STRIKE') }
+  const of = (type: string, arm: Arm): number => s.events.filter((e) => e.type === type && e.arm === arm).length
+  const rate = (arm: Arm): { readonly attempts: number; readonly rate: number } => {
+    const attempts = of('ATTEMPT_LOGGED', arm)
+    return { attempts, rate: attempts === 0 ? 0 : of('EXCEPTION_OPENED', arm) / attempts }
+  }
+  const bonus = rate('bonus')
+  const control = rate('control')
+  return {
+    falseAttemptRate: bonus.rate,
+    attempts: bonus.attempts,
+    controlFalseAttemptRate: control.rate,
+    controlAttempts: control.attempts,
+    strikes: of('STRIKE', 'bonus'),
+  }
 }
 
 /**
@@ -72,6 +84,8 @@ export function dayHeadline(s: DayState, verdictResult: VerdictResult = dayVerdi
     controlTerminal: c.n,
     controlDelivered: c.y,
     bonus: s.config.bonus,
+    // What the ledger actually owes: a blocked or clawed-back bonus is not a cost.
+    bonusPaid: s.ledger.filter((l) => l.status !== 'blocked' && l.status !== 'clawed_back').reduce((t, l) => t + l.amount, 0),
     reverse: verdictConfigFor(s.config).reverse,
     ci95: Number.isFinite(verdictResult.ci95[0]) && Number.isFinite(verdictResult.ci95[1]) ? verdictResult.ci95 : undefined,
   })

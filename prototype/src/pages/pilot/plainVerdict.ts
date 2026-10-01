@@ -11,7 +11,7 @@ const n = (x: number): string => `${x < 0 ? '−' : '+'}${Math.abs(x).toFixed(1)
 
 const SAFETY_WORDS: Readonly<Record<string, string>> = {
   'normal orders': 'normal orders get worse',
-  'false attempts': 'too many fake attempts',
+  'false attempts': 'too many fake attempts compared with Control riders',
 }
 
 /** "The worst case we can't rule out" is the low end of the 95% range; the page never needs the word "interval". */

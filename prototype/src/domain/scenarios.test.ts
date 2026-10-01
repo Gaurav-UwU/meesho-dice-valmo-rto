@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DEFAULT_VERDICT_CONFIG, compareArms, ruleHash, verdict } from '../engine/verdict.ts'
 import { reduce } from './reducer.ts'
 import { kpis, stopsOf } from './selectors.ts'
-import { AT, heroStops, run, startedDay } from './testkit.ts'
+import { AT, forceParcel, heroStops, run, startedDay } from './testkit.ts'
 import { verdictConfigFor } from './rule.ts'
 import { dayVerdict, dayVerdictData } from './verdictData.ts'
 import type { DayState } from './types.ts'
@@ -120,7 +120,7 @@ describe('scenario 5: "Change time" becomes a next-day attempt and the order sta
 })
 
 describe('the accepted second chance no longer erases the failure', () => {
-  const refused = run(day, { type: 'riderRefuse', at: AT, orderId: bonusId, code: '7777' }, { type: 'submitOtp', at: AT + 1, orderId: bonusId, code: '7777' })
+  const refused = forceParcel(run(day, { type: 'riderRefuse', at: AT, orderId: bonusId, code: '7777' }, { type: 'submitOtp', at: AT + 1, orderId: bonusId, code: '7777' }), bonusId, { reason: 'not_home' })
   const pid = refused.parcels[0].id
   const accepted = run(refused, { type: 'deskSecondChance', at: AT + 2, parcelId: pid }, { type: 'customerSecondChance', at: AT + 3, parcelId: pid, accept: true })
 
@@ -159,7 +159,7 @@ describe('scenario 14: a guardrail breach is a KILL even with a strong uplift', 
         bonus: { riders: Array.from({ length: 8 }, (_, i) => ({ riderId: `b${i}`, pairId: `p${i}`, n: 250, y: 190 })), open: 0 },
         control: { riders: Array.from({ length: 8 }, (_, i) => ({ riderId: `c${i}`, pairId: `p${i}`, n: 250, y: 150 })), open: 0 },
       },
-      readings: { falseAttemptRate: 0.09 },
+      readings: { falseAttemptRate: 0.09, controlFalseAttemptRate: 0.04 },
     }
     expect(data.flagged.bonus.riders).toBeDefined()
     const v = verdict(strong, DEFAULT_VERDICT_CONFIG, ruleHash(DEFAULT_VERDICT_CONFIG))

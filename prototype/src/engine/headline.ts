@@ -11,6 +11,8 @@ export interface HeadlineInput {
   readonly controlDelivered: number
   /** ₹ paid per delivered flagged order in the Bonus arm */
   readonly bonus: number
+  /** ₹ the bonus ledger actually owes: blocked and clawed-back bonuses left out. When omitted, every delivered order is assumed paid. */
+  readonly bonusPaid?: number
   /** ₹ of reverse leg avoided per rescued order */
   readonly reverse: number
   /** 95% interval of the uplift per 100 flagged orders (rider-clustered), if known */
@@ -35,7 +37,7 @@ export function causalHeadline(i: HeadlineInput): CausalHeadline {
   const ready = i.bonusTerminal > 0 && i.controlTerminal > 0
   const gap = ready ? i.bonusDelivered / i.bonusTerminal - i.controlDelivered / i.controlTerminal : 0
   const extra = gap * i.bonusTerminal
-  const bonusCost = i.bonusDelivered * i.bonus
+  const bonusCost = i.bonusPaid ?? i.bonusDelivered * i.bonus
   const rtoAvoided = extra * i.reverse
   return {
     ready,

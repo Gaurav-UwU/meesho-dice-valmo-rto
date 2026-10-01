@@ -82,8 +82,24 @@ describe('Step 1: your assumptions', () => {
     show()
     const more = inputs().querySelector('details')!
     const safety = within(more).getByRole('heading', { name: /Safety rules/ }).parentElement as HTMLElement
-    expect(within(safety).getAllByRole('slider').map((s) => s.getAttribute('id'))).toEqual(['pilot-spillover', 'pilot-falseAttempts'])
+    expect(within(safety).getAllByRole('slider').map((s) => s.getAttribute('id'))).toEqual(['pilot-spillover', 'pilot-fakeExtra'])
     expect(more.textContent).not.toMatch(/Returns|Complaints|On-time/)
+  })
+
+  it('says returns and complaints are watched in the real pilot, not simulated, and are not a stop rule', () => {
+    show()
+    const more = inputs().querySelector('details')!
+    expect(more.textContent).toMatch(/watched in the real pilot, not simulated/i)
+    expect(more.textContent).toMatch(/never trigger a KILL/)
+  })
+
+  it('words the fake-attempt slider as points above Control and says the simulation does not move it', () => {
+    show()
+    const more = inputs().querySelector('details')!
+    expect(more.textContent).toMatch(/Extra fake attempts for Bonus riders/)
+    expect(more.textContent).toMatch(/in points above Control/i)
+    expect(more.textContent).toMatch(/do not respond to the bonus unless you move this/)
+    expect(more.textContent).toMatch(/limit 2 pts above Control/)
   })
 
   it('labels the 60% as our assumption, measured by the Control group', () => {

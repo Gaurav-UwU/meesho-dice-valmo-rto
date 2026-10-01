@@ -58,7 +58,8 @@ describe('Deliver again (as before)', () => {
     expect(savingsLedger(s).total).toBe(0)
     const done = deliverOrder(s, bonusId, '1357')
     expect(order(done).status).toBe('delivered_a2')
-    expect(savingsLedger(done).total).toBe(99)
+    expect(savingsLedger(done).total).toBe(120)
+    expect(costLedger(done).find((c) => c.line === 'Second-chance re-attempt leg')?.amount).toBe(21)
   })
 
   it('an accept with no option means Deliver again', () => {
@@ -78,7 +79,7 @@ describe('Different time', () => {
     expect(order(s).status).toBe('refused')
   })
 
-  it('tomorrow: the order is parked until 08:00 tomorrow, then goes out as attempt 2; the delivery books the ₹99 saving', () => {
+  it('tomorrow: the order is parked until 08:00 tomorrow, then goes out as attempt 2; the delivery books the ₹120 saving (net ₹99 with the ₹21 leg)', () => {
     const s = choose(choose(offered(), 'later'), 'tomorrow', AT + 4)
     expect(record(s).state).toBe('recovered')
     expect(record(s).choice).toBe('later')
@@ -90,7 +91,7 @@ describe('Different time', () => {
     const out = advanceHours(s, 24)
     expect(order(out).status).toBe('out_for_delivery')
     expect(eventsOf(out, 'ORDER_DISPATCHED', bonusId).at(-1)?.data.attempt).toBe(2)
-    expect(savingsLedger(deliverOrder(out, bonusId, '2468')).total).toBe(99)
+    expect(savingsLedger(deliverOrder(out, bonusId, '2468')).total).toBe(120)
   })
 
   it('the day after: one day later than tomorrow', () => {

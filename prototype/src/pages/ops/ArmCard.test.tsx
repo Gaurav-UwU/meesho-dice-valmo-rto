@@ -54,19 +54,41 @@ describe('Ops Bonus-vs-Control card', () => {
     expect(screen.getByText(/compared with an equally-skilled partner: 0 pairs have finished flagged orders so far/)).toBeTruthy()
   })
 
-  it('shows the fake-attempt check as a count, not a hidden zero: suspected attempts out of attempts, with strikes apart', () => {
-    const { bonus } = heroStops(day)
-    const faked = run(day, { type: 'riderAttempt', at: AT, orderId: bonus, claim: 'customer_unavailable', evidence: { gpsDistM: 900, calls: 0, waitMin: 0 } })
+  it('shows the fake-attempt check as counts for BOTH arms, not a hidden zero, with strikes apart and the limit against Control', () => {
+    const { bonus, control } = heroStops(day)
+    const faked = run(
+      day,
+      { type: 'riderAttempt', at: AT, orderId: bonus, claim: 'customer_unavailable', evidence: { gpsDistM: 900, calls: 0, waitMin: 0 } },
+      { type: 'riderAttempt', at: AT, orderId: control, claim: 'customer_unavailable', evidence: { gpsDistM: 40, calls: 3, waitMin: 6 } },
+    )
     show(faked)
     const line = screen.getByText(/Fake-attempt check/).closest('p')!
-    expect(line.textContent).toMatch(/1 of 1 attempts? by Bonus riders looks fake/)
-    expect(line.textContent).toMatch(/0 confirmed by Ops/)
+    expect(line.textContent).toMatch(/Bonus riders: 1 of 1 attempt looks fake/)
+    expect(line.textContent).toMatch(/Control riders: 0 of 1 attempt looks fake/)
+    expect(line.textContent).toMatch(/0 confirmed/)
+    expect(line.textContent).toMatch(/more than 2 points above Control/)
     expect(line.textContent).toMatch(/30 attempts/)
   })
 
   it('says so when no attempt has been logged yet', () => {
     show(day)
     expect(screen.getByText(/Fake-attempt check/).closest('p')!.textContent).toMatch(/no attempts logged yet/i)
+  })
+
+  it('watches returns, Bonus against Control, and says they never stop the pilot', () => {
+    const { bonus, control } = heroStops(day)
+    const deliver = (s: DayState, id: string): DayState =>
+      run(s, { type: 'riderDeliver', at: AT + 1, orderId: id, code: '1111' }, { type: 'submitOtp', at: AT + 2, orderId: id, code: '1111' })
+    show(run(deliver(deliver(day, bonus), control), { type: 'openReturn', at: AT + 500, orderId: bonus }))
+    const line = screen.getByText(/Returns \(watched\)/).closest('p')!
+    expect(line.textContent).toMatch(/Bonus riders: 1 of 1 delivered flagged orders returned/)
+    expect(line.textContent).toMatch(/Control riders: 0 of 1/)
+    expect(line.textContent).toMatch(/not a stop rule/i)
+  })
+
+  it('shows a dash for returns, not 0%, before anything is delivered', () => {
+    show(day)
+    expect(screen.getByText(/Returns \(watched\)/).closest('p')!.textContent).toMatch(/nothing delivered yet/i)
   })
 
   it('says INVALID when the rule is loosened after the day was planned', () => {

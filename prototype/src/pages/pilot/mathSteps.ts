@@ -1,6 +1,6 @@
 import { costPerSuccessfulDelivery, FORWARD_COST, ROUTER, routerBreakEven, VALMO_ORDERS_PER_YEAR } from '../../engine/economics.ts'
 import { BAND_NAMES, BAND_OFFSETS, FAIR_GAP_PTS } from '../../engine/pilot.ts'
-import { tQuantile975 } from '../../engine/verdict.ts'
+import { tQuantile975, type VerdictResult } from '../../engine/verdict.ts'
 import { RTO_TODAY, type Controls, type PilotView } from './pilotModel.ts'
 
 /** Where a number comes from, so a judge can tell fact from assumption. */
@@ -26,9 +26,9 @@ export interface MathSection {
 }
 
 const n1 = (x: number): string => x.toFixed(1)
+const pct1 = (x: number): string => `${(x * 100).toFixed(1)}%`
 const n2 = (x: number): string => x.toFixed(2)
 const rs = (x: number): string => `${x < 0 ? '−' : ''}₹${Math.abs(x).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
-const pct1 = (x: number): string => `${(x * 100).toFixed(1)}%`
 const signed = (x: number, digits = 1): string => `${x < 0 ? '−' : '+'}${Math.abs(x).toFixed(digits)}`
 const num = (x: number): string => x.toLocaleString('en-IN')
 
@@ -38,6 +38,12 @@ const plainPct = (x: number): string => `${x.toFixed(1)}%`
  * The whole chain of maths behind the Pilot page, every step with the numbers currently on screen.
  * It recomputes nothing new: it reads the engine's results and shows the working, so it cannot drift from the page.
  */
+function fakeWorking(f: VerdictResult['fakeAttempts']): string {
+  if (f === undefined) return 'no fake-attempt reading'
+  if (f.controlRate === undefined) return `Bonus riders ${pct1(f.suspectedRate)}; no Control reading to compare with`
+  return `Bonus riders ${pct1(f.suspectedRate)} − Control riders ${pct1(f.controlRate)} = ${n2(f.excessPts ?? 0)} points`
+}
+
 export function buildMathSections(c: Controls, view: PilotView): readonly MathSection[] {
   const r = view.result
   const pooled = r.pooled
@@ -223,6 +229,15 @@ export function buildMathSections(c: Controls, view: PilotView): readonly MathSe
           result: `${signed(pooled.normalDeltaPts)} pts (range ${signed(pooled.normalCi95[0])} to ${signed(pooled.normalCi95[1])})`,
           source: 'simulated',
         },
+        {
+          id: 'fake',
+          title: 'Do Bonus riders fake more attempts than Control?',
+          plain: "A fake attempt is a failed delivery logged from far away, or one the customer says never happened. Some happen with no bonus at all, so the rule compares Bonus riders with Control riders: only a gap above 2 points stops the pilot. In this simulation riders' fake attempts do not respond to the bonus unless you move the slider.",
+          formula: "Gap = Bonus riders' suspected fake rate − Control riders' rate;  KILL if the gap is more than 2 points (judged once each arm has 30 attempts)",
+          working: fakeWorking(v.fakeAttempts),
+          result: v.fakeAttempts === undefined ? 'not read' : v.fakeAttempts.enough ? `${signed(v.fakeAttempts.excessPts ?? 0)} pts above Control (limit +${v.fakeAttemptLimitPts})` : 'too early (each arm needs 30 attempts)',
+          source: 'simulated',
+        },
       ],
     },
     {
@@ -233,7 +248,7 @@ export function buildMathSections(c: Controls, view: PilotView): readonly MathSe
         {
           id: 'rules',
           title: 'INVALID, INCOMPLETE, KILL, GO or RE-PRICE',
-          plain: 'GO only when even the LOW end of the range pays for the bonus. A broken safety rule (normal orders get worse, or too many fake attempts) or no effect is KILL. Too little data is INCOMPLETE. A rule changed after planning is INVALID.',
+          plain: "GO only when even the LOW end of the range pays for the bonus. A broken safety rule (normal orders get worse, or Bonus riders' fake attempts run more than 2 points above Control's) or no effect is KILL. Too little data is INCOMPLETE. A rule changed after planning is INVALID.",
           formula: `INVALID if the rule hash changed;  INCOMPLETE if < 90% of orders final or < 6 pairs;  KILL if a safety rule breaks or Δ < +${v.killFloor};  GO if the low end of the range ≥ break-even;  else RE-PRICE`,
           working: verdictBranch,
           result: r.insufficientData ? 'NO DATA' : r.verdict,

@@ -1,7 +1,7 @@
 import { logit, sigmoid } from '../engine/math.ts'
 import { HOUR_MS, MINUTE_MS, codReconciliationTime, dayIndex } from './clock.ts'
 import { emit } from './events.ts'
-import { feedAdd, moveOrder, patchStop, type S } from './helpers.ts'
+import { bookSecondChanceLeg, feedAdd, moveOrder, patchStop, type S } from './helpers.ts'
 import { reconcileCod, releaseDue } from './ledger.ts'
 import { closeAsRto, EXCEPTION_DEFAULT_MS, openExceptionFor, resolveExceptionFor, retryOne } from './orders.ts'
 import { parcelTimers } from './routing.ts'
@@ -60,6 +60,8 @@ export function tick(s: S, at: number): TickSummary {
       closed++
     } else if (st.rescheduledTo !== undefined && st.rescheduledTo <= next.simNow) {
       next = moveOrder(next, id, 'out_for_delivery', { at, reason: 'the rescheduled time arrived' })
+      // A second chance with a different time spends its ₹21 leg when the order goes back out.
+      if (st.viaSecondChance && next.stops[id].status === 'out_for_delivery') next = bookSecondChanceLeg(next, id, at)
       back++
     }
   }

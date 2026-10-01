@@ -1,7 +1,8 @@
 /**
  * Post-failure check. After a rider marks an attempt as failed, the customer is asked on WhatsApp:
  * "Did the rider reach you?" and, if the rider says the customer asked for it, "Did you ask to reschedule?".
- * This stops fake "attempted" marks being used to shed a hard stop or claim a Rescue Bonus.
+ * This makes a fake "attempted" mark (used to shed a hard stop) visible and costly. A fake attempt never earns the Rescue Bonus on that order: the
+ * bonus is paid on a delivery, and an order's later delivery does not pay the rider whose own earlier attempt looked fake.
  */
 export type AttemptClaim = 'customer_unavailable' | 'reschedule_requested' | 'address_not_found'
 

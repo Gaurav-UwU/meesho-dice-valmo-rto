@@ -29,18 +29,38 @@ function ArmBar({ label, arm, tone }: { readonly label: string; readonly arm: Ar
   )
 }
 
-/** The second safety rule in numbers: how many of the Bonus riders' attempts look fake, and how many Ops confirmed. */
-function FakeAttemptCheck({ reading }: { readonly reading: VerdictResult['fakeAttempts'] }) {
+const attemptsText = (who: string, rate: number | undefined, attempts: number): string =>
+  `${who}: ${Math.round((rate ?? 0) * attempts)} of ${attempts} attempt${attempts === 1 ? '' : 's'} looks fake`
+
+/**
+ * The second safety rule in numbers, for BOTH arms: it stops the pilot only when Bonus riders' suspected fake rate is more than 2 points above
+ * Control's, because a fake rate both arms share is not something the bonus caused.
+ */
+function FakeAttemptCheck({ reading, limitPts }: { readonly reading: VerdictResult['fakeAttempts']; readonly limitPts: number }) {
   if (reading === undefined) return null
-  const { attempts = 0, suspectedRate, strikes, enough } = reading
-  const suspected = Math.round(suspectedRate * attempts)
+  const { attempts = 0, controlAttempts = 0, suspectedRate, controlRate, strikes, enough, excessPts } = reading
   return (
     <p className="ops-note">
       <strong>Fake-attempt check:</strong>{' '}
-      {attempts === 0
-        ? 'no attempts logged yet.'
-        : `${suspected} of ${attempts} attempt${attempts === 1 ? '' : 's'} by Bonus riders looks fake (${strikes} confirmed by Ops).`}
-      {enough ? '' : ' It cannot stop the pilot until Bonus riders have logged 30 attempts.'}
+      {attempts === 0 && controlAttempts === 0
+        ? 'no attempts logged yet. '
+        : `${attemptsText('Bonus riders', suspectedRate, attempts)}; ${attemptsText('Control riders', controlRate, controlAttempts)} (${strikes} confirmed). ${
+            excessPts === undefined ? '' : `Bonus is ${excessPts >= 0 ? '+' : '−'}${Math.abs(excessPts).toFixed(1)} points against Control. `
+          }`}
+      The pilot stops only if Bonus riders run more than {limitPts} points above Control, and it cannot judge until each arm has logged 30 attempts.
+      {enough ? '' : ' Not enough attempts yet.'}
+    </p>
+  )
+}
+
+/** Returns are WATCHED: shown, Bonus against Control, but they never stop the pilot (no KILL comes from them). */
+function ReturnsWatch({ returns }: { readonly returns: Kpis['returns'] }) {
+  const part = (who: string, r: Kpis['returns']['bonus']): string => `${who}: ${r.returned} of ${r.delivered} delivered flagged orders returned (${r.share === undefined ? '—' : pct(r.share)})`
+  const none = returns.bonus.delivered === 0 && returns.control.delivered === 0
+  return (
+    <p className="ops-note">
+      <strong>Returns (watched):</strong> {none ? 'nothing delivered yet. ' : `${part('Bonus riders', returns.bonus)}; ${part('Control riders', returns.control)}. `}
+      Watched in the real pilot, not a stop rule: a bonus that pushed false deliveries would show up here.
     </p>
   )
 }
@@ -83,7 +103,8 @@ export function ArmCard({ kpis, verdict, headline }: Props) {
       <p className="ops-note">
         Each Bonus rider is compared with an equally-skilled partner: {verdict.pairs} {verdict.pairs === 1 ? 'pair has' : 'pairs have'} finished flagged orders so far.
       </p>
-      <FakeAttemptCheck reading={verdict.fakeAttempts} />
+      <FakeAttemptCheck reading={verdict.fakeAttempts} limitPts={verdict.fakeAttemptLimitPts} />
+      <ReturnsWatch returns={kpis.returns} />
       <p className="ops-note">
         {verdict.mdeText} One synthetic day is a few dozen orders per arm, so even a GO here shows the rule working, not evidence that the bonus works. Every flagged order stays in its arm until it has a final outcome. The real answer comes from the 30-day pilot (
         <Link to="/pilot">/pilot</Link>).

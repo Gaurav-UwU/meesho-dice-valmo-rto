@@ -282,7 +282,7 @@ describe('refusal and the Refused-Parcel Desk', () => {
   })
 
   it('second chance: accepted saves the sale', () => {
-    const s0 = refused(bonusId)
+    const s0 = forceParcel(refused(bonusId), bonusId, { reason: 'not_home' })
     const pid = s0.parcels[0].id
     const s = run(s0, { type: 'deskSecondChance', at: AT + 2, parcelId: pid }, { type: 'customerSecondChance', at: AT + 3, parcelId: pid, accept: true })
     expect(s.parcels[0].state).toBe('recovered')
@@ -291,7 +291,7 @@ describe('refusal and the Refused-Parcel Desk', () => {
   })
 
   it('second chance: declined puts it back in the queue and marks it declined', () => {
-    const s0 = refused(bonusId)
+    const s0 = forceParcel(refused(bonusId), bonusId, { reason: 'not_home' })
     const pid = s0.parcels[0].id
     const s = run(s0, { type: 'deskSecondChance', at: AT + 2, parcelId: pid }, { type: 'customerSecondChance', at: AT + 3, parcelId: pid, accept: false })
     expect(s.parcels[0].state).toBe('queued')
@@ -299,7 +299,7 @@ describe('refusal and the Refused-Parcel Desk', () => {
   })
 
   it('cannot send a second chance twice or answer one that was never sent', () => {
-    const s0 = refused(bonusId)
+    const s0 = forceParcel(refused(bonusId), bonusId, { reason: 'not_home' })
     const pid = s0.parcels[0].id
     expect(reduce(s0, { type: 'customerSecondChance', at: AT, parcelId: pid, accept: true })).toBe(s0)
     const sent = reduce(s0, { type: 'deskSecondChance', at: AT + 2, parcelId: pid })

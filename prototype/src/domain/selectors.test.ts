@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createDay } from './day.ts'
-import { deskItems, deskSummary, demoRiders, demoStops, kpis, parcelForOrder, riderBag, riderEarnings, scoreAccuracy, stopsOf } from './selectors.ts'
-import { AT, heroStops, run, startedDay } from './testkit.ts'
+import { deskItems, deskSummary, demoRiders, demoStops, kpis, parcelForOrder, returnShare, riderBag, riderEarnings, scoreAccuracy, stopsOf } from './selectors.ts'
+import { AT, deliverOrder, heroStops, run, startedDay } from './testkit.ts'
+import { dayVerdictData } from './verdictData.ts'
+import { DEFAULT_VERDICT_CONFIG } from '../engine/verdict.ts'
 import { fakeGeo } from '../engine/testkit.ts'
 
 describe('createDay', () => {
@@ -134,5 +136,32 @@ describe('demo helpers', () => {
     expect(parcelForOrder(s, id)).toBeUndefined()
     const after = run(s, { type: 'riderRefuse', at: AT, orderId: id, code: '1' }, { type: 'submitOtp', at: AT + 1, orderId: id, code: '1' })
     expect(parcelForOrder(after, id)?.orderId).toBe(id)
+  })
+})
+
+describe('returnShare: returns are WATCHED (Bonus vs Control), never a stop rule', () => {
+  const day = startedDay()
+  const { bonus, control } = heroStops(day)
+  const delivered = (s: ReturnType<typeof startedDay>, id: string, at: number) => deliverOrder(s, id, '4321', at)
+
+  it('is a dash (undefined share), not a fake zero, when nothing is delivered yet', () => {
+    const r = returnShare(day)
+    expect(r.bonus).toEqual({ delivered: 0, returned: 0, share: undefined })
+    expect(r.control).toEqual({ delivered: 0, returned: 0, share: undefined })
+  })
+
+  it('counts returned flagged orders over delivered flagged orders in each arm', () => {
+    let s = delivered(delivered(day, bonus, AT + 100), control, AT + 200)
+    s = run(s, { type: 'openReturn', at: AT + 400, orderId: bonus })
+    const r = returnShare(s)
+    expect(r.bonus).toMatchObject({ delivered: 1, returned: 1, share: 1 })
+    expect(r.control).toMatchObject({ delivered: 1, returned: 0, share: 0 })
+  })
+
+  it('does not change the verdict: no KILL comes from returns', () => {
+    let s = delivered(day, bonus, AT + 100)
+    s = run(s, { type: 'openReturn', at: AT + 400, orderId: bonus })
+    expect(dayVerdictData(s).readings).not.toHaveProperty('returnsDeltaPts')
+    expect(Object.keys(DEFAULT_VERDICT_CONFIG.guardrails)).toHaveLength(2)
   })
 })

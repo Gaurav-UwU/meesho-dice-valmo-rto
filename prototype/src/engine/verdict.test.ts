@@ -47,7 +47,7 @@ describe('ruleHash', () => {
   it('changes when any part of the rule changes, including a nested guardrail', () => {
     const base = ruleHash(DEFAULT_VERDICT_CONFIG)
     expect(ruleHash({ ...DEFAULT_VERDICT_CONFIG, killFloor: 2 })).not.toBe(base)
-    expect(ruleHash({ ...DEFAULT_VERDICT_CONFIG, guardrails: { ...DEFAULT_VERDICT_CONFIG.guardrails, falseAttemptRate: 0.1 } })).not.toBe(base)
+    expect(ruleHash({ ...DEFAULT_VERDICT_CONFIG, guardrails: { ...DEFAULT_VERDICT_CONFIG.guardrails, fakeAttemptExcessPts: 5 } })).not.toBe(base)
   })
 })
 
@@ -311,7 +311,7 @@ describe('verdict', () => {
   })
 
   it('INVALID beats every other verdict, even INCOMPLETE and guardrail KILLs', () => {
-    const data: VerdictData = { flagged: { bonus: arm(cells(2, 10, [5], 'b'), 50), control: arm(cells(2, 10, [4], 'c'), 50) }, readings: { falseAttemptRate: 0.5 } }
+    const data: VerdictData = { flagged: { bonus: arm(cells(2, 10, [5], 'b'), 50), control: arm(cells(2, 10, [4], 'c'), 50) }, readings: { falseAttemptRate: 0.5, controlFalseAttemptRate: 0.04 } }
     expect(judge(data, { ...DEFAULT_VERDICT_CONFIG, bonus: 20 }, PLANNED).verdict).toBe('INVALID')
   })
 
@@ -358,41 +358,67 @@ describe('verdict', () => {
   })
 
   it('scenario 14: a guardrail breach means KILL even with a strong uplift, and names the guardrail', () => {
-    const data: VerdictData = { ...cleanWin(), readings: { falseAttemptRate: 0.11 } }
+    const data: VerdictData = { ...cleanWin(), readings: { falseAttemptRate: 0.11, controlFalseAttemptRate: 0.04 } }
     const v = judge(data)
     expect(v.verdict).toBe('KILL')
     expect(v.breachedGuardrail).toBe('false attempts')
     expect(v.reason).toMatch(/fake/i)
   })
 
-  it('a fake-attempt rate above the limit is a KILL', () => {
-    const v = judge({ ...cleanWin(), readings: { falseAttemptRate: 0.08 } })
+  it('the fake-attempt rule is RELATIVE: Bonus more than 2 points above Control is a KILL, and the reason shows both rates', () => {
+    const v = judge({ ...cleanWin(), readings: { falseAttemptRate: 0.08, controlFalseAttemptRate: 0.04 } })
     expect(v.verdict).toBe('KILL')
     expect(v.breachedGuardrail).toBe('false attempts')
-    expect(v.reason).toMatch(/8\.0% of attempts/)
+    expect(v.reason).toMatch(/8\.0%/)
+    expect(v.reason).toMatch(/4\.0%/)
+    expect(v.reason).toMatch(/4\.0 points above/)
   })
 
-  it('has exactly two safety rules: normal orders and fake attempts', () => {
-    expect(Object.keys(DEFAULT_VERDICT_CONFIG.guardrails).sort()).toEqual(['falseAttemptRate', 'normalOrderDeltaPts'])
-  })
-
-  it('carries the confirmed strikes next to the suspected rate without judging on them', () => {
-    const v = judge({ ...cleanWin(), readings: { falseAttemptRate: 0.02, strikes: 3 } })
+  it('a high fake rate that Control shares is NOT a breach: the bonus did not cause it', () => {
+    const v = judge({ ...cleanWin(), readings: { falseAttemptRate: 0.09, controlFalseAttemptRate: 0.08 } })
     expect(v.verdict).toBe('GO')
-    expect(v.fakeAttempts).toEqual({ suspectedRate: 0.02, strikes: 3, enough: true })
+    expect(v.breachedGuardrail).toBeUndefined()
   })
 
-  it('does not let a handful of attempts stop the pilot: under 30 attempts the fake-attempt rule stays silent, but still shows the number', () => {
-    const v = judge({ ...cleanWin(), readings: { falseAttemptRate: 0.2, attempts: 12 } })
+  it('the limit is "more than 2 points": exactly 2 passes, 2.5 breaks', () => {
+    expect(judge({ ...cleanWin(), readings: { falseAttemptRate: 0.06, controlFalseAttemptRate: 0.04 } }).verdict).toBe('GO')
+    expect(judge({ ...cleanWin(), readings: { falseAttemptRate: 0.065, controlFalseAttemptRate: 0.04 } }).verdict).toBe('KILL')
+  })
+
+  it('a Bonus rate below Control is fine', () => {
+    expect(judge({ ...cleanWin(), readings: { falseAttemptRate: 0.01, controlFalseAttemptRate: 0.06 } }).verdict).toBe('GO')
+  })
+
+  it('has exactly two safety rules: normal orders and fake attempts (relative to Control)', () => {
+    expect(Object.keys(DEFAULT_VERDICT_CONFIG.guardrails).sort()).toEqual(['fakeAttemptExcessPts', 'normalOrderDeltaPts'])
+    expect(DEFAULT_VERDICT_CONFIG.guardrails.fakeAttemptExcessPts).toBe(2)
+  })
+
+  it('carries the confirmed strikes next to the suspected rates without judging on them', () => {
+    const v = judge({ ...cleanWin(), readings: { falseAttemptRate: 0.03, controlFalseAttemptRate: 0.02, strikes: 3 } })
     expect(v.verdict).toBe('GO')
-    expect(v.fakeAttempts).toMatchObject({ suspectedRate: 0.2, attempts: 12, enough: false })
+    expect(v.fakeAttempts).toEqual({ suspectedRate: 0.03, controlRate: 0.02, excessPts: expect.closeTo(1, 6), strikes: 3, enough: true })
   })
 
-  it('judges the fake-attempt rate once there are 30 attempts', () => {
-    expect(judge({ ...cleanWin(), readings: { falseAttemptRate: 0.1, attempts: 29 } }).verdict).toBe('GO')
-    const v = judge({ ...cleanWin(), readings: { falseAttemptRate: 0.1, attempts: 30 } })
+  it('does not let a handful of attempts stop the pilot: until EACH arm has 30 attempts the rule stays silent, but still shows the numbers', () => {
+    const v = judge({ ...cleanWin(), readings: { falseAttemptRate: 0.2, attempts: 12, controlFalseAttemptRate: 0.02, controlAttempts: 80 } })
+    expect(v.verdict).toBe('GO')
+    expect(v.fakeAttempts).toMatchObject({ suspectedRate: 0.2, attempts: 12, controlRate: 0.02, controlAttempts: 80, enough: false })
+  })
+
+  it('judges once both arms have 30 attempts, and not before either does', () => {
+    const base = { falseAttemptRate: 0.1, controlFalseAttemptRate: 0.02 }
+    expect(judge({ ...cleanWin(), readings: { ...base, attempts: 29, controlAttempts: 50 } }).verdict).toBe('GO')
+    expect(judge({ ...cleanWin(), readings: { ...base, attempts: 50, controlAttempts: 29 } }).verdict).toBe('GO')
+    const v = judge({ ...cleanWin(), readings: { ...base, attempts: 30, controlAttempts: 30 } })
     expect(v.verdict).toBe('KILL')
     expect(v.breachedGuardrail).toBe('false attempts')
+  })
+
+  it('stays silent, and says it cannot compare, when the Control reading is missing', () => {
+    const v = judge({ ...cleanWin(), readings: { falseAttemptRate: 0.3, attempts: 100 } })
+    expect(v.verdict).toBe('GO')
+    expect(v.fakeAttempts?.enough).toBe(false)
   })
 
   it('KILLs when normal orders fall by more than the guardrail, whatever the uplift', () => {
@@ -407,7 +433,7 @@ describe('verdict', () => {
   })
 
   it('passes guardrails that are within their limits', () => {
-    const v = judge({ ...cleanWin(), readings: { falseAttemptRate: 0.02 } })
+    const v = judge({ ...cleanWin(), readings: { falseAttemptRate: 0.02, controlFalseAttemptRate: 0.02 } })
     expect(v.verdict).toBe('GO')
     expect(v.breachedGuardrail).toBeUndefined()
   })

@@ -186,10 +186,36 @@ describe('simulatePilot: verdicts', () => {
     expect(r.verdictResult.breachedGuardrail).toBe('normal orders')
   })
 
-  it('scenario 14 at pilot level: too many fake attempts KILLs even with a strong uplift', () => {
-    const r = simulatePilot({ ...DEFAULT_PILOT, trueUplift: 0.22, falseAttemptRate: 0.12 })
+  it('scenario 14 at pilot level: Bonus riders faking 8 points more than Control KILLs even with a strong uplift', () => {
+    const r = simulatePilot({ ...DEFAULT_PILOT, trueUplift: 0.22, fakeAttemptExtra: 0.08 })
     expect(r.verdict).toBe('KILL')
     expect(r.verdictResult.breachedGuardrail).toBe('false attempts')
+  })
+
+  it('the simulated reading is Control at the baseline rate and Bonus at baseline + the slider', () => {
+    const r = simulatePilot({ ...DEFAULT_PILOT, fakeAttemptBaseline: 0.04, fakeAttemptExtra: 0.03 })
+    const f = r.verdictResult.fakeAttempts!
+    expect(f.controlRate).toBeCloseTo(0.04, 1)
+    expect(f.suspectedRate).toBeCloseTo(0.07, 1)
+    expect(f.excessPts).toBeCloseTo(3, 0)
+  })
+
+  it('a high baseline fake rate that both arms share is NOT a breach: the bonus did not cause it', () => {
+    const r = simulatePilot({ ...DEFAULT_PILOT, trueUplift: 0.2, fakeAttemptBaseline: 0.12, fakeAttemptExtra: 0 })
+    expect(r.verdictResult.breachedGuardrail).toBeUndefined()
+    expect(r.verdict).toBe('GO')
+  })
+
+  it('with the default (extra 0) the fake-attempt rule does not trip, over many reruns', () => {
+    const odds = outcomeOdds({ ...DEFAULT_PILOT, trueUplift: 0.2 }, 100)
+    expect(odds.KILL).toBeLessThan(0.05)
+  })
+
+  it('both arms have attempts to judge in the simulation', () => {
+    const f = simulatePilot(DEFAULT_PILOT).verdictResult.fakeAttempts!
+    expect(f.attempts).toBeGreaterThanOrEqual(30)
+    expect(f.controlAttempts).toBeGreaterThanOrEqual(30)
+    expect(f.enough).toBe(true)
   })
 
   it('the pilot input has no returns, complaints or on-time settings any more', () => {

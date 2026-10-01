@@ -61,6 +61,13 @@ export const BATCHED_SAVING = REVERSE_COST * 0.3
 export const BATCHED_RETURN_SHARE = 0.7
 export const REATTEMPT_LEG_COST = 21
 
+/** The ₹21 leg of a second chance, booked once when the order goes back out (so a failed second chance shows its cost). */
+export function bookSecondChanceLeg(s: S, orderId: string, at: number): S {
+  const done = s.events.some((e) => e.type === 'COST_BOOKED' && e.orderId === orderId && e.data.line === SECOND_CHANCE_LEG_LINE)
+  return done ? s : bookCost(s, at, SECOND_CHANCE_LEG_LINE, REATTEMPT_LEG_COST, 'Valmo', 'router', orderId)
+}
+export const SECOND_CHANCE_LEG_LINE = 'Second-chance re-attempt leg'
+
 export interface MoveOptions extends TransitionOptions {
   /** The order goes back inside a consolidated return: the reverse leg costs less */
   readonly batched?: boolean
@@ -84,7 +91,9 @@ export function moveOrder(s: S, orderId: string, to: OrderStatus, opts: MoveOpti
   }
   if (isTerminal(to)) {
     next = emit(next, opts.at, 'ORDER_TERMINAL', { status: to }, { orderId })
-    if (to === 'rto') next = bookCost(next, opts.at, 'RTO reverse', opts.batched ? REVERSE_COST * BATCHED_RETURN_SHARE : REVERSE_COST, 'Valmo', 'common', orderId)
+    // A re-homed order is the same physical parcel as its original: when it fails, the parcel goes back once and the cost lands on the ORIGINAL
+    // (as a batched return), so the re-home order books none of its own.
+    if (to === 'rto' && now.rehomedFrom === undefined) next = bookCost(next, opts.at, 'RTO reverse', opts.batched ? REVERSE_COST * BATCHED_RETURN_SHARE : REVERSE_COST, 'Valmo', 'common', orderId)
   }
   return next
 }

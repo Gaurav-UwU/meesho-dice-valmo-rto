@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { clockText } from '../../domain/clock.ts'
+import { returnShare } from '../../domain/selectors.ts'
 import { dayHeadline, dayVerdict } from '../../domain/verdictData.ts'
 import { headlineSentence } from '../../engine/headline.ts'
 import type { VerdictLabel } from '../../engine/verdict.ts'
@@ -8,6 +9,8 @@ import { useDay, useSend } from '../../store/StoreContext.tsx'
 import { useHubParam } from '../../ui/hub.ts'
 import { plainVerdict } from './plainVerdict.ts'
 import { RangeDiagram } from './RangeDiagram.tsx'
+
+const share = (x: number | undefined): string => (x === undefined ? '—' : `${(x * 100).toFixed(0)}%`)
 
 const TONE: Readonly<Record<VerdictLabel, string>> = { GO: 'is-go', 'RE-PRICE': 'is-reprice', KILL: 'is-kill', INVALID: 'is-invalid', INCOMPLETE: 'is-nodata' }
 
@@ -27,6 +30,7 @@ export function OpsDayCheck({ simulatedPerArm }: Props) {
   const [confirming, setConfirming] = useState(false)
   const verdict = useMemo(() => (day?.started ? dayVerdict(day) : undefined), [day])
   const headline = useMemo(() => (day && verdict ? dayHeadline(day, verdict) : undefined), [day, verdict])
+  const returns = useMemo(() => (day?.started ? returnShare(day) : undefined), [day])
   const incomplete = verdict?.verdict === 'INCOMPLETE'
   const finalPct = verdict ? Math.round(verdict.terminalShare * 100) : 0
 
@@ -91,6 +95,12 @@ export function OpsDayCheck({ simulatedPerArm }: Props) {
               <dd>
                 {Math.round((headline.bonusTerminal + headline.controlTerminal) / 2).toLocaleString('en-IN')}{' '}
                 <small>vs {simulatedPerArm.toLocaleString('en-IN')} per arm in the 30-day simulation</small>
+              </dd>
+            </div>
+            <div>
+              <dt>Returned (watched)</dt>
+              <dd>
+                Bonus {share(returns?.bonus.share)} · Control {share(returns?.control.share)} <small>watched, not a stop rule</small>
               </dd>
             </div>
             <div>

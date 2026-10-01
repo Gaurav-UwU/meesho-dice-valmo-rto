@@ -42,7 +42,8 @@ export function runAudit(s: DayState): readonly AuditCheck[] {
     return !otp || !done || otp.seq > done.seq
   })
 
-  const rtoWithoutCost = stops.filter((x) => x.status === 'rto' && !s.events.some((e) => e.type === 'COST_BOOKED' && e.orderId === x.order.id && e.data.line === 'RTO reverse' && String(e.data.owner).length > 0))
+  // A re-home order that failed is the same physical parcel as its original: the one reverse leg is booked on the original, so the re-home order is exempt.
+  const rtoWithoutCost = stops.filter((x) => x.status === 'rto' && x.rehomedFrom === undefined && !s.events.some((e) => e.type === 'COST_BOOKED' && e.orderId === x.order.id && e.data.line === 'RTO reverse' && String(e.data.owner).length > 0))
 
   const sumEvents = (type: 'BONUS_ACCRUED' | 'BONUS_RELEASED' | 'BONUS_CLAWED_BACK' | 'BONUS_BLOCKED'): number => eventsOf(s, type).reduce((t, e) => t + Number(e.data.amount), 0)
   const totals = ledgerTotals(s)
@@ -102,7 +103,7 @@ export function runAudit(s: DayState): readonly AuditCheck[] {
         ? `₹${totals.liability} owed, ₹${totals.released} released, ₹${totals.clawedBack} clawed back, ₹${totals.blocked} blocked: the event log, the Ops tile and the rider earnings agree`
         : `ledger says ₹${totals.liability} owed / ₹${totals.released} released / ₹${totals.clawedBack} clawed back / ₹${totals.blocked} blocked; events say ₹${expected.liability} / ₹${expected.released} / ₹${expected.clawedBack} / ₹${expected.blocked}; Ops tile ₹${k.bonusPending}; riders ₹${shownOnRiders}`,
     },
-    { id: 'rto-cost-owner', label: 'Every RTO has a cost owner', ok: rtoWithoutCost.length === 0, detail: rtoWithoutCost.length === 0 ? `${stops.filter((x) => x.status === 'rto').length} RTOs, each booked to Valmo` : `no cost booked for ${list(rtoWithoutCost.map((x) => x.order.id))}` },
+    { id: 'rto-cost-owner', label: 'Every RTO has a cost owner', ok: rtoWithoutCost.length === 0, detail: rtoWithoutCost.length === 0 ? `${stops.filter((x) => x.status === 'rto' && x.rehomedFrom === undefined).length} RTOs, each booked to Valmo (a failed re-home books its one return on the original parcel)` : `no cost booked for ${list(rtoWithoutCost.map((x) => x.order.id))}` },
     { id: 'timers', label: 'No timer overdue', ok: overdue.length === 0, detail: overdue.length === 0 ? `sim clock ${new Date(s.simNow).toISOString().slice(11, 16)} on day ${Math.floor(s.simNow / 86_400_000) + 1}: nothing due` : list(overdue) },
     { id: 'rule-hash', label: 'Rule hash unchanged since DAY_PLANNED', ok: hashOk, detail: !s.started ? 'the day has not been planned yet' : hashOk ? `rule ${currentHash} is the rule the day was planned with` : `planned with ${s.plannedRuleHash}, now ${currentHash}` },
     { id: 'otp-before-delivery', label: 'Nothing delivered without a verified OTP', ok: noOtp.length === 0, detail: noOtp.length === 0 ? `${delivered.length} deliveries, each after a verified OTP` : `no OTP before delivery for ${list(noOtp.map((x) => x.order.id))}` },

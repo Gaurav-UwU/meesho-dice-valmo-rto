@@ -19,7 +19,16 @@ const SIZE: readonly SliderSpec[] = [
 
 const SAFETY: readonly SliderSpec[] = [
   { key: 'spillover', label: 'Normal orders', min: -3, max: 1, step: 0.5, format: pts, limit: { value: g.normalOrderDeltaPts, breaksWhen: 'below' } },
-  { key: 'falseAttempts', label: 'Fake attempts', min: 0, max: 15, step: 1, format: (v) => `${v}%`, limit: { value: g.falseAttemptRate * 100, breaksWhen: 'above' } },
+  {
+    key: 'fakeExtra',
+    label: 'Extra fake attempts for Bonus riders',
+    min: 0,
+    max: 10,
+    step: 1,
+    format: (v) => `${v} pts above Control`,
+    help: "In points above Control. In the simulation riders' fake attempts do not respond to the bonus unless you move this.",
+    limit: { value: g.fakeAttemptExcessPts, breaksWhen: 'above' },
+  },
 ]
 
 /** One tap each. They change what you believe, never "who gets it". */
@@ -28,7 +37,7 @@ const SCENARIOS: readonly { readonly label: string; readonly patch: Partial<Cont
   { label: 'It works well', patch: { uplift: 20 } },
   { label: 'It does nothing', patch: { uplift: 0 } },
   { label: 'It hurts normal orders', patch: { uplift: 15, spillover: -3 } },
-  { label: 'Fake attempts rise', patch: { uplift: 15, falseAttempts: 9 } },
+  { label: 'Fake attempts rise', patch: { uplift: 15, fakeExtra: 6 } },
 ]
 
 export function Slider({ spec, value, onChange }: { readonly spec: SliderSpec; readonly value: number; readonly onChange: (v: number) => void }) {
@@ -42,9 +51,12 @@ export function Slider({ spec, value, onChange }: { readonly spec: SliderSpec; r
       </div>
       <input id={id} type="range" min={spec.min} max={spec.max} step={spec.step} value={value} aria-valuetext={spec.format(value)} onChange={(e) => onChange(Number(e.target.value))} />
       {spec.limit ? (
-        <p className="pilot-limit">
-          {broken ? <strong>Breaks the safety rule</strong> : 'OK'} · limit {spec.format(spec.limit.value)}
-        </p>
+        <>
+          <p className="pilot-limit">
+            {broken ? <strong>Breaks the safety rule</strong> : 'OK'} · limit {spec.format(spec.limit.value)}
+          </p>
+          {spec.help ? <p>{spec.help}</p> : null}
+        </>
       ) : spec.help ? (
         <p>{spec.help}</p>
       ) : null}
@@ -127,6 +139,9 @@ export function Assumptions({ controls, onChange }: Props) {
             {SAFETY.map((s) => (
               <Slider key={s.key} spec={s} value={controls[s.key]} onChange={set(s.key)} />
             ))}
+            <p className="pilot-watched">
+              <strong>Watched, not a stop rule:</strong> returns and complaints (Bonus vs Control). Watched in the real pilot, not simulated here. They never trigger a KILL.
+            </p>
           </div>
         </div>
         <div className="pilot-field pilot-rulebox">
