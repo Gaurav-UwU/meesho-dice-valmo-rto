@@ -12,6 +12,7 @@ import { createLocalStore } from '../store/local.ts'
 import { StoreProvider } from '../store/StoreContext.tsx'
 import type { Store } from '../store/types.ts'
 import Audit from './Audit.tsx'
+import Captain from './Captain.tsx'
 import Customer from './Customer.tsx'
 import Desk from './Desk.tsx'
 import Ops from './Ops.tsx'
@@ -24,8 +25,8 @@ vi.mock('./ops/LiveMap.tsx', () => ({ LiveMap: () => null }))
 let store: Store
 const state = (): DayState => store.getState('lucknow')!
 
-type Page = 'rider' | 'customer' | 'ops' | 'audit' | 'desk'
-const PAGES = { rider: Rider, customer: Customer, ops: Ops, audit: Audit, desk: Desk } as const
+type Page = 'rider' | 'customer' | 'ops' | 'audit' | 'desk' | 'captain'
+const PAGES = { rider: Rider, customer: Customer, ops: Ops, audit: Audit, desk: Desk, captain: Captain } as const
 
 const show = (url: string, page: Page): void => {
   cleanup()
@@ -65,7 +66,7 @@ describe('rider: refusal reasons and proof at the door', () => {
     expect(state().parcels[0].parcel.reason).toBe('no_cash')
   })
 
-  it('logging an attempt from far away opens an exception that Ops can settle', async () => {
+  it('logging an attempt from far away opens an exception that the HUB CAPTAIN settles (Ops only reads it)', async () => {
     const rider = demoRiders(state()).bonus!
     const hero = demoStops(state()).bonus[0]
     show(`/rider?hub=lucknow&rider=${rider.id}`, 'rider')
@@ -79,7 +80,14 @@ describe('rider: refusal reasons and proof at the door', () => {
     show('/ops?hub=lucknow', 'ops')
     const queue = await screen.findByRole('region', { name: 'Exception queue' })
     expect(within(queue).getByText(/low confidence/)).toBeTruthy()
-    await user.click(within(queue).getByRole('button', { name: 'Free re-attempt' }))
+    // Ops is read-only here: no decision buttons.
+    expect(within(queue).queryByRole('button', { name: 'Free re-attempt' })).toBeNull()
+    expect(within(queue).queryByRole('button', { name: 'Confirm valid' })).toBeNull()
+    expect(within(queue).queryByRole('button', { name: /Strike/ })).toBeNull()
+
+    show('/captain?hub=lucknow', 'captain')
+    const review = await screen.findByRole('region', { name: 'Review queue' })
+    await user.click(within(review).getByRole('button', { name: 'Free re-attempt' }))
     await waitFor(() => expect(state().exceptions[0].status).toBe('resolved'))
     expect(state().stops[hero].status).toBe('out_for_delivery')
     expect(state().stops[hero].riderId).not.toBe(rider.id)

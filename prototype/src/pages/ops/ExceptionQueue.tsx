@@ -1,3 +1,6 @@
+import { Link } from 'react-router-dom'
+import { captainName, STRIKE_REASON_LABEL } from '../../domain/captain.ts'
+import { strikeView } from '../../domain/captainView.ts'
 import { HOUR_MS } from '../../domain/clock.ts'
 import { EXCEPTION_DEFAULT_MS } from '../../domain/orders.ts'
 import type { DayState, ExceptionAction, ExceptionItem } from '../../domain/types.ts'
@@ -18,36 +21,40 @@ const ACTION_LABEL: Readonly<Record<ExceptionAction, string>> = {
 const hoursLeft = (state: DayState, item: ExceptionItem): number => Math.max(0, Math.ceil((item.openedSim + EXCEPTION_DEFAULT_MS - state.simNow) / HOUR_MS))
 
 /**
- * Attempts Ops has to look at: weak evidence at the door (GPS over 500 m away) or a customer who says the rider never came.
- * Three choices; nobody decides in 24 sim-hours and it becomes a free re-attempt on its own.
+ * Ops' READ-ONLY view of the disputed attempts. The hub captain decides them on /captain; nobody here can confirm, re-attempt or strike.
+ * Ops sees who is deciding, how long is left, the outcome, and "captain did not decide" when 24 h went by. Ops can overturn a strike
+ * within 48 h, and sees when a rider has asked for a review.
  */
 export function ExceptionQueue({ state, onSelect }: Props) {
   const send = useSend(state.hub.id)
   const open = state.exceptions.filter((e) => e.status === 'open')
   const done = state.exceptions.filter((e) => e.status === 'resolved')
-  const decide = (orderId: string, action: ExceptionAction): void => void send({ type: 'resolveException', orderId, action })
+  const strikes = state.strikeLog
   return (
     <section className="ops-card" aria-label="Exception queue">
       <div className="ops-card-head">
-        <h2>Exception queue</h2>
-        <span className={`ops-chip ${open.length > 0 ? 'is-red' : ''}`}>{open.length} open</span>
+        <h2>Disputed attempts</h2>
+        <span className={`ops-chip ${open.length > 0 ? 'is-red' : ''}`}>{open.length} with the captain</span>
       </div>
+      <p className="ops-note">
+        Decided by {captainName(state.hub)} on <Link to={`/captain?hub=${state.hub.id}`}>the captain screen</Link>. Ops reads them here (read-only) and can overturn a strike within 48 h.
+      </p>
       {open.length === 0 ? (
         <p className="ops-empty">
-          Nothing to decide. A failed attempt lands here when the rider&apos;s phone puts them over 500 m from the address, or the customer answers the
-          WhatsApp check with “the rider never came”. {done.length > 0 ? `${done.length} decided so far.` : ''}
+          Nothing waiting. A failed attempt goes to the captain when the rider&apos;s phone puts them over 500 m from the address, or the customer answers the WhatsApp check with “the rider never
+          came”. {done.length > 0 ? `${done.length} decided so far.` : ''}
         </p>
       ) : (
         <div className="ops-table-wrap">
           <table className="ops-table">
-            <caption className="sr-only">Failed attempts that need a decision</caption>
+            <caption className="sr-only">Failed attempts waiting for the hub captain</caption>
             <thead>
               <tr>
                 <th scope="col">Order</th>
                 <th scope="col">Rider</th>
                 <th scope="col">Evidence at the door</th>
+                <th scope="col">Captain</th>
                 <th scope="col">Time left</th>
-                <th scope="col">Decide</th>
               </tr>
             </thead>
             <tbody>
@@ -63,24 +70,12 @@ export function ExceptionQueue({ state, onSelect }: Props) {
                     </th>
                     <td>{riderNameOf(state, e.riderId)}</td>
                     <td>
-                      <span className="ops-chip is-red">{e.confidence} confidence</span>{' '}
+                      <span className="ops-chip is-red">{e.enhanced ? 'enhanced review' : `${e.confidence} confidence`}</span>{' '}
                       {ev ? `${Math.round(ev.gpsDistM)} m away · ${ev.calls} calls · waited ${ev.waitMin} min` : 'no GPS logged'}
                       {st.assessment?.status === 'suspect' ? <div className="ops-muted">{st.assessment.reason}</div> : null}
                     </td>
+                    <td>{captainName(state.hub)}</td>
                     <td>{hoursLeft(state, e)} h</td>
-                    <td>
-                      <div className="ops-actions">
-                        <button type="button" className="btn" onClick={() => decide(e.orderId, 'confirm')} title="The attempt was valid: normal failed-attempt path, bonus block lifted">
-                          Confirm valid
-                        </button>
-                        <button type="button" className="btn" onClick={() => decide(e.orderId, 'free_reattempt')} title="Another rider of the same arm tries again; it does not count against the cap and the first rider is not paid">
-                          Free re-attempt
-                        </button>
-                        <button type="button" className="btn danger" onClick={() => decide(e.orderId, 'strike')} title="A strike on the first rider, plus a free re-attempt">
-                          Strike
-                        </button>
-                      </div>
-                    </td>
                   </tr>
                 )
               })}
@@ -90,8 +85,56 @@ export function ExceptionQueue({ state, onSelect }: Props) {
       )}
       {done.length > 0 ? (
         <p className="ops-note">
-          Decided: {done.slice(-5).map((e) => `${state.stops[e.orderId].order.awb} ${ACTION_LABEL[e.action ?? 'confirm'].toLowerCase()}${e.auto ? ' (auto after 24 h)' : ''}`).join(' · ')}
+          Decided:{' '}
+          {done
+            .slice(-5)
+            .map((e) => `${state.stops[e.orderId].order.awb} ${ACTION_LABEL[e.action ?? 'confirm'].toLowerCase()}${e.captainMissed ? ' (captain did not decide, auto after 24 h)' : ` by ${e.captainName ?? 'the captain'}`}`)
+            .join(' · ')}
         </p>
+      ) : null}
+      {strikes.length > 0 ? (
+        <div className="ops-table-wrap">
+          <table className="ops-table">
+            <caption>Strikes (overturn within 48 h)</caption>
+            <thead>
+              <tr>
+                <th scope="col">Rider</th>
+                <th scope="col">Order</th>
+                <th scope="col">Reason</th>
+                <th scope="col">Status</th>
+                <th scope="col">Ops</th>
+              </tr>
+            </thead>
+            <tbody>
+              {strikes.map((k) => {
+                const v = strikeView(state, k)
+                return (
+                  <tr key={k.id}>
+                    <th scope="row">{riderNameOf(state, k.riderId)}</th>
+                    <td>{state.stops[k.orderId]?.order.awb ?? k.orderId}</td>
+                    <td>
+                      {STRIKE_REASON_LABEL[k.reason]}
+                      {k.note ? <div className="ops-muted">{k.note}</div> : null}
+                    </td>
+                    <td>
+                      {v.state === 'active' ? `active, ${v.daysLeft} days left` : v.state}
+                      {k.reviewAskedSim !== undefined && v.state === 'active' ? <span className="ops-chip is-red">rider asked for a review</span> : null}
+                    </td>
+                    <td>
+                      {v.canOverturn ? (
+                        <button type="button" className="btn" onClick={() => void send({ type: 'overturnStrike', strikeId: k.id })}>
+                          Overturn
+                        </button>
+                      ) : v.state === 'active' ? (
+                        <span className="ops-muted">overturn window (48 h) closed</span>
+                      ) : null}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       ) : null}
     </section>
   )

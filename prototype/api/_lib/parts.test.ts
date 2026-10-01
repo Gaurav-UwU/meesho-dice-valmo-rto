@@ -218,6 +218,21 @@ describe('request validation', () => {
     expect(ok({ type: 'deskSetGate', parcelId: pid, gate: 'sealOk', value: false })).toBe(false)
   })
 
+  it('accepts the captain actions (reason chips, notes, overturn, review, bonus hold) and rejects malformed ones', () => {
+    const ok = (action: unknown) => parseActionRequest({ hubId: 'lucknow', dayId: 'd1-x', action }).ok
+    const oid = 'lucknow-0001'
+    for (const reason of ['phone_far', 'customer_says_nobody_came', 'repeated_pattern', 'other']) expect(ok({ type: 'resolveException', orderId: oid, action: 'strike', reason, note: 'seen by the neighbour' })).toBe(true)
+    expect(ok({ type: 'resolveException', orderId: oid, action: 'confirm' })).toBe(true)
+    expect(ok({ type: 'resolveException', orderId: oid, action: 'strike', reason: 'because I said so' })).toBe(false)
+    expect(ok({ type: 'resolveException', orderId: oid, action: 'strike', reason: 'other', note: 'x'.repeat(141) })).toBe(false)
+    expect(ok({ type: 'overturnStrike', strikeId: 'k12' })).toBe(true)
+    expect(ok({ type: 'overturnStrike', strikeId: '../k12' })).toBe(false)
+    expect(ok({ type: 'riderAskReview', strikeId: 'k12' })).toBe(true)
+    expect(ok({ type: 'reviewBonus', orderId: oid, decision: 'release' })).toBe(true)
+    expect(ok({ type: 'reviewBonus', orderId: oid, decision: 'withhold', reason: 'phone_far' })).toBe(true)
+    expect(ok({ type: 'reviewBonus', orderId: oid, decision: 'steal' })).toBe(false)
+  })
+
   it('accepts the second-chance options and the pickup handover, and rejects anything else', () => {
     const ok = (action: unknown) => parseActionRequest({ hubId: 'lucknow', dayId: 'd1-x', action }).ok
     const pid = 'P-lucknow-0001'

@@ -9,6 +9,10 @@ interface Props {
   readonly showBonus: boolean
   readonly bonusAmount: number
   readonly hasOtp: boolean
+  /** The hub captain has an open review on this order's failed attempt */
+  readonly underReview?: boolean
+  /** The rider's own line about a bonus held for the captain (parking gap), already in their language */
+  readonly holdText?: string
   readonly t: Translate
   readonly onDeliver: () => void
   readonly onEnterCode: () => void
@@ -32,7 +36,7 @@ const replyChip = (reply: ReplyKind, stop: StopRecord): string => {
 function attemptNote(stop: StopRecord): string {
   const s = stop.assessment?.status
   if (s === 'verified') return 'Attempt recorded. The customer confirmed on WhatsApp.'
-  if (s === 'suspect') return 'Attempt recorded. Under review by the ops team.'
+  if (s === 'suspect') return 'Attempt recorded. Under review by the hub captain.'
   return 'Attempt recorded. Waiting for the customer to confirm on WhatsApp.'
 }
 
@@ -59,7 +63,7 @@ function lockedReason(stop: StopRecord): string | null {
   }
 }
 
-export function TaskCard({ stop, hubName, showBonus, bonusAmount, hasOtp, t, onDeliver, onEnterCode, onAttempt, onRefuse }: Props) {
+export function TaskCard({ stop, hubName, showBonus, bonusAmount, hasOtp, underReview, holdText, t, onDeliver, onEnterCode, onAttempt, onRefuse }: Props) {
   const { order } = stop
   const who = persona(order, hubName)
   const rescheduled = stop.status === 'rescheduled'
@@ -104,6 +108,12 @@ export function TaskCard({ stop, hubName, showBonus, bonusAmount, hasOtp, t, onD
         </div>
       ) : null}
 
+      {underReview ? (
+        <p className="rider-banner" role="status">
+          {t('underReview')}
+        </p>
+      ) : null}
+      {holdText ? <p className="rider-banner is-hold">{holdText}</p> : null}
       {rescheduled ? <p className="rider-note">Customer asked for another time</p> : null}
       {open && stop.failedAttempts > 0 ? <p className="rider-note">Attempt {stop.failedAttempts + 1}: an earlier attempt on this order did not deliver.</p> : null}
       {reason ? <p className="rider-note">{reason}</p> : null}

@@ -466,3 +466,73 @@
   outline: 2px solid var(--fab, #f26c2b);
   outline-offset: 2px;
 }
+
+/* Fake-attempt control: what the rider sees (both arms) */
+.rider-strikes {
+  margin: 8px 12px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--valmo-border, #d9e1ee);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 13px;
+}
+.rider-strikes-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.rider-pips {
+  display: inline-flex;
+  gap: 5px;
+}
+.rider-pips i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #9aa9c2;
+  background: transparent;
+}
+.rider-pips i.is-on {
+  background: #c0392b;
+  border-color: #c0392b;
+}
+.rider-strike-ladder {
+  margin: 6px 0 0;
+  color: #34445f;
+}
+.rider-strike-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.rider-strike-list li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.rider-strike-tag {
+  font-style: normal;
+  color: #6a7a96;
+}
+.rider-strike-tag.is-ok {
+  color: #1d7a46;
+  font-weight: 600;
+}
+.rider-banner {
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #fff4d6;
+  color: #6b4b00;
+  font-size: 13px;
+  font-weight: 600;
+}
+.rider-banner.is-hold {
+  background: #e8f0ff;
+  color: #1b3f7a;
+  font-weight: 500;
+}

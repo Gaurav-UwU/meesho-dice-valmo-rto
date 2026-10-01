@@ -9,9 +9,11 @@ import { useSend } from '../../store/StoreContext.tsx'
 import { Footer } from '../../ui/Footer.tsx'
 import { AttemptSheet } from './AttemptSheet.tsx'
 import { EarningsCard } from './EarningsCard.tsx'
-import { translator, type Lang } from './i18n.ts'
+import { translator, type Lang, type Translate } from './i18n.ts'
 import { OtpSheet } from './OtpSheet.tsx'
+import { holdLine } from './captainText.ts'
 import { RefusalSheet } from './RefusalSheet.tsx'
+import { StrikeMeter } from './StrikeMeter.tsx'
 import { RiderHeader } from './RiderHeader.tsx'
 import { TaskCard } from './TaskCard.tsx'
 
@@ -53,6 +55,12 @@ function useBonusToast(state: DayState, bag: readonly StopRecord[], isBonus: boo
     return () => window.clearTimeout(id)
   }, [toast])
   return toast
+}
+
+/** The rider's line about a bonus held for the captain on this delivered order, in their language */
+function heldText(state: DayState, stop: StopRecord, riderId: string, t: Translate): string | undefined {
+  const entry = state.ledger.find((l) => l.orderId === stop.order.id && l.riderId === riderId && l.review !== undefined)
+  return entry ? holdLine(t, entry.amount, entry.review, entry.status) : undefined
 }
 
 export function RiderApp({ state, hub, rider, onSwitch }: Props) {
@@ -99,6 +107,7 @@ export function RiderApp({ state, hub, rider, onSwitch }: Props) {
       <RiderHeader rider={rider} lang={lang} t={t} onLang={setLang} onSwitch={onSwitch} />
       <div className="rider-scroll">
         <EarningsCard earnings={earnings} showBonus={isBonus} t={t} />
+        <StrikeMeter state={state} rider={rider} t={t} />
         <div className="rider-tabs" role="tablist">
           {TABS.map((x) => (
             <button key={x} type="button" role="tab" aria-selected={tab === x} className="rider-tab" onClick={() => setTab(x)}>
@@ -135,6 +144,8 @@ export function RiderApp({ state, hub, rider, onSwitch }: Props) {
               showBonus={isBonus}
               bonusAmount={state.config.bonus}
               hasOtp={state.otps[stop.order.id] !== undefined}
+              underReview={state.exceptions.some((e) => e.orderId === stop.order.id && e.status === 'open')}
+              holdText={heldText(state, stop, rider.id, t)}
               t={t}
               onDeliver={() => deliver(stop.order.id)}
               onEnterCode={() => setOtpFor(stop.order.id)}

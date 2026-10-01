@@ -11,6 +11,7 @@ const MENU = [
   'Refused Parcel Desk',
   'RTO Manifest',
   'COD',
+  'Hub captain',
   'Audit',
 ] as const
 
@@ -38,7 +39,13 @@ export function DeskDrawer({ hubName, hubId, isOpen, onClose }: DeskDrawerProps)
             const active = item === ACTIVE
             return (
               <li key={item}>
-                {item === 'Audit' ? (
+                {item === 'Hub captain' ? (
+                  <Link className="desk-menu-item" to={`/captain?hub=${hubId}`} onClick={onClose}>
+                    <span className="desk-menu-icon" aria-hidden="true" />
+                    Hub captain
+                    <span className="desk-new">NEW</span>
+                  </Link>
+                ) : item === 'Audit' ? (
                   <Link className="desk-menu-item" to={`/audit?hub=${hubId}`} onClick={onClose}>
                     <span className="desk-menu-icon" aria-hidden="true" />
                     Audit

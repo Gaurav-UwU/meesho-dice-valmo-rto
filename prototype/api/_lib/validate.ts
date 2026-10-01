@@ -8,6 +8,8 @@ export const HubIdSchema = z.enum(['powai', 'whitefield', 'lucknow', 'gaya'])
 const orderId = z.string().regex(/^[a-z]+-\d{4,6}(-B2)?$/)
 const parcelId = z.string().regex(/^P-[a-z]+-\d{4,6}(-B2)?$/)
 const code = z.string().regex(/^\d{4}$/)
+const strikeId = z.string().regex(/^k\d{1,6}$/)
+const strikeReason = z.enum(['phone_far', 'customer_says_nobody_came', 'repeated_pattern', 'other'])
 const latLng = z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) })
 
 const ActionInputSchema = z.discriminatedUnion('type', [
@@ -47,7 +49,10 @@ const ActionInputSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('deskMatch'), parcelId }),
   z.object({ type: z.literal('deskConsolidate'), parcelId }),
   z.object({ type: z.literal('reattempt'), orderId, riderId: z.string().regex(/^[a-z]+-r\d{2}$/).optional() }),
-  z.object({ type: z.literal('resolveException'), orderId, action: z.enum(['confirm', 'free_reattempt', 'strike']) }),
+  z.object({ type: z.literal('resolveException'), orderId, action: z.enum(['confirm', 'free_reattempt', 'strike']), reason: strikeReason.optional(), note: z.string().max(140).optional() }),
+  z.object({ type: z.literal('overturnStrike'), strikeId }),
+  z.object({ type: z.literal('riderAskReview'), strikeId }),
+  z.object({ type: z.literal('reviewBonus'), orderId, decision: z.enum(['release', 'withhold']), reason: strikeReason.optional(), note: z.string().max(140).optional() }),
   z.object({ type: z.literal('openReturn'), orderId }),
   z.object({ type: z.literal('reconcileCod') }),
   z.object({ type: z.literal('advanceClock'), minutes: z.number().min(1).max(60 * 24 * 30) }),
