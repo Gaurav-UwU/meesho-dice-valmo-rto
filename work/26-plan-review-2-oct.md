@@ -43,3 +43,30 @@ The deck PPTX (the teammate's), the 90-second video, the survey and calls, how m
 3. Banner on `14-deck-handoff.md` (or fix its stale lines).
 4. Log the mentor call.
 5. Only then: build on a branch, preview-deploy, review, and promote only if green and the assets are already saved.
+
+---
+
+## Deep dive (2 Oct): why the pilot has a fake-attempt rule, every scenario, and the flaws
+**Facts read from the code:** the bonus pays on a delivery at any attempt; it is blocked for a rider only when the customer answered "the rider never came" on that rider's own attempt (`assessAttempt` sets `bonusBlocked` only then; GPS alone never blocks it). A phone more than 500 m away opens an exception; within 200 m with no calls and no wait is only "medium" confidence and opens nothing. A failed order is retried at the next day's start by the **same rider** (`tick.ts` calls `retryOne` without a rider). The bots fake 4% of failures **in both arms equally**. The pilot's fake-attempt rule is **absolute** (Bonus riders' suspected rate above 5%), not compared with Control.
+
+**Why a rider might still fake an attempt with a bonus in place (on the same order a fake never earns the ₹15):**
+| # | Scenario | Rider's gain | What the prototype does | Gap? |
+|---|---|---|---|---|
+| S1 | Fake to drop a hard flagged stop for good | Time | Far GPS opens an exception and another same-arm rider re-attempts; "never came" blocks his bonus | Covered |
+| S2 | **Defer**: fake "customer unavailable" from near the door today, deliver tomorrow and still get ₹15 | A convenient time and the ₹15 | Medium confidence, no exception; next day the **same rider** gets it; blocked only if the customer answers "never came" | **Gap** |
+| S3 | **Effort shift**: push the ₹15 orders, fake or skip normal orders | Time | The rule counts all Bonus riders' attempts (normal orders too); normal-order rule −1 pt; ledger floor −3 pts | Partly (see F1) |
+| S4 | **False delivery** (pressure or OTP collusion) to collect ₹15 | ₹15 | OTP, COD cash reconciliation, 7-day hold and clawback, ₹300 cap | **Gap**: no pilot rule watches returns or complaints since plan 18 |
+| S5 | Pass-through: A fakes, B (same arm) re-attempts and gets ₹15 | None overall (it moves the ₹15) | Captain monitor (planned) would see repeats | Low |
+| S6 | Customer says "never came" when the rider did come (forgot, or avoiding COD) | — | Low confidence, exception, a human decides | Risk of unfair strikes (F6) |
+| S7 | Rider fakes the evidence itself (GPS from his own phone) | Time | Values capped, but sent by the rider's app | Real system needs device-level data (audit item 15) |
+| S8 | Control rider | No bonus reason | Fakes at the baseline rate: the comparison | — |
+
+**Flaws**
+- **F1 The rule is absolute, not causal.** If fake attempts are already 4 to 6% everywhere, it can stop the bonus for a problem the bonus did not cause; if they are 1%, a bonus-caused rise to 4% passes. *Fix:* judge Bonus minus Control (for example no more than +2 points), like the normal-order rule, and show both rates.
+- **F2 The simulator cannot show the effect it guards against:** the bots fake equally in both arms and never respond to the bonus. The "Fake attempts rise" scenario is only a slider. Say so.
+- **F3 The deferral loophole (S2).** *Fix without changing the any-attempt rule:* when a flagged order's earlier attempt by the same rider was not high confidence, its ₹15 waits in the 7-day pending window for a captain review; count deferrals per rider in the monitor; optionally give the retry to another rider.
+- **F4 No watch on false deliveries (S4)**, the bonus's real fraud risk. *Fix:* add returns and complaints (Bonus vs Control) as a monitored number on `/pilot` (or a third safety rule; Gaurav's call, since plan 18 settled two).
+- **F5 Plan 24's "₹ saved" double counts:** a recovered delivery in the Bonus arm pays ₹15 to the rider who delivers it; subtract it.
+- **F6 A customer's word alone should not produce a strike (S6):** require corroboration (far GPS, no calls, a pattern) or a captain note; with strong at-the-door evidence the default is "confirm valid".
+- **F7 Thresholds are guesses** (5% limit, 4% assumed rate): set the limit from the 8-week baseline and lock it before day 1.
+- **F8 Code comment** in `attempts.ts` says the check stops fakes being used "to claim a Rescue Bonus": misleading, since a fake attempt never earns the bonus on that order; reword.
