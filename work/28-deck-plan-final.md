@@ -8,11 +8,35 @@
 
 ---
 
-## The story in four sentences
-1. **RTO is a two-sided friction problem.** The customer pays nothing upfront, so refusing is free. The rider is paid flat and only on success, so hard stops get less effort: two calls, no wait, or a "customer unavailable" logged from the gate.
-2. **Now: the Rescue Bonus.** ₹15 to the rider when an order in the riskiest 20% is delivered, on any attempt, tested fairly in a 30-day pilot (paired riders, a same-time Control group, GO only if even the low end of the range pays, rule locked before day 1).
-3. **Alongside it, independent of it: fake-attempt control and the Refused-Parcel Router.** Suspicious attempts go to the hub captain; refused parcels take their cheapest legal recovery. If the bonus fails, both still stand.
-4. **Long-term: pay by difficulty.** The risk score becomes a price, and carriers are judged on cost per successful delivery.
+## The story
+
+**The problem we solve, in one line:** *Valmo pays the same for an easy stop and a hard stop, so hard stops get the least effort and fail; Meesho knows which stops are hard but that knowledge never reaches the door.*
+
+**The answer, in one line:** *Carry the risk signal to the door, pay for the hard delivery, check the effort was real, and recover cheaply what still fails.*
+
+**Read the headlines in order: they must work as one paragraph** (the "headline test"; a judge skimming only the headlines should get the whole argument):
+
+| # | Act | Headline | What the judge should believe after it |
+|---|---|---|---|
+| 1 | Claim | Price the hard stop: 3 more of every 100 orders delivered *(Round 1 slide, unchanged)* | There is a cheap, specific answer, and it is big |
+| 2 | Diagnose | Two-thirds of RTOs happen at a door a rider can still save *(unchanged)* | The failure is at the door, and both sides have reasons to let it happen, including attempts that were never really made (the 9% slice) |
+| 3 | Choose | Rescue first: the only lever that needs no new system *(unchanged)* | Of five scored levers, the bonus goes first; proof of attempt sits inside its controls |
+| 4 | **Rescue**: how | Same app, same payout rail: ₹15 for the hard delivery, and a check that every failed attempt was real | It runs on Valmo's rails; gaming doesn't pay; the effort checks work even without the bonus |
+| 5 | **Rescue**: proof | One avoided return pays for eight bonuses. A fair 30-day test decides it | The bar is low, and we won't scale on hope: a fair test with a rule locked in advance |
+| 6 | **Recover** | The doors we still lose: send each refused parcel to its cheapest legal recovery, not ₹120 back | Even a failed door doesn't have to cost ₹120 |
+| 7 | Decide | Every phase ends with a number that decides the next, and a fallback if the bonus fails | There is no scenario where we have nothing: if the bonus fails, the effort checks and the Router still stand |
+| 8 | Guard | The ways this could break, and what we do about each | We have thought like the rider, the hub, the customer and the seller who try to game it |
+| 9 | Scale | Today the risk score is a filter. Tomorrow it's a price | The pilot is step one of repricing difficulty across the whole network |
+
+**The frame (from Round 1, kept):** Prevent · **Rescue** · **Recover**. On slides 4–9 a small breadcrumb in the top-right corner shows where we are: Rescue (4, 5), Recover (6), Plan (7), Risks (8), 10x (9). It is not added to slides 1–3.
+
+**One order runs through the deck.** Slide 2's real order (COD, arrived early with no warning, "the rider called twice and didn't wait", "Failed Delivery") is the thread. Each slide from 4 to 7 ends with one italic line saying what would have happened to *that* order:
+- **Slide 4:** the rider sees "+₹15 Bonus Eligible"; the two calls with no wait are a weak attempt, so it lands in the hub captain's queue and the customer is asked "Did the rider reach you?"
+- **Slide 5:** across 12,000 orders like it, the pilot measures whether ₹15 makes the rider wait and knock.
+- **Slide 6:** if the customer still says no, a second chance on WhatsApp, then a nearby buyer, then a batched return, never an automatic ₹120 trip.
+- **Slide 7:** a captain ruling on that attempt is one of the numbers that decides day 31.
+
+**How fake attempts fit the story (without touching slides 1–3):** slide 2 diagnoses it (the 9% "no real attempt" slice and the real order); slide 3 says proof of attempt is part of the bonus's controls; **slide 4 shows those controls and adds that they do not need the bonus to work**; slide 7 runs them from day 0 in both groups and keeps them if the bonus is killed; slide 8 guards the captain against bias. Read in order, this is one line of thought, not a contradiction: *built as the bonus's guard, strong enough to stand alone.*
 
 ---
 
@@ -143,9 +167,10 @@ Keep a small thumbnail of the Round 1 matrix for continuity.
 
 ---
 
-## Slide 4: Rescue Bonus, how it works, and how gaming is caught (ask ③, the hero)
-**Headline:** Same score, same app, same payout rail. Only the trigger changes
+## Slide 4: Rescue Bonus, how it works, and how gaming is caught (ask ③, the hero) · breadcrumb: RESCUE
+**Headline:** Same app, same payout rail: ₹15 for the hard delivery, and a check that every failed attempt was real
 **Message:** The Rescue Bonus runs on systems Valmo already has, is new in how it targets, and is built so gaming doesn't pay; suspicious attempts go to the hub captain.
+**Story beat:** slide 3 chose Rescue; this is how it works. Two halves: pay for the hard delivery (top), and make sure the effort was real (bottom).
 
 **Top: 5-step flow (chevrons)**
 1. **Score:** TrustMesh + last-mile signals
@@ -168,7 +193,7 @@ Keep a small thumbnail of the Round 1 matrix for continuity.
 | If someone works around it… | Control built in |
 |---|---|
 | Chases bonus orders, neglects normal ones | **Safety rule 1:** normal-order delivery no more than 1 point below Control riders; a rider whose normal deliveries drop gets bonuses held |
-| Logs a fake "attempted" | Proof at the door (GPS, calls, wait) + WhatsApp check "Did the rider reach you?". **Suspicious attempts go to the hub captain**, who sees the evidence and can confirm, order a free re-attempt by another rider, or strike (a strike needs supporting evidence, not the customer's word alone). **Strike ladder (a proposal):** 1 warning; 2 every failed attempt reviewed for 14 days and any bonus blocked; 3 escalated to the hub manager. Strikes expire after 30 days; Ops can overturn within 48 h; the rider sees every strike and its reason. **Safety rule 2:** Bonus riders' suspected fake-attempt rate no more than 2 points above Control (from 30 attempts) |
+| Logs a fake "attempted" | Proof at the door (GPS, calls, wait) + WhatsApp "Did the rider reach you?". **Suspicious attempts go to the hub captain:** confirm, free re-attempt by another rider, or strike (needs evidence, not the customer's word alone). Strikes: 1 warning → 2 bonus blocked + every failure reviewed → 3 hub manager; visible to the rider; expire in 30 days. **Safety rule 2:** Bonus riders' suspected fakes ≤ Control + 2 pts |
 | Fakes an attempt today and delivers it himself tomorrow | If the same rider's earlier attempt was weak and the customer did not confirm it, the ₹15 waits in the 7-day hold for the captain's review (released by default) |
 | Fakes a delivery or pressures a buyer | OTP or same-day COD cash; the bonus is held 7 days and taken back on a return; returns and complaints watched, Bonus vs Control |
 | Farms the bonus | ₹300 a day cap per rider |
@@ -178,13 +203,16 @@ One line under the table: **"Fake-attempt control stands on its own.** It is Rou
 Small line: *"Every prototype day is checked by 14 automatic tests, for example nothing delivered without a verified OTP."*
 Screenshots: the rider chip (shot 4); the hub-captain queue and the rider's strike meter **once built** (until then the Ops exception queue, labelled "being replaced by the hub-captain screen").
 **Footer:** Valmo Delivery Services Agreement (Annex A, §3) · Meituan (arXiv 2202.10695) · Uber fare guide · Flipkart WhatsApp flow (real orders).
-*Density warning: this is the fullest slide; keep the table to one line per row and move the ladder's detail to the speaker notes if it overflows.*
+**Bridge (italic, last line):** *"Our real order: the rider would have seen +₹15, and 'called twice, didn't wait' would have gone to the captain. But does ₹15 actually change what riders do, and does it pay?"*
+**Speaker notes (off the slide face):** Ops can overturn a strike within 48 h; the rider can ask for a review; 24 h with no captain decision = a free re-attempt, no strike; the Watch rule (3 disputes in 7 days and 2× the hub median).
+*Density warning: this is the fullest slide; keep the table to one line per row.*
 
 ---
 
-## Slide 5: Economics and how we'd test it (asks ③ ⑤)
+## Slide 5: Economics and how we'd test it (asks ③ ⑤) · breadcrumb: RESCUE
 **Headline:** One avoided return pays for eight bonuses. A fair 30-day test decides it
 **Message:** Break-even is low, the upside is large, and a simple paired-rider pilot gives a clear decision, with a pre-planned next step if it doesn't pay.
+**Story beat:** answers the question slide 4 ends on. Left half: how little it takes to pay. Right half: how we find out honestly.
 
 **① Unit economics (per 100 flagged orders)** (line chart: net vs effect, break-even marked)
 - Baseline: **60 of 100 flagged orders are delivered without the bonus.** Label: *"Our assumption: the riskiest 20% fail about 40% of the time, vs 17% overall. The Control group measures it."*
@@ -204,7 +232,7 @@ Screenshots: the rider chip (shot 4); the hub-captain queue and the rider's stri
 | ₹15 | −57 | 23 | 103 | 184 |
 | ₹20 | −107 | −31 | 46 | 122 |
 Sentence: *"If a ₹15 bonus truly adds +10 per 100, Valmo gains about ₹23 cr a year; at +15, about ₹103 cr; at +5 it loses ₹57 cr. That is why we test before we scale."* Cost per successful delivery: **₹84.8 → ₹77.7**.
-Targeting (small table): top 20% vs top 10%: delivered anyway 60% vs 51%; break-even +8.6 vs +7.3; 153 mn vs 76.5 mn flagged a year; ₹103 cr vs ₹62 cr a year at +15; −3.0 vs −1.5 RTO points. Footnote: *"the top-10% ₹62 cr and the conservative ₹62 cr are different calculations"*. Line: *"A tighter score is cheaper per order and easier to prove, but the prize is smaller, so we start at 20%."*
+One line on the slide: *"A tighter cut (top 10%) is cheaper per order and easier to prove, but the prize is half, so we start at 20%."* **Speaker notes:** the targeting table (top 20% vs top 10%: delivered anyway 60% vs 51%; break-even +8.6 vs +7.3; 153 mn vs 76.5 mn flagged a year; ₹103 cr vs ₹62 cr a year at +15; −3.0 vs −1.5 RTO points; the top-10% ₹62 cr and the conservative ₹62 cr are different calculations).
 
 **③ A fair test in 5 steps** (numbered strip)
 1. **Fair groups:** in each of 4 hubs (2 metro, 2 smaller), pair riders who delivered equally well last month; a coin decides who gets ₹15 → **24 pairs**. One sentence for judges: *"two equally good riders, a coin decides which one gets ₹15; after 30 days we compare every pair."*
@@ -219,18 +247,20 @@ Targeting (small table): top 20% vs top 10%: delivered anyway 60% vs 51%; break-
 | **KILL** | Under +3, or a safety rule breaks: normal orders more than 1 point below Control, or Bonus riders' suspected fake attempts more than 2 points above Control |
 | **Not enough data** | Fewer than 6 pairs, or under 90% of orders finished |
 Watched, not a stop rule: returns and complaints, Bonus vs Control.
-- *"Why not just compare with last year?"* Meesho's RTO moved 21.2% → 17.8% (FY23–25) and COD success fell 78.6% → 75.9%; the bonus should move network RTO by about 1.7 points at break-even, the same size as normal drift and festive swings. A same-time Control group removes that.
+- **Speaker notes, ready if asked** *"Why not just compare with last year?"*: Meesho's RTO moved 21.2% → 17.8% (FY23–25) and COD success fell 78.6% → 75.9%; the bonus should move network RTO by about 1.7 points at break-even, the same size as normal drift and festive swings. A same-time Control group removes that.
 - Example (simulated): *"If the bonus truly adds +15 per 100, this pilot says GO about 97 times in 100; at +12 it is about a coin flip (6 in 10); at +10 or less it usually says RE-PRICE and we'd run Pilot 2."* Small type: *"the simulation has no good-month and bad-month luck in riders, so a real pilot will be noisier."*
 - *"₹15 → more rider effort → more deliveries is our assumption. The pilot measures it."*
 - Visual: the prototype's range diagram with the ✔ Fair comparison line (shot 1); optional shot 2 (RE-PRICE with "Next: Pilot 2").
 **Callout:** "₹120 to haul a parcel back; ₹15 to make the hard stop worth it. If it doesn't pay, we change one lever and test again, and the fallback keeps running."
+**Bridge (italic, last line):** *"Even with the bonus, some customers will still say no at the door. What happens to those parcels?"*
 **Footer:** case data pack · RHP · Swiggy/Zomato rain pay (Indian per-order difficulty pay) · Butschek et al., *Labour Economics* 2022.
 
 ---
 
-## Slide 6: Refused parcels (ask ④): the Router, fallback part 2
-**Headline:** Send each refused parcel to its cheapest legal recovery. Only the rest travels back
+## Slide 6: Refused parcels (ask ④): the Router · breadcrumb: RECOVER
+**Headline:** The doors we still lose: send each refused parcel to its cheapest legal recovery, not ₹120 back
 **Message:** A per-parcel router with three lanes, each checked against GST, consumer, privacy and foreign-investment rules, and paid for only when a parcel is actually delivered.
+**Story beat:** Rescue lowers how many doors fail; Recover lowers what each failed door costs. It works whether or not the bonus is scaled.
 
 **① Why it matters:** a return costs **₹120 = 45%** of Meesho's ₹265 average order; Meesho bears it; about **130 mn** RTO parcels a year (763.5 mn × 17%); the default is to send it back (Shopee: refuse once → return to sender). **We found no marketplace that re-homes refused parcels from the last-mile hub** (desk search, Sep 2026); prior art is patents (Pitney Bowes, expired 2025; Shopify) and one small Indian fulfiller re-routing from its own hub.
 
@@ -247,12 +277,15 @@ Watched, not a stop rule: returns and complaints, Bonus vs Control.
 - Small type: *"History is synthetic: this shows the mechanism; real calibration comes from the pilot. Kill the Hold lane if the match rate is below 3% after 30 days, or on any custody incident."*
 - Screenshots: a Desk parcel card (shot 7), the money tiles (shot 8), the four second-chance options (shot 9).
 **Callout:** the pilot first measures how long refused parcels sit at the hub today, the share of "maybe later" refusals, and the match rate.
+**Bridge (italic, last line):** *"Our real order: if the customer still said no, a WhatsApp second chance, then a nearby buyer of the same item, then a batched return. Never an automatic ₹120 trip."*
 **Footer:** GST s.2(85), IGST s.10(1)(a), Notif. 34/2023-CT · FDI Press Note 2 (2018) · Consumer Protection (E-Com) Rules 2020 · DPDP Act 2023 · UPS Happy Returns / Optoro · Meesho RHP.
 
 ---
 
-## Slide 7: 30-60-90 plan (ask ⑤)
-**Headline:** Every phase ends with a number that decides the next
+## Slide 7: 30-60-90 plan (ask ⑤) · breadcrumb: PLAN
+**Headline:** Every phase ends with a number that decides the next, and a fallback if the bonus fails
+**Story beat:** pulls slides 4–6 into one timeline and answers "what if you're wrong?" before the judge asks.
+**Visual (top right): the decision fork after day 30.** Pilot 1 verdict → **GO:** region price test (~40 hubs) → scale · **RE-PRICE:** Pilot 2, one lever changed · **KILL:** stop the bonus; **fake-attempt control and the Router carry on** (the same two boxes sit under all three branches, so the picture shows they never depended on the bonus).
 | | Days 0–30 | Days 31–60 | Days 61–90 |
 |---|---|---|---|
 | **Rescue Score** | Before day 0: measure accuracy on Valmo's last 90 days | Add "hard to deliver" signals; re-weight from pilot data | Learn which orders the bonus saves |
@@ -266,11 +299,14 @@ Watched, not a stop rule: returns and complaints, Bonus vs Control.
 - KPI tree: north star = cost per successful delivery → RTO % → uplift per 100 flagged / match rate / recovered deliveries.
 - Router and fake-attempt KPIs show their count and "too early" until 30 parcels or attempts. **Custody incidents and complaints are not simulated; they are measured in the real pilot** (never show a 0).
 - Owners: last-mile ops (bonus, fake-attempt control via hub captains), reverse ops (Router), data science (score), customer comms (WhatsApp).
+- **Bridge (italic, last line):** *"A plan this specific has specific ways to break. Here they are."*
 
 ---
 
-## Slide 8: Risks and second-order effects (ask ⑥)
+## Slide 8: Risks and second-order effects (ask ⑥) · breadcrumb: RISKS
 **Headline:** The ways this could break, and what we do about each
+**Story beat:** we think like the people who will game it. Group the table rows by Rescue / fake-attempt control / Recover / all, in the same order as slides 4–6, so it reads as a recap.
+**Bridge (italic, last line):** *"Guarded and tested, the bonus is only the first step."*
 Layout: ① risk matrix (likelihood × impact) · ② the table · ③ a "who works around it" quadrant (riders / hubs / customers / sellers).
 | Risk | Move | Likelihood | Guard |
 |---|---|---|---|
@@ -295,12 +331,13 @@ Layout: ① risk matrix (likelihood × impact) · ② the table · ③ a "who wo
 
 ---
 
-## Slide 9: 10x, pay by difficulty
+## Slide 9: 10x, pay by difficulty · breadcrumb: 10x
 **Headline:** Today the risk score is a filter. Tomorrow it's a price
+**Story beat:** closes the loop with slide 1 ("price the hard stop"): the ₹15 is the first price; the network learns to price every stop.
 - **① Three horizons** (staircase): now one ₹15 bonus on the riskiest 20% → 6–12 months a price per parcel by difficulty (risk × distance × address × time slot) → long-term every node paid per successful outcome; refused parcels become a local inventory network.
 - **② Judge carriers by cost per success** (bar chart): cost per success = (forward + RTO% × ₹120) ÷ (1 − RTO%); Valmo **₹84.8** today → **₹77.7** at 14% RTO; Carrier A ₹45 at 10% RTO = ₹63 per success, Carrier B ₹40 at 20% = ₹80: **the cheaper parcel is the dearer delivery.**
 - **③ It learns and stays asset-light:** pilot data → learn which orders effort saves → set prices; works for Valmo and 3PLs; software + incentives on existing floor space (Vidit Aatrey: warehousing "tends to have lower ROI").
-- **Callout:** *"Money that carries no information can't coordinate a network. Price the difficulty."*
+- **Callout (the last words of the deck, echoing slide 1):** *"Money that carries no information can't coordinate a network. Price the hard stop."*
 
 ---
 
