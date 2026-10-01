@@ -29,7 +29,7 @@ An order in the top 20% by Risk Score. It is the only risk signal the rider ever
 _Avoid_: Flagged order, risky order, high-risk order
 
 **Rescue Bonus**:
-The ₹15 paid to the delivering rider when a Bonus-Eligible Order is delivered and the customer confirms it.
+The ₹15 paid to the delivering rider when a Bonus-Eligible Order is delivered and the customer confirms it, **on any attempt** (first, second or later; confirmed by Gaurav on 2 Oct). The one exception: a rider who made a suspect (faked-looking) earlier attempt on that same order does not get it.
 _Avoid_: Incentive, risk-weighted delivery incentive, bonus
 
 ### Recover (after failure)

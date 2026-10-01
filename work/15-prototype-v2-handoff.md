@@ -247,7 +247,7 @@ Plus: Audit all green at the end of a full Autopilot day + Close pilot.
 ## 8. Team decisions (defaults used; confirm or change)
 | Decision | Default |
 |---|---|
-| Bonus on an attempt-2 delivery? | **Yes**, unless attempt 1 was confirmed fake (then the delivering same-arm rider gets it and the first rider gets a strike) |
+| Bonus on an attempt-2 delivery? | **Yes (CONFIRMED by Gaurav on 2 Oct: the bonus is paid on a delivery at any attempt)**, unless attempt 1 was confirmed fake (then the delivering same-arm rider gets it and the first rider gets a strike) |
 | Return window | 7 simulated days |
 | Contact cap | 4 non-OTP messages per order |
 | Guardrails | normal-order ≥ control −1 pt · returns ≤ control +1 pt · complaints ≤ control +0.5 pt · on-time ≥ control −2 pts · false-attempt rate ≤ 5% |

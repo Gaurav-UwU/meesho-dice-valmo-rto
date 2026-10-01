@@ -8,6 +8,7 @@
 - **It is the fallback story for the deck:** *"If the bonus fails in the 30-day pilot, we already have a concrete plan, built and tested in our prototype, that does not depend on it: (1) fake-attempt control run by the hub captain, and (2) the Refused-Parcel Router with local re-home."* (Say "built and tested in our prototype", never "proven". The real pilot measures both.)
 
 ## 2. What exists today (read from the code on 2 Oct)
+- **The bonus rule (confirmed by Gaurav on 2 Oct):** ₹15 is paid when a flagged order is delivered on **any attempt** (first, second or later). A rider whose own earlier attempt on that order looked fake does not get it; the rider who then delivers it does. So on a given order a fake attempt never earns the bonus; the gaming risks are effort shifting to normal orders, false deliveries, and riders avoiding stops worth more than ₹15 of effort.
 - A failed attempt becomes an **exception** when the rider's phone is more than 500 m from the address, or the customer answers the WhatsApp check "the rider never came". It works in **both arms**.
 - **Ops** presses Confirm valid / Free re-attempt / Strike. 24 sim-hours with no decision = a free re-attempt, no strike. A human review is booked at **₹10**.
 - **A strike's only consequence is that two strikes block the rider's bonus**: it depends on the bonus, so with the bonus off a strike means nothing.

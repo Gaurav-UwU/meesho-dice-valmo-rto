@@ -102,7 +102,7 @@ Legend: ⭐ current, use it · 📚 background, still valid · ⚠️ partly sup
 - Through-line: **"carry Meesho's risk signal (TrustMesh) to the door and beyond."**
 
 **Three moves**
-1. **Now: Rescue Bonus.** ₹15 on a delivered order from the riskiest 20%; the score is hidden from the rider. It's paid on Valmo's existing **"Additional Incentive"** line, direct to the rider (from Valmo's published Delivery Services Agreement).
+1. **Now: Rescue Bonus.** ₹15 on a delivered order from the riskiest 20%, **on any attempt (first, second or later; confirmed 2 Oct)**, except to a rider whose own earlier attempt on that order looked fake; the score is hidden from the rider. It's paid on Valmo's existing **"Additional Incentive"** line, direct to the rider (from Valmo's published Delivery Services Agreement).
 2. **Next: Refused-Parcel Router v2.**
    - Second chance (clean)
    - Hold & Re-home: **same state only**, seller opt-in per SKU, seal check, invoice outside the parcel or digital; start with **non-GST sellers** (intra-state by law) in **Uttar Pradesh**

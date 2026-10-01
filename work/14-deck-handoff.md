@@ -69,7 +69,7 @@ This file has everything you need to build our Round 2 deck: the story, how each
 
 | When | Move | What it is | Impact |
 |---|---|---|---|
-| **Now** | **Rescue Bonus** | ₹15 extra to the rider, paid only when an order in the riskiest 20% is actually delivered. The rider never sees the risk score; nothing changes for the customer. A 30-day pilot decides whether it scales. | RTO ~17% → ~14% · ₹62 cr (conservative, +15 per 100) to ₹184 cr (case, +20 per 100) a year |
+| **Now** | **Rescue Bonus** | ₹15 extra to the rider, paid only when an order in the riskiest 20% is actually delivered, on any attempt (first or second). The rider never sees the risk score; nothing changes for the customer. A 30-day pilot decides whether it scales. | RTO ~17% → ~14% · ₹62 cr (conservative, +15 per 100) to ₹184 cr (case, +20 per 100) a year |
 | **Next** | **Refused-Parcel Router** | Every refused parcel goes to its cheapest legal recovery: second chance → Hold & Re-home → batched return. No more automatic ₹120 trip back. | ₹50–140 cr/yr (up to ₹270 cr) |
 | **Long-term** | **Pay by difficulty** | The risk score becomes a price across the network. Carriers are judged on cost per *successful* delivery. | ₹85 → ₹78 per success |
 
