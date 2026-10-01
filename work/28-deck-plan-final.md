@@ -4,7 +4,7 @@
 
 **Build the deck from this file only.** It replaces `14-deck-handoff.md` slides 1–3 (those were rewritten versions of Round 1; we now use the real ones) and merges 14 + `23-deck-plan-v5.md` for slides 4–9. Still use 14 for the **look and feel (§3)** and the **do-not-use list (§7)**, and `10-sources.md` for every footer.
 
-**Format:** 10 slides including the cover (rules allow 6–10). The Round 2 slides copy the Round 1 look: the DICE Season 3 header with the meesho logo, a big two-line headline, three numbered panels (circled ①②③), ➢ bullets, at least one native chart or diagram, a pink "so what" callout box, a small grey sources footer. About 350–400 words a slide. Valmo app screens keep Valmo navy #092D5E.
+**Format:** cover + 10 slides (the brief says 6–10 slides; Round 1's "3-slider" was accepted as cover + 3, so the cover is not counted; confirm with the mentor if unsure). The Round 2 slides copy the Round 1 look: the DICE Season 3 header with the meesho logo, a big two-line headline, three numbered panels (circled ①②③), ➢ bullets, at least one native chart or diagram, a pink "so what" callout box, a small grey sources footer. About 350–400 words a slide. Valmo app screens keep Valmo navy #092D5E.
 
 **Words never to use:** "proven" (say "built and tested in our prototype" or "in simulation"), "X% of risky orders delivered" (say what the bonus *caused* against Control), "GO at +9", "12,000 orders detects +3", "15% of failed deliveries are fake", stats jargon on the slide face ("clustered", "MDE", "t-value", "difference-in-differences", "Brier score").
 
@@ -28,9 +28,10 @@
 | 6 | **Rescue, proved** | One avoided return pays for eight bonuses. A fair 30-day test decides it | The bar is low, and we won't scale on hope |
 | 7 | **Recover** | The doors we still lose: send each refused parcel to its cheapest legal recovery, not ₹120 back | Even a failed door doesn't have to cost ₹120 |
 | 8 | Decide | Every phase ends with a number that decides the next, and a fallback if the bonus fails | There is no scenario where we have nothing |
-| 9 | Guard + 10x | A guard for every way this can break, and an end state that pays by difficulty | We thought like the people who will game it, and this is step one of repricing the network |
+| 9 | Guard | The ways this could break, and the guard we built for each | We thought like the rider, hub, customer and seller who try to game it |
+| 10 | Scale | Today the risk score is a filter. Tomorrow it's a price | The pilot is step one of repricing difficulty across the whole network |
 
-**The frame (from Round 1, kept):** Prevent · Rescue · Recover, and Round 1's lever codes (P1 preferred slot, P2 geotagging, R1 delivery incentive, R2 proof of attempt, C1 local re-home). Round 2 slides use the same codes, so a judge can see each Round 1 lever grow. A small breadcrumb in the top-right of slides 4–9: Summary (4), Rescue (5, 6), Recover (7), Plan (8), Risks + 10x (9).
+**The frame (from Round 1, kept):** Prevent · Rescue · Recover, and Round 1's lever codes (P1 preferred slot, P2 geotagging, R1 delivery incentive, R2 proof of attempt, C1 local re-home). Round 2 slides use the same codes, so a judge can see each Round 1 lever grow. A small breadcrumb in the top-right of slides 4–10: Summary (4), Rescue (5, 6), Recover (7), Plan (8), Risks (9), 10x (10).
 
 **Enhance, don't pivot (say it on slide 4):** the hero is still R1, the ₹15 on a delivered risky order. What changed: R2 (proof of attempt) moves from "Consider" to "Pursue" because Valmo already collects the evidence and the hub, paid only on delivery, is on our side; the cheapest slice of P1 (an early-arrival heads-up) needs no build; C1 has its legal design and break-even; Round 1's "A/B the bonus level" becomes a region-scale price test, because 4 hubs can't separate price from hub.
 
@@ -61,12 +62,12 @@ Judges score research quality first. The Round 1 slides show the Round 1 researc
 | 8 | **No Indian vendor's RTO-reduction claim is independently audited** (Delhivery "up to 20%", GoKwik, Shadowfax "almost 60%": all self-reported) | We test with a same-time Control group a sceptic would accept | 6 |
 | 9 | RTO swings with the season (D2C ~39% in Nov 2025 → ~21% in Feb 2026), more than the bonus's whole effect | No before/after; a same-time Control group | 6 |
 | 10 | Tier-2/3 cities are 66% of new D2C orders; India is not one market (Vadodara 18% vs Patna 35%) | 2 of the 4 pilot hubs are smaller-town hubs (as Round 1 said) | 6 |
-| 11 | Hubs earn ₹5 per delivered parcel; node margins are thin | Meesho funds the bonus, paid only on success; the hub bears no new cost and gains ₹5 per rescue. A re-homed parcel is a delivered parcel, so the hub earns its ₹5 again | 6, 7, 9 |
+| 11 | Hubs earn ₹5 per delivered parcel; node margins are thin | Meesho funds the bonus, paid only on success; the hub bears no new cost and gains ₹5 per rescue. A re-homed parcel is a delivered parcel, so the hub earns its ₹5 again | 6, 7, 10 |
 | 12 | E-way bills are a red herring (₹50,000 threshold). **The real constraint is GST place of supply** (Notif. 34/2023), plus FDI Press Note 2 and the Carriage by Road Act s.15 (a carrier can't sell goods) | Re-home only within one state, with seller opt-in; the seller stays the seller | 7 |
 | 13 | The two halves exist in India: Ecom Express runs dark stores at its delivery centres; Delhivery's doorstep QC lifted AJIO's resaleable returns 25% → 98%. Nobody has joined them at the refused parcel | The Router joins them: inspect at the hub, re-home locally | 7 |
 | 14 | Prior art: Amazon's 2012 patent (US 8,615,473) offers the cost of a return as a discount to a nearby buyer | Name it first: the same principle, pushed to the last-mile hub, where India's COD economics make it pay | 7 |
-| 15 | Meesho allocates lanes by lowest cost, no fixed Valmo share (Q1 FY27 call) | Allocate by cost per *successful* delivery | 9 |
-| 16 | Predicting *when* the customer is home cut delivery cost up to 10.2% (Kandula et al., *Decision Support Systems* 2021) | Time slot is one input to the difficulty price | 9 |
+| 15 | Meesho allocates lanes by lowest cost, no fixed Valmo share (Q1 FY27 call) | Allocate by cost per *successful* delivery | 10 |
+| 16 | Predicting *when* the customer is home cut delivery cost up to 10.2% (Kandula et al., *Decision Support Systems* 2021) | Time slot is one input to the difficulty price | 10 |
 
 **State the research limits ourselves:** riders willing to talk are the least busy; stated interest in a bonus is not behaviour; no published Indian RTO cause split exists, so ours (the Round 1 pie) is a labelled blend of rider + buyer research, the industry NDR mix and the data pack; every vendor number is self-reported. Round 2 research covered Tier 3/4 as well as metro. The pilot's Control group answers the biggest unknown: do riders *cause* COD failure or correctly *predict* it?
 
@@ -226,7 +227,7 @@ One line: *"A tighter cut (top 10%) is cheaper per order and easier to prove, bu
 | **RE-PRICE** | It helps (+3 or more) but isn't proven to pay → **Pilot 2** with one lever changed (top 10% or a smaller bonus), its rule locked first |
 | **KILL** | Under +3, or a safety rule breaks: normal orders more than 1 point below Control, or Bonus riders' suspected fake attempts more than 2 points above Control |
 | **Not enough data** | Fewer than 6 pairs, or under 90% of orders finished |
-Watched, not a stop rule: returns and complaints, Bonus vs Control.
+Returns and complaints: watched Bonus vs Control, as Round 1 promised; a rise stops the payout for review (not an automatic KILL, because returns arrive after the 30 days end).
 - Example (simulated): *"If the bonus truly adds +15 per 100, this pilot says GO about 97 times in 100; at +12 about 6 in 10; at +10 or less it usually says RE-PRICE and we'd run Pilot 2."* Small type: *"the simulation has no good-month and bad-month luck in riders, so a real pilot will be noisier."*
 - *"₹15 → more rider effort → more deliveries is our assumption. The pilot measures it, and its Control group also answers the question nobody has answered: do riders cause COD failure, or correctly predict it?"*
 - One line: *"Meesho funds the ₹15, paid only on success; the hub, which earns ₹5 per delivered parcel, bears no new cost and gains ₹5 on every rescue."*
@@ -286,33 +287,54 @@ Watched, not a stop rule: returns and complaints, Bonus vs Control.
 
 ---
 
-## Slide 9: Risks and the 10x (ask ⑥ + 10x) · breadcrumb: RISKS + 10x
-**Headline:** A guard for every way this can break, and an end state that pays by difficulty
-**Story beat:** left 60%: we think like the people who will game it. Right 40%: where this goes. The last words echo Round 1's "make the hard stop worth the same effort".
-
-**Left: ① risk matrix (likelihood × impact) + ② the top 10 risks** (rows grouped R1 / R2 / C1 / all; the rest go in a small "also guarded" line and the speaker notes)
+## Slide 9: Risks and second-order effects (ask ⑥) · breadcrumb: RISKS
+**Headline:** The ways this could break, and the guard we built for each
+**Story beat:** we think like the people who will game it. Rows grouped R1 / R2 / C1 / all, in the order of slides 5–7, so the slide also reads as a recap.
+**Layout:** ① risk matrix (likelihood × impact, the top 10 plotted) · ② the table · ③ a "who works around it" quadrant (riders / hubs / customers / sellers, one line each).
 | Risk | Lever | Likelihood | Guard |
 |---|---|---|---|
 | Uplift below break-even | R1 | Med | RE-PRICE → Pilot 2 with one lever changed; **fake-attempt control + Router continue** |
 | Riders correctly *predict* COD failure rather than cause it | R1 | Med | Exactly what the Control group measures; a KILL is a cheap, 30-day answer to the case's central unknown |
 | Season or trend distorts the result | R1 | Med | A same-time Control group; never a before/after alone |
-| Riders game the bonus (fake attempts, fake deliveries, neglected normal orders) | R1 | Med | OTP and cash proof, 7-day hold and clawback, hub-captain review, the two safety rules, returns watched |
+| Riders game the bonus (fake attempts, fake deliveries, neglected normal orders) | R1 | Med | OTP and cash proof, 7-day hold and clawback, hub-captain review, the two safety rules; returns and complaints watched Bonus vs Control, and a rise stops the payout for review (as in Round 1) |
 | Riders' interest is stated, not shown | R1 | Med | The pilot measures deliveries vs Control, never stated interest; 2 of 4 pilot hubs small-town |
+| Moving the goalposts after seeing results | R1 | Low | Rule locked before day 1; a changed rule makes the verdict invalid |
+| Hub differences hide the price effect | R1 | High at 4 hubs | Price test only at region scale (~40 hubs), hubs assigned at random |
+| Real pilot noisier than our simulation | R1 | Med | Decide on the low end; Pilot 2 loop; smallest detectable effect stated |
+| Score misses hard orders / drifts | R1 | Med | 20% cap; accuracy measured before the pilot and monthly |
 | Hub captain biased (protects or over-strikes) | R2 | Med | Ops can overturn within 48 h; sample audit; captain scorecard |
 | Unfair strikes on riders | R2 | Med | Evidence and a reason for every strike; 30-day expiry; appeal; the rider sees everything |
 | Theft from held parcels (Surat 2026: 33,035 Meesho parcels faked as delivered) | C1 | Med | Inspection, scan in/out, old ↔ new order link, OTP to the new buyer, 48 h cap, daily shelf count |
 | Cross-state GST exposure | C1 | Blocked by rule | Same state only; non-GST sellers first |
-| Volume shifts to 3PLs (~50% in Q1 FY27) | All | Med | Carrier-agnostic design (right half) |
-"Also guarded" line: moving the goalposts (rule locked) · unfair groups (pairs + coin) · hub differences hide price (region-scale test) · noisier than simulation (decide on the low end) · score drift (20% cap, monthly check) · thin-listing forecasts (low end only) · pickup no-shows (48 h) · FDI (seller opt-in) · buyer 1's data (label covered) · WhatsApp fatigue (cap 4 per order) · heads-up nudging cancels ("keep my promised date" is the default).
+| Demand forecast wrong for thin listings | C1 | Med | Hold only on the low end; confidence label; kill rule |
+| Marketplace seen as controlling stock (FDI) | C1 | Low–Med | Seller opt-in and rules; neutral allocation; the seller keeps title |
+| Heads-up nudges some buyers to cancel | P1 | Low–Med | "Keep my promised date" is the default choice; cancels measured vs a no-message hub |
+| Volume shifts to 3PLs (~50% in Q1 FY27) | All | Med | Carrier-agnostic design (slide 10) |
+"Also guarded" line: unfair groups (pairs + coin) · pickup no-shows (48 h) · buyer 1's data (label covered) · WhatsApp fatigue (cap 4 per order).
+**Callout:** *"Every guard is either already in Valmo's process (OTP, cash reconciliation, verification call) or built and tested in our prototype."*
+**Bridge (italic, last line):** *"Guarded and tested, the bonus is only the first step."*
+**Footer:** Surat (deshgujarat.com, Apr 2026) · Valmo Delivery Services Agreement · Meesho Q1 FY27 letter (3PL share).
+*Density: if the table overflows, keep the top 10 by likelihood × impact on the face and move the rest into the "also guarded" line.*
 
-**Right: ③ the 10x: today the risk score is a filter; tomorrow it's a price**
-- **Three horizons** (staircase): now one ₹15 bonus on the riskiest 20% → 6–12 months a price per parcel by difficulty (risk × distance × address × time slot) → long-term every node paid per successful outcome; refused parcels become a local inventory network.
-- **Judge carriers by cost per success** (small bar chart): cost per success = (forward + RTO% × ₹120) ÷ (1 − RTO%); Valmo **₹84.8** today → **₹77.7** at 14% RTO; Carrier A ₹45 at 10% RTO = ₹63 per success, Carrier B ₹40 at 20% = ₹80: **the cheaper parcel is the dearer delivery.** Meesho already allocates lanes by lowest cost with no fixed Valmo share (Q1 FY27 call); allocate by cost per *successful* delivery instead.
-- **The price learns *when*, not just *whether*:** predicting when the customer is home cut delivery cost up to 10.2% (Kandula et al., 2021), and our early-arrival finding says timing matters, so time slot is an input to the price.
-- **Asset-light:** software + incentives on existing floor space (Vidit Aatrey: warehousing "tends to have lower ROI"); works for Valmo and 3PLs.
+---
+
+## Slide 10: 10x: pay by difficulty · breadcrumb: 10x
+**Headline:** Today the risk score is a filter. Tomorrow it's a price
+**Story beat:** closes the loop with Round 1's "make the hard stop worth the same effort": the ₹15 is the first price; the network learns to price every stop. Now a full slide, because 10x is scored on its own.
+**① Three horizons** (staircase visual)
+- **Now:** one ₹15 bonus on the riskiest 20%, tested against a Control group.
+- **6–12 months:** a price per parcel by difficulty: risk × distance × address × **time slot**. Our early-arrival finding says *timing* matters as much as risk, and predicting when the customer is home cut delivery cost up to 10.2% in a published study (Kandula et al., 2021).
+- **Long-term:** every node paid per successful outcome; refused parcels become a local inventory network (C1 at scale).
+**② Judge carriers by cost per success** (bar chart)
+- Cost per success = (forward + RTO% × ₹120) ÷ (1 − RTO%). Valmo **₹84.8** today → **₹77.7** at 14% RTO.
+- Carrier A ₹45 at 10% RTO = **₹63** per success; Carrier B ₹40 at 20% = **₹80**: **the cheaper parcel is the dearer delivery.**
+- Meesho already allocates lanes by lowest cost with no fixed Valmo share (Q1 FY27 call). Allocate by cost per *successful* delivery instead, and every carrier, Valmo or 3PL, is pushed to price the hard stop.
+**③ It learns and stays asset-light**
+- Pilot data → learn which orders effort actually saves → set prices from evidence, not guesses.
+- Software + incentives on existing floor space; no warehouses (Vidit Aatrey: warehousing "tends to have lower ROI"). Works for Valmo and 3PLs alike.
+- Hubs earn ₹5 per delivered parcel today; paying by outcome lines up rider, hub and Meesho on the same number.
 **Callout (the last words of the deck):** *"Money that carries no information can't coordinate a network. Price the hard stop."*
-**Footer:** Surat (deshgujarat.com, Apr 2026) · Meesho Q1 FY27 earnings call · Kandula, Krishnamoorthy & Roy, *Decision Support Systems* 149 (2021) · MediaNama, 2 Feb 2026 · our cost-per-success calculation.
-*Density: this is two slides' worth. If it overflows, cut the risk matrix (keep the table) before cutting anything on the 10x side; the 10x is scored on its own.*
+**Footer:** Meesho Q1 FY27 earnings call (23 Jul 2026) · Kandula, Krishnamoorthy & Roy, *Decision Support Systems* 149 (2021) · MediaNama, 2 Feb 2026 · our cost-per-success calculation · Round 2 field research (hub pay).
 
 ---
 
