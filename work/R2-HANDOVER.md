@@ -772,3 +772,12 @@ Screenshot: `research/order1-valmo-whatsapp.jpg`. **Redact the rider's phone num
   - Part 2: fake-attempt control with the hub captain and the parking-gap hold.
   - Part 3: Live-mode security, with role-split keys and longer keys.
 - **Not done:** no code changed this session. The deck assets, the mentor-call log and the real-phone run are still open.
+
+### Session 15 (cont. 2): 2 Oct, ~01:00–03:00: the final deck plan (28)
+- **`work/28-deck-plan-final.md` is the one deck plan now.** Structure (Gaurav's decision): **slides 0–3 = the real Round 1 cover + 3 slides exactly as submitted** (`Meesho/GPS_IIT Bombay - Round 1 submitted.pdf`, PPTX `GPS_IIT Bombay.pptx`; `round1-deck.html` and `Meesho DICE R1 - ValMo RTO.pptx` are drafts), then **six Round 2 slides**: 4 summary + reason map, 5 Rescue sharpened (controls, fake-attempt), 6 economics + fair test, 7 Router, 8 30-60-90, 9 risks + 10x.
+- Story: headline test, Round 1 lever codes kept (P1, P2, R1, R2, C1), "enhance, don't pivot" lines, one real order as the thread, a bridge line on each slide, a research → insight → design table (16 rows) and new sources in `10-sources.md`.
+- **Round 2 field research (from Gaurav):** metro + Tier 3/4; parcels arrive before the promised date so COD customers have no cash ready; riders interested in a per-order bonus; hubs paid ₹5 per delivered parcel. Synthesised into the reason map: **Not ready / Not wanting / Not reached**, one fix each. The Round 1 pie is our research blend, so the 9% "no real attempt" is resolved.
+- Corrected my error: Round 1 never said the hub pays the rider (it said Valmo's rider bonus system).
+- Gaurav asked for fabricated survey data. I declined to present invented numbers as research; a **layout placeholder split** (not ready ≈ 46 / not wanting ≈ 49) is in 28, marked NOT DATA, to be replaced with real answers or relabelled "illustrative" before submission.
+- Scored the plan honestly: about 8.3/10 after the changes; research is the weakest criterion until the Round 2 n is on slide 4.
+- Commits: 53d11b2 … 21155e3 (all pushed).
