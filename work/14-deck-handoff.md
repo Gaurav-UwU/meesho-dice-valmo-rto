@@ -1,6 +1,8 @@
 # Team GPS: Round 2 deck handoff
 
-> **READ FIRST (2 Oct): `23-deck-plan-v5.md` overrides this file for slides 4 to 8, the numbers cheat sheet and the screenshots.** It has the final pilot numbers (smallest effect ~4 per 100, GO about 97 in 100 if the true effect is +15 and about 6 in 10 at +12), the Refused-Parcel Desk rewrite for slide 6, the fallback story (fake-attempt control + the Router), the hub-captain controls for slide 4, and the pilot-design decisions of 2 Oct (§10). Look, structure, sources and slides 0 to 3 and 9 still come from this file.
+> **READ FIRST (2 Oct, latest): build the deck from `28-deck-plan-final.md`.** It merges this file and 23 slide by slide and adds the fake-attempt diagnosis to slides 1 to 3. Use this file only for the look and feel (§3), the do-not-use list (§7) and sources.
+>
+> **Earlier note (2 Oct): `23-deck-plan-v5.md` overrides this file for slides 4 to 8, the numbers cheat sheet and the screenshots.** It has the final pilot numbers (smallest effect ~4 per 100, GO about 97 in 100 if the true effect is +15 and about 6 in 10 at +12), the Refused-Parcel Desk rewrite for slide 6, the fallback story (fake-attempt control + the Router), the hub-captain controls for slide 4, and the pilot-design decisions of 2 Oct (§10). Look, structure, sources and slides 0 to 3 and 9 still come from this file.
 
 **Meesho DICE 3.0 · Business track · Case: Valmo, reducing RTO · Team GPS, IIT Bombay**
 
@@ -228,7 +230,7 @@ Use a redrawn version, not the raw screenshot (it shows the rider's number).
 | **Refused-Parcel Router** (C1) | All refused parcels | 2.5–13.5% re-homed + cheaper returns | 0 (recovers cost) | 50–270 | Low–Med | Med | 2 · day 30+ |
 | **Two-way WhatsApp** (P1, sharpened) | Not home 18% + unreachable 12% | fixes ⅕ | −1.0 | ~95 gross | Low–Med | **Low**: Valmo already sends WhatsApp | 3 · day 31+ |
 | **Address confidence + fix before dispatch** (P2) | Address 13% + wrong hub 9% | fixes ¼ | −0.9 | ~80 gross | Med | Med (builds on GeoIndia) | 4 · day 60+ |
-| Proof of attempt (R2) | No real attempt 9% | Mostly in play already (Valmo verification call + refusal OTP), so it's folded into the Rescue Bonus controls | | | | | — |
+| Fake-attempt control (R2 "proof of attempt", sharpened; superseded wording, see 28) | No real attempt 9% (at most ~1.5 RTO pts) | Hub-captain review of suspicious attempts + strikes; measured in the 8-week baseline; break-even ~1 in 10 reviews | up to −1.5 (not claimed) | not claimed | Low–Med | Low | 1 · now, independent of the bonus |
 
 Keep a small thumbnail of the Round 1 matrix for continuity.
 

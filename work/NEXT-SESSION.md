@@ -18,7 +18,7 @@
 ## Then
 1. **Independent code-review + security-review agents** (not run in Sessions 8, 9, 11, 12 or 14). Session 14 touched the API validation (`deskInspect`, `deskSkipSecondChance`, `deskHandover`, option enum), the inbound numbered-reply parser (maps by button id) and the pickup-code hashing/masking (`sanitize.ts`, `core.ts`).
 2. **Real-phone multi-device run** (Session 12 list: real iPhone Safari, Android Chrome, WhatsApp in-app browser) and the new Live pickup path on two devices.
-3. **Deck:** the teammate uses `14-deck-handoff.md` + `23-deck-plan-v5.md` (not 16, which is history) (new section at the bottom: slide 6, "hold only where the low end of the forecast clears break-even", the backtest numbers, hub pickup, what to say about the synthetic history).
+3. **Deck:** the teammate builds from **`28-deck-plan-final.md`** (the single merged plan, 2 Oct). Earlier: `14-deck-handoff.md` + `23-deck-plan-v5.md` (not 16, which is history) (new section at the bottom: slide 6, "hold only where the low end of the forecast clears break-even", the backtest numbers, hub pickup, what to say about the synthetic history).
 4. **Freeze Fri 2 Oct, 3 pm:** Ops, Desk, Rider, Audit and `/pilot` at desktop and phone width; screenshots for deck slides 4 and 6, the QR, the 90 s video (Demo mode, one browser), then redeploy.
 5. Still open: `17-prototype-audit.md` items 1 and 6 to 15 (Live `closePilot` messages bound phones is the important one), Hindi on the sheets, a "Plan Pilot 2" button, Playwright e2e in the repo.
 6. Mentor question to add (asked on 1 Oct or by Slack): *"Can hubs get SKU-level order history by pincode from Meesho, near real time?"* The match forecast needs it.
