@@ -49,12 +49,12 @@ You need three free accounts: **Supabase** (the shared database), **Twilio** (Wh
    ```bash
    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
    ```
-   One becomes `OTP_PEPPER`, one `ADMIN_TOKEN`, and pick a short memorable word-based one for `LIVE_KEY` (at least 6 characters; the team types it once per browser tab).
+   One becomes `OTP_PEPPER`, one `ADMIN_TOKEN`, and two more for the two screen keys: `LIVE_KEY` (the RIDER key, which the phone QR codes carry) and `CAPTAIN_KEY` (the team's own key, never in a QR code). **Both must be at least 20 characters and different.** Use long random values (`openssl rand -hex 16`); the team types a key once per browser tab.
 2. Copy `prototype/.env.example` to `prototype/.env.local` and fill in every line (the file explains each one):
    - `SUPABASE_URL` and `VITE_SUPABASE_URL` = the Project URL
    - `SUPABASE_SERVICE_KEY` = the secret / service_role key
    - `VITE_SUPABASE_ANON_KEY` = the publishable / anon key
-   - `OTP_PEPPER`, `ADMIN_TOKEN`, `LIVE_KEY` = your three secrets
+   - `OTP_PEPPER`, `ADMIN_TOKEN`, `LIVE_KEY` (rider key), `CAPTAIN_KEY` = your four secrets. **If `LIVE_KEY` was shorter than 20 characters, replace it before deploying: the server refuses to start with a short key (`/api/health` says `{"ok":false}`).**
    - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` = from Twilio
    - `TWILIO_WHATSAPP_FROM=whatsapp:+17372508034` (your sandbox number)
    - `TWILIO_WEBHOOK_URL` = leave as the placeholder for now
@@ -84,7 +84,7 @@ From then on that order's WhatsApp messages (order-day message, OTP, checks) go 
 
 ## Several phones on one day (added 1 Oct, Session 12)
 - **No Twilio needed** for the multi-phone demo: the Customer screen is an in-app WhatsApp. Only Supabase, the Vercel API and the keys in Part D are needed.
-- The landing page (Setup, "Several devices (shared day)") makes QR codes that open the rider and customer screens in Live mode and carry the `LIVE_KEY` after the `#`, so phones never type it. The part after `#` is never sent to a server and is removed from the address bar. Show those codes only to your own phones.
+- The landing page (Setup, "Several devices (shared day)") makes QR codes that open the rider and customer screens in Live mode and carry the **rider key** (`LIVE_KEY`) after the `#`, so phones never type it. A rider key can only deliver, attempt, refuse, enter an OTP and answer as the in-app customer; the captain, Desk, clock and pilot buttons need the **captain key**, which is asked for once per tab when such a button is pressed and is never put in a link. The part after `#` is never sent to a server and is removed from the address bar. Show those codes only to your own phones.
 - `ADMIN_TOKEN` is still typed, once per tab, only on the laptop that presses Reset day / Autopilot.
 - **Redeploying with a new day shape no longer needs a manual Reset:** the server replaces a day saved in an older shape when the first screen opens it. (Session 12 moved the day to schema 6 and the Desk v3 build (Session 14) to schema 7, so a day saved before is replaced that way.) If a screen still says NEEDS RESET, press Reset day on Ops once.
 - **The OTP on the in-app customer phone is readable** in the public day for orders that are **not** linked to a real phone (it is synthetic data, and the in-app phone must show it). For a linked order the OTP message stays masked and only the real phone gets the code. The stored OTP record is always a hash.

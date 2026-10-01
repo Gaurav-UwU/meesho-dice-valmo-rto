@@ -40,6 +40,10 @@ export const ADDRESS_FIX_LOGIT_DROP = 0.7
 /** A customer who says they will be home is a little more likely to take the parcel */
 export const HOME_LOGIT_DROP = 0.3
 export const MAX_OTP_ATTEMPTS = 5
+/** How long five wrong tries lock an order (wall time). It is a cooldown: afterwards the rider gets five fresh tries. */
+export const OTP_COOLDOWN_MS = 5 * 60 * 1000
+/** A customer's shared location is kept to about 1 km: the day is readable by anyone, and the exact pin is only needed to score the order once. */
+const coarse = (x: number): number => Math.round(x * 100) / 100
 export const OTP_TTL_MS = 10 * 60 * 1000
 const DEMO_FLAGGED_MANUAL = { bonusRider: 6, controlRider: 2 } as const
 
@@ -136,7 +140,7 @@ function customerReply(s: S, a: Extract<Action, { type: 'customerReply' }>): S {
       const km = Math.round(roadKmEstimate(s.hub, a.location) * 10) / 10
       const order: Order = { ...st.order, lat: a.location.lat, lng: a.location.lng, distanceKm: km, addressQuality: 'clear' }
       const drop = st.order.addressQuality === 'clear' ? 0 : ADDRESS_FIX_LOGIT_DROP
-      next = patchStop(next, a.orderId, { order, location: a.location, score: rescueScore(order), pRto: sigmoid(logit(st.pRto) - drop) })
+      next = patchStop(next, a.orderId, { order, location: { lat: coarse(a.location.lat), lng: coarse(a.location.lng) }, score: rescueScore(order), pRto: sigmoid(logit(st.pRto) - drop) })
       next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: addressFixedAck })
       return feedAdd(next, a.at, 'reply', `Address pin moved: ${st.order.distanceKm.toFixed(1)} km to ${km.toFixed(1)} km from the hub, score recomputed`, a.orderId)
     }
@@ -170,7 +174,17 @@ function requestOtp(s: S, orderId: string, code: string, at: number, purpose: 'd
     ...next,
     otps: {
       ...next.otps,
-      [orderId]: { orderId, code, purpose, issuedAt: at, issuedSim: s.simNow, attempts: s.otps[orderId]?.attempts ?? 0, ...(refusalReason ? { refusalReason } : {}) },
+      [orderId]: {
+        orderId,
+        code,
+        purpose,
+        issuedAt: at,
+        issuedSim: s.simNow,
+        attempts: s.otps[orderId]?.attempts ?? 0,
+        // A new code does not dodge a cooldown that is running.
+        ...(s.otps[orderId]?.lockedUntil === undefined ? {} : { lockedUntil: s.otps[orderId].lockedUntil }),
+        ...(refusalReason ? { refusalReason } : {}),
+      },
     },
   }
   next = emit(next, at, 'OTP_REQUESTED', { purpose }, { orderId })
@@ -226,10 +240,17 @@ function submitOtp(s: S, a: Extract<Action, { type: 'submitOtp' }>): S {
   if (a.at - otp.issuedAt > OTP_TTL_MS || s.simNow - otp.issuedSim >= OTP_SIM_TTL_MS) {
     return feedAdd(emit(s, a.at, 'OTP_FAILED', { reason: 'expired' }, { orderId: a.orderId }), a.at, 'info', 'OTP expired after 10 minutes: tap the button again to send a new one', a.orderId)
   }
-  if (otp.attempts >= MAX_OTP_ATTEMPTS) return feedAdd(s, a.at, 'info', 'OTP locked after 5 wrong tries', a.orderId)
+  if (otp.lockedUntil !== undefined && a.at < otp.lockedUntil) {
+    return feedAdd(s, a.at, 'info', `OTP locked after ${MAX_OTP_ATTEMPTS} wrong tries: try again in ${Math.ceil((otp.lockedUntil - a.at) / 60_000)} min`, a.orderId)
+  }
+  // The cooldown is over: five fresh tries.
+  const fresh = otp.lockedUntil === undefined ? otp : { ...otp, attempts: 0, lockedUntil: undefined }
   if (a.code !== otp.code) {
-    const attempts = otp.attempts + 1
-    const next = emit({ ...s, otps: { ...s.otps, [a.orderId]: { ...otp, attempts } } }, a.at, 'OTP_FAILED', { reason: 'wrong code' }, { orderId: a.orderId })
+    const attempts = fresh.attempts + 1
+    const locked = attempts >= MAX_OTP_ATTEMPTS ? { lockedUntil: a.at + OTP_COOLDOWN_MS } : {}
+    const { lockedUntil: _gone, ...base } = fresh
+    void _gone
+    const next = emit({ ...s, otps: { ...s.otps, [a.orderId]: { ...base, attempts, ...locked } } }, a.at, 'OTP_FAILED', { reason: 'wrong code' }, { orderId: a.orderId })
     return feedAdd(next, a.at, 'info', `Wrong OTP (${attempts}/${MAX_OTP_ATTEMPTS})`, a.orderId)
   }
   const rest = Object.fromEntries(Object.entries(s.otps).filter(([id]) => id !== a.orderId))

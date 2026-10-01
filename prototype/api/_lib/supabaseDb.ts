@@ -61,6 +61,12 @@ export function createSupabaseDb(url: string, serviceKey: string): Db {
         return (data ?? []).map((r): Binding => ({ phone: r.phone as string, hubId: r.hub_id as HubId, orderId: r.order_id as string }))
       }),
 
+    async wasSeen(messageSid: string) {
+      const { data, error } = await client.from('wa_seen').select('message_sid').eq('message_sid', messageSid).maybeSingle()
+      if (error) throw new Error(`Could not read the message record: ${error.message}`)
+      return data !== null
+    },
+
     async markSeen(messageSid: string) {
       const { error } = await client.from('wa_seen').insert({ message_sid: messageSid })
       if (!error) return true

@@ -1,5 +1,6 @@
 import { DAY_SCHEMA } from '../domain/day.ts'
 import { DAY_RESET_MESSAGE, isNewerDay } from '../domain/dayId.ts'
+import { roleCan } from '../domain/roles.ts'
 import type { DayState } from '../domain/types.ts'
 import type { HubId } from '../engine/types.ts'
 import { dayShape } from './guards.ts'
@@ -22,7 +23,12 @@ export interface LiveStoreOptions {
   readonly feed: DayFeed
   /** Call the server API (POST/GET to /api/...) */
   readonly call: (path: string, init: { method: 'GET' | 'POST'; headers: Record<string, string>; body?: string }) => Promise<CallResult>
+  /** The RIDER key (the one in the phone QR codes) */
   readonly getLiveKey: () => string | undefined
+  /** The CAPTAIN key: needed for the captain, desk, clock and pilot actions. Asked for when such a button is first pressed. */
+  readonly getCaptainKey?: () => string | undefined
+  /** The server said the key given as the rider key is really the captain key: keep it out of the rider slot so it can never reach a QR code */
+  readonly onKeyIsCaptain?: (key: string) => void
   readonly getAdminToken: () => string | undefined
   /** Show a problem to the person using the screen (a toast). The store never throws at a button press. */
   readonly onError: (message: string) => void
@@ -173,6 +179,7 @@ export function createLiveStore(opts: LiveStoreOptions): Store {
       }
       const { error, code } = await errorBody(res)
       if (code === 'day_reset') return 'day_reset'
+      // 401 = the key is not one of ours. 403 = it is a rider key and the action needs the captain key: not a bad join key.
       if (res.status === 401) patch(hubId, { problem: 'bad-key' })
       if (code === 'old_shape') patch(hubId, { problem: 'old-shape' })
       opts.onError(error ?? `The server said no (${res.status})`)
@@ -197,8 +204,13 @@ export function createLiveStore(opts: LiveStoreOptions): Store {
     }
   }
 
-  const liveHeaders = (): Record<string, string> => {
-    const key = opts.getLiveKey()
+  /**
+   * The key for a request. A rider-level action (what a rider's phone does, and the customer replies) uses the rider key, falling back to the
+   * captain key; every other action uses the captain key (asked for once). A rider key can never do what only the captain key may.
+   */
+  const liveHeaders = (type?: ActionInput['type']): Record<string, string> => {
+    const captainLevel = type !== undefined && !roleCan('rider', type)
+    const key = captainLevel ? (opts.getCaptainKey?.() ?? opts.getLiveKey()) : (opts.getLiveKey() ?? opts.getCaptainKey?.())
     return key ? { 'x-live-key': key } : {}
   }
 
@@ -212,8 +224,17 @@ export function createLiveStore(opts: LiveStoreOptions): Store {
     if (existing) return existing
     const p = (async () => {
       try {
-        const res = await opts.call(`/api/day?hub=${hubId}`, { method: 'GET', headers: liveHeaders() })
+        const headers = liveHeaders()
+        const res = await opts.call(`/api/day?hub=${hubId}`, { method: 'GET', headers })
         if (res.status === 401) patch(hubId, { problem: 'bad-key' })
+        if (res.ok && opts.onKeyIsCaptain && headers['x-live-key'] && headers['x-live-key'] === opts.getLiveKey()) {
+          try {
+            const body = (await res.json()) as { role?: unknown }
+            if (body.role === 'captain') opts.onKeyIsCaptain(headers['x-live-key'])
+          } catch {
+            // No role in the answer (an older server): nothing to do.
+          }
+        }
       } catch {
         // The server may be asleep; the read below still tells us what exists.
       }
@@ -237,7 +258,7 @@ export function createLiveStore(opts: LiveStoreOptions): Store {
       opts.onError('The shared day has not loaded yet. Check your connection.')
       return
     }
-    const outcome = await post('/api/action', { hubId, dayId: seen.dayId, action: input }, liveHeaders(), hubId)
+    const outcome = await post('/api/action', { hubId, dayId: seen.dayId, action: input }, liveHeaders(input.type), hubId)
     if (outcome === 'day_reset') await dayMovedOn(hubId)
     else if (outcome === 'ok') await refresh(hubId)
   }

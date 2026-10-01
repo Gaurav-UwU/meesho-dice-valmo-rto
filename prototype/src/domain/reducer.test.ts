@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ADDRESS_FIX_LOGIT_DROP, MAX_OTP_ATTEMPTS, OTP_TTL_MS, PAY_NOW_RTO_FACTOR, reduce } from './reducer.ts'
+import { ADDRESS_FIX_LOGIT_DROP, MAX_OTP_ATTEMPTS, OTP_COOLDOWN_MS, OTP_TTL_MS, PAY_NOW_RTO_FACTOR, reduce } from './reducer.ts'
 import { deskItems, demoStops, kpis, messagesFor, riderEarnings, suspectStops } from './selectors.ts'
 import { createDay } from './day.ts'
 import { fakeGeo } from '../engine/testkit.ts'
@@ -85,7 +85,8 @@ describe('customer WhatsApp replies', () => {
     const spot = { lat: day.hub.lat + 0.01, lng: day.hub.lng + 0.01 }
     const fixed = run(ask, { type: 'customerReply', at: AT + 1, orderId: unclear, reply: 'fix_address', location: spot })
     const st = fixed.stops[unclear]
-    expect(st.location).toEqual(spot)
+    // The kept spot is rounded to about 1 km (the exact pin only scores the order once; the stored day is readable by anyone).
+    expect(st.location).toEqual({ lat: Math.round(spot.lat * 100) / 100, lng: Math.round(spot.lng * 100) / 100 })
     expect(st.order.addressQuality).toBe('clear')
     expect(st.order.distanceKm).not.toBe(day.stops[unclear].order.distanceKm)
     expect(st.score).toBeLessThan(day.stops[unclear].score)
@@ -147,6 +148,29 @@ describe('delivery with OTP and the Rescue Bonus', () => {
     const s = run(day, { type: 'riderDeliver', at: AT, orderId: bonusId, code: '4321' }, ...wrong, { type: 'submitOtp', at: AT + 99, orderId: bonusId, code: '4321' })
     expect(s.stops[bonusId].status).toBe('otp_sent')
     expect(s.feed.at(-1)?.text).toMatch(/locked/i)
+  })
+
+  it('the lock is a COOLDOWN, not for good: it says how long, and after it the rider gets fresh tries', () => {
+    const wrong: Action[] = Array.from({ length: MAX_OTP_ATTEMPTS }, (_, i) => ({ type: 'submitOtp', at: AT + i, orderId: bonusId, code: '9999' }))
+    const locked = run(day, { type: 'riderDeliver', at: AT, orderId: bonusId, code: '4321' }, ...wrong)
+    expect(locked.otps[bonusId].lockedUntil).toBe(AT + (MAX_OTP_ATTEMPTS - 1) + OTP_COOLDOWN_MS)
+    const during = run(locked, { type: 'submitOtp', at: AT + 60_000, orderId: bonusId, code: '4321' })
+    expect(during.stops[bonusId].status).toBe('otp_sent')
+    expect(during.feed.at(-1)?.text).toMatch(/try again in \d+ min/i)
+    // Asking for a new code during the cooldown does not dodge it.
+    const asked = run(during, { type: 'riderDeliver', at: AT + 70_000, orderId: bonusId, code: '1357' }, { type: 'submitOtp', at: AT + 80_000, orderId: bonusId, code: '1357' })
+    expect(asked.stops[bonusId].status).toBe('otp_sent')
+    // After the cooldown the right code works (within the 10-minute life of the code).
+    const after = run(locked, { type: 'submitOtp', at: AT + OTP_COOLDOWN_MS + 10, orderId: bonusId, code: '4321' })
+    expect(after.stops[bonusId].status).toBe('delivered_a1')
+  })
+
+  it('after the cooldown a wrong code starts a new count of five (not an instant relock)', () => {
+    const wrong: Action[] = Array.from({ length: MAX_OTP_ATTEMPTS }, (_, i) => ({ type: 'submitOtp', at: AT + i, orderId: bonusId, code: '9999' }))
+    const locked = run(day, { type: 'riderDeliver', at: AT, orderId: bonusId, code: '4321' }, ...wrong)
+    const again = run(locked, { type: 'submitOtp', at: AT + OTP_COOLDOWN_MS + 10, orderId: bonusId, code: '0000' })
+    expect(again.otps[bonusId].attempts).toBe(1)
+    expect(again.otps[bonusId].lockedUntil).toBeUndefined()
   })
 
   it('an OTP older than 10 minutes no longer works, and a fresh one does', () => {

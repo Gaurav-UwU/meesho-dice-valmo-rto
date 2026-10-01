@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { demoStops } from '../../src/domain/selectors.ts'
 import { runAction, runEnsure, runReset } from './core.ts'
 import { loadEnv } from './env.ts'
-import { createRateLimiter, handleAction, handleAdmin, handleTwilio } from './http.ts'
+import { createRateLimiter, handleAction, handleAdmin, handleHealth, handleTwilio } from './http.ts'
 import { twilioSignature } from './twilio.ts'
 import { harness } from './testkit.ts'
+
+const RIDER = 'rider-key-0123456789abcdef'
+const CAPT = 'captain-key-0123456789abcd'
 
 const post = (url: string, body: unknown, headers: Record<string, string> = {}): Request =>
   new Request(url, { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body), headers: { 'content-type': 'application/json', ...headers } })
@@ -16,17 +19,94 @@ async function ready(h: ReturnType<typeof harness>, hub: 'lucknow' | 'gaya' = 'l
 }
 
 describe('handleAction', () => {
-  const cfg = { liveKey: 'live-key' }
+  // Two keys: the RIDER key (in the QR codes) and the CAPTAIN key (the team's, never in a QR code).
+  const cfg = { liveKey: 'rider-key-0123456789abcdef', captainKey: 'captain-key-0123456789abcd' }
+  const rider = { 'x-live-key': 'rider-key-0123456789abcdef' }
+  const captain = { 'x-live-key': 'captain-key-0123456789abcd' }
   // Every tap names the day it was made on. Screens get the id from the day they read; the tests read it from the store.
   const startDay = { hubId: 'lucknow', dayId: 'test-day', action: { type: 'startDay' } }
 
   it('applies a valid, authorised action', async () => {
     const h = harness()
     const dayId = await ready(h)
-    const res = await handleAction(post('http://x/api/action', { ...startDay, dayId }, { 'x-live-key': 'live-key' }), h.deps, cfg)
+    const res = await handleAction(post('http://x/api/action', { ...startDay, dayId }, captain), h.deps, cfg)
     expect(res.status).toBe(200)
     expect(h.db.days.get('lucknow')?.started).toBe(true)
   })
+
+  it('a RIDER key can send only the rider actions: starting the day, deciding, the clock and the pilot need the captain key (403)', async () => {
+    const h = harness()
+    const dayId = await ready(h)
+    await handleAction(post('http://x', { ...startDay, dayId }, captain), h.deps, cfg)
+    const oid = demoStops(h.db.days.get('lucknow')!).bonus[0]
+    const send = async (action: unknown, headers: Record<string, string>) => handleAction(post('http://x', { hubId: 'lucknow', dayId, action }, headers), h.deps, cfg)
+    for (const action of [
+      { type: 'startDay' },
+      { type: 'resolveException', orderId: oid, action: 'confirm' },
+      { type: 'overturnStrike', strikeId: 'k1' },
+      { type: 'reviewBonus', orderId: oid, decision: 'release' },
+      { type: 'advanceClock', minutes: 60 },
+      { type: 'advanceDay' },
+      { type: 'closePilot' },
+      { type: 'deskHold', parcelId: `P-${oid}` },
+      { type: 'openReturn', orderId: oid },
+    ]) {
+      const res = await send(action, rider)
+      expect(res.status, JSON.stringify(action)).toBe(403)
+    }
+    const before = h.db.days.get('lucknow')!.version
+    expect((await send({ type: 'advanceDay' }, rider)).status).toBe(403)
+    expect(h.db.days.get('lucknow')!.version).toBe(before)
+    // The same actions with the captain key go through (or fail on their own merits, never with 403).
+    expect((await send({ type: 'advanceClock', minutes: 60 }, captain)).status).toBe(200)
+  })
+
+  it('a RIDER key can send riderDeliver, submitOtp, riderAttempt and riderRefuse, and the customer replies', async () => {
+    const h = harness()
+    const dayId = await ready(h)
+    await handleAction(post('http://x', { ...startDay, dayId }, captain), h.deps, cfg)
+    const oid = demoStops(h.db.days.get('lucknow')!).bonus[0]
+    const send = async (action: unknown) => handleAction(post('http://x', { hubId: 'lucknow', dayId, action }, rider), h.deps, cfg)
+    expect((await send({ type: 'riderDeliver', orderId: oid })).status).toBe(200)
+    expect((await send({ type: 'submitOtp', orderId: oid, code: '0000' })).status).toBe(200)
+    expect((await send({ type: 'customerReply', orderId: oid, reply: 'home' })).status).toBe(200)
+    const o2 = demoStops(h.db.days.get('lucknow')!).bonus[1]
+    expect((await send({ type: 'riderAttempt', orderId: o2, claim: 'customer_unavailable' })).status).toBe(200)
+    expect((await send({ type: 'customerReach', orderId: o2, reached: false })).status).toBe(200)
+    const o3 = demoStops(h.db.days.get('lucknow')!).bonus[2]
+    expect((await send({ type: 'riderRefuse', orderId: o3, reason: 'no_cash' })).status).toBe(200)
+  })
+
+  it('a rider key still cannot answer for a customer on a REAL WhatsApp number (the bound-order guard)', async () => {
+    const h = harness()
+    const dayId = await ready(h)
+    await handleAction(post('http://x', { ...startDay, dayId }, captain), h.deps, cfg)
+    const oid = demoStops(h.db.days.get('lucknow')!).bonus[0]
+    h.db.bindings.set('+919999900001', { phone: '+919999900001', hubId: 'lucknow', orderId: oid })
+    const res = await handleAction(post('http://x', { hubId: 'lucknow', dayId, action: { type: 'customerReach', orderId: oid, reached: true } }, rider), h.deps, cfg)
+    expect(res.status).toBe(409)
+    expect(((await res.json()) as { error: string }).error).toMatch(/own WhatsApp/)
+  })
+
+  it('the captain key can send everything, and a rider key is not the captain key (neither opens the other)', async () => {
+    const h = harness()
+    const dayId = await ready(h)
+    expect((await handleAction(post('http://x', { ...startDay, dayId }, rider), h.deps, cfg)).status).toBe(403)
+    expect(h.db.days.get('lucknow')!.started).toBe(false)
+    expect((await handleAction(post('http://x', { ...startDay, dayId }, { 'x-live-key': `${CAPT}x` }), h.deps, cfg)).status).toBe(401)
+    expect((await handleAction(post('http://x', { ...startDay, dayId }, captain), h.deps, cfg)).status).toBe(200)
+  })
+
+  it('the 403 says what is needed without revealing either key', async () => {
+    const h = harness()
+    const dayId = await ready(h)
+    const res = await handleAction(post('http://x', { ...startDay, dayId }, rider), h.deps, cfg)
+    const body = (await res.json()) as { error: string; code?: string }
+    expect(body.error).toMatch(/captain key/i)
+    expect(JSON.stringify(body)).not.toContain(CAPT)
+    expect(JSON.stringify(body)).not.toContain(RIDER)
+  })
+
 
   it('rejects a missing or wrong live key', async () => {
     const h = harness()
@@ -182,10 +262,12 @@ describe('handleTwilio', () => {
     expect(h.db.days.get('lucknow')!.stops[orderId].location).toEqual({ lat: 26.87, lng: 81.02 })
   })
 
-  it('rounds a shared location to about 100 m and ignores out-of-range coordinates', async () => {
+  it('rounds a shared location to about 1 km (the day is readable by anyone) and ignores out-of-range coordinates', async () => {
     const { h, orderId } = await boundHarness()
     await handleTwilio(form({ From: 'whatsapp:+919999900001', Body: '', Latitude: '26.876543', Longitude: '81.023456' }), h.deps, cfg)
-    expect(h.db.days.get('lucknow')!.stops[orderId].location).toEqual({ lat: 26.877, lng: 81.023 })
+    expect(h.db.days.get('lucknow')!.stops[orderId].location).toEqual({ lat: 26.88, lng: 81.02 })
+    // The pin that drives the order is rounded in the stored day too: nothing finer than about 1 km is published.
+    expect(h.db.days.get('lucknow')!.stops[orderId].order).toMatchObject({ lat: 26.88, lng: 81.02 })
     const before = h.db.days.get('lucknow')!.version
     await handleTwilio(form({ From: 'whatsapp:+919999900001', Body: '', Latitude: '999', Longitude: '0' }), h.deps, cfg)
     expect(h.db.days.get('lucknow')!.version).toBe(before)
@@ -197,6 +279,22 @@ describe('handleTwilio', () => {
     await handleTwilio(form(params), h.deps, cfg)
     await handleTwilio(form(params), h.deps, cfg)
     expect(h.db.days.get('lucknow')!.stops[orderId].replies).toEqual(['pay_now'])
+  })
+
+  it('records the MessageSid only AFTER the reply was applied: a busy day answers 503 and the retry is applied, once', async () => {
+    const { h, orderId } = await boundHarness()
+    const params = { From: 'whatsapp:+919999900001', Body: '1', MessageSid: 'SMretry' }
+    h.db.conflicts = 10 // every save loses the race: the day is "busy"
+    const busy = await handleTwilio(form(params), h.deps, cfg)
+    expect(busy.status).toBe(503)
+    expect(h.db.seen.has('SMretry')).toBe(false)
+    expect(h.db.days.get('lucknow')!.stops[orderId].replies).toEqual([])
+    h.db.conflicts = 0
+    expect((await handleTwilio(form(params), h.deps, cfg)).status).toBe(200)
+    expect(h.db.days.get('lucknow')!.stops[orderId].replies).toEqual(['home'])
+    expect(h.db.seen.has('SMretry')).toBe(true)
+    await handleTwilio(form(params), h.deps, cfg)
+    expect(h.db.days.get('lucknow')!.stops[orderId].replies).toEqual(['home'])
   })
 
   it('ignores a garbage location and still answers Twilio with 200', async () => {
@@ -221,6 +319,16 @@ describe('handleTwilio', () => {
 })
 
 describe('rate limiter', () => {
+  it('prunes keys that have gone quiet, so the map cannot grow forever', () => {
+    let t = 0
+    const allow = createRateLimiter(5, 1000, () => t)
+    for (let i = 0; i < 500; i++) allow(`ip-${i}`)
+    expect(allow.size()).toBe(500)
+    t = 5000
+    allow('ip-new')
+    expect(allow.size()).toBeLessThan(5)
+  })
+
   it('allows `limit` calls per window per key, then blocks, then recovers', () => {
     let t = 0
     const allow = createRateLimiter(2, 1000, () => t)
@@ -236,7 +344,8 @@ describe('loadEnv', () => {
     SUPABASE_URL: 'https://abc.supabase.co',
     SUPABASE_SERVICE_KEY: 'x'.repeat(30),
     OTP_PEPPER: 'p'.repeat(40),
-    LIVE_KEY: 'live-key-1',
+    LIVE_KEY: 'rider-key-0123456789abcd',
+    CAPTAIN_KEY: 'captain-key-0123456789abc',
     ADMIN_TOKEN: 'a'.repeat(16),
     TWILIO_ACCOUNT_SID: 'AC' + '1'.repeat(30),
     TWILIO_AUTH_TOKEN: 't'.repeat(32),
@@ -245,12 +354,21 @@ describe('loadEnv', () => {
   }
 
   it('accepts a complete configuration', () => {
-    expect(loadEnv(good).LIVE_KEY).toBe('live-key-1')
+    expect(loadEnv(good).LIVE_KEY).toBe('rider-key-0123456789abcd')
+    expect(loadEnv(good).CAPTAIN_KEY).toBe('captain-key-0123456789abc')
   })
 
   it('requires a live key and a strong pepper (the API never runs open)', () => {
     expect(() => loadEnv({ ...good, LIVE_KEY: undefined })).toThrow(/LIVE_KEY/)
     expect(() => loadEnv({ ...good, OTP_PEPPER: 'short-pepper-only-24-chars!' })).toThrow(/OTP_PEPPER/)
+  })
+
+  it('requires both keys to be at least 20 characters, and different', () => {
+    expect(() => loadEnv({ ...good, LIVE_KEY: 'short-key-19-chars!!' .slice(0, 19) })).toThrow(/LIVE_KEY/)
+    expect(() => loadEnv({ ...good, CAPTAIN_KEY: 'short-key-19-chars!!'.slice(0, 19) })).toThrow(/CAPTAIN_KEY/)
+    expect(() => loadEnv({ ...good, CAPTAIN_KEY: undefined })).toThrow(/CAPTAIN_KEY/)
+    expect(() => loadEnv({ ...good, CAPTAIN_KEY: good.LIVE_KEY })).toThrow(/CAPTAIN_KEY/)
+    expect(loadEnv({ ...good, LIVE_KEY: 'x'.repeat(20), CAPTAIN_KEY: 'y'.repeat(20) }).LIVE_KEY).toHaveLength(20)
   })
 
   it('names what is missing without printing any value', () => {
@@ -266,18 +384,64 @@ describe('loadEnv', () => {
   })
 })
 
+describe('health', () => {
+  const good = {
+    SUPABASE_URL: 'https://abc.supabase.co',
+    SUPABASE_SERVICE_KEY: 'x'.repeat(30),
+    OTP_PEPPER: 'p'.repeat(40),
+    LIVE_KEY: 'rider-key-0123456789abcd',
+    CAPTAIN_KEY: 'captain-key-0123456789abc',
+    ADMIN_TOKEN: 'a'.repeat(16),
+    TWILIO_ACCOUNT_SID: 'AC' + '1'.repeat(30),
+    TWILIO_AUTH_TOKEN: 't'.repeat(32),
+    TWILIO_WHATSAPP_FROM: 'whatsapp:+14155238886',
+    TWILIO_WEBHOOK_URL: 'https://demo.vercel.app/api/whatsapp',
+  }
+
+  it('returns only {ok}: it never lists which variables are missing', async () => {
+    const ok = handleHealth(good)
+    expect(ok.status).toBe(200)
+    expect(await ok.json()).toEqual({ ok: true })
+    const bad = handleHealth({ ...good, OTP_PEPPER: undefined, CAPTAIN_KEY: undefined })
+    expect(bad.status).toBe(503)
+    const body = await bad.json()
+    expect(body).toEqual({ ok: false })
+    expect(JSON.stringify(body)).not.toMatch(/OTP_PEPPER|CAPTAIN_KEY|variable/)
+  })
+})
+
 describe('handleEnsure', () => {
   it('creates a missing day once and leaves an existing one alone', async () => {
     const { handleEnsure } = await import('./http.ts')
     const h = harness()
     const req = (): Request => new Request('http://x/api/day?hub=gaya', { headers: { 'x-live-key': 'k' } })
-    expect((await handleEnsure(req(), h.deps, { liveKey: 'k' })).status).toBe(200)
+    expect((await handleEnsure(req(), h.deps, { liveKey: 'k', captainKey: 'c' })).status).toBe(200)
     const created = h.db.days.get('gaya')!
     expect(created.started).toBe(false)
     expect(created.dayId).toBeTruthy()
     await runAction(h.deps, 'gaya', { type: 'startDay' })
-    expect((await handleEnsure(req(), h.deps, { liveKey: 'k' })).status).toBe(200)
+    expect((await handleEnsure(req(), h.deps, { liveKey: 'k', captainKey: 'c' })).status).toBe(200)
     expect(h.db.days.get('gaya')!.started).toBe(true)
+  })
+
+  it('says which role the key is, so a screen can keep the captain key out of QR codes', async () => {
+    const { handleEnsure } = await import('./http.ts')
+    const h = harness()
+    const both = { liveKey: 'rider-key', captainKey: 'captain-key' }
+    const get = (key: string): Request => new Request('http://x/api/day?hub=gaya', { headers: { 'x-live-key': key } })
+    expect(((await (await handleEnsure(get('rider-key'), h.deps, both)).json()) as { role: string }).role).toBe('rider')
+    expect(((await (await handleEnsure(get('captain-key'), h.deps, both)).json()) as { role: string }).role).toBe('captain')
+  })
+
+  it('opens the day for either key, and for neither a stranger', async () => {
+    const { handleEnsure } = await import('./http.ts')
+    const h = harness()
+    const get = (key: string | null): Request => new Request('http://x/api/day?hub=gaya', { headers: key === null ? {} : { 'x-live-key': key } })
+    const both = { liveKey: 'rider-key', captainKey: 'captain-key' }
+    expect((await handleEnsure(get('rider-key'), h.deps, both)).status).toBe(200)
+    expect((await handleEnsure(get('captain-key'), h.deps, both)).status).toBe(200)
+    expect((await handleEnsure(get('stranger'), h.deps, both)).status).toBe(401)
+    expect((await handleEnsure(get(null), h.deps, both)).status).toBe(401)
   })
 
   it('checks the key, the method and the hub', async () => {

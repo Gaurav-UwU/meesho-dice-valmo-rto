@@ -49,6 +49,58 @@ function fake(extra: Partial<LiveStoreOptions> = {}): Fake {
   return { opts, calls, errors, state }
 }
 
+describe('live store: two keys', () => {
+  const twoKeys = (extra: Partial<LiveStoreOptions> = {}) => fake({ getLiveKey: () => 'rider-key', getCaptainKey: () => 'captain-key', ...extra })
+
+  it('sends the rider key for what a rider phone does, and the captain key for everything else', async () => {
+    const f = twoKeys()
+    const store = createLiveStore(f.opts)
+    await store.ensureDay('lucknow')
+    await store.send('lucknow', { type: 'riderAttempt', orderId: 'lucknow-0001', claim: 'customer_unavailable' })
+    await store.send('lucknow', { type: 'customerReply', orderId: 'lucknow-0001', reply: 'home' })
+    await store.send('lucknow', { type: 'resolveException', orderId: 'lucknow-0001', action: 'confirm' })
+    await store.send('lucknow', { type: 'advanceDay' })
+    const keys = f.calls.filter((c) => c.path === '/api/action').map((c) => c.headers['x-live-key'])
+    expect(keys).toEqual(['rider-key', 'rider-key', 'captain-key', 'captain-key'])
+  })
+
+  it('a device with only the captain key still works for everything', async () => {
+    const f = fake({ getLiveKey: () => undefined, getCaptainKey: () => 'captain-key' })
+    const store = createLiveStore(f.opts)
+    await store.ensureDay('lucknow')
+    await store.send('lucknow', { type: 'riderDeliver', orderId: 'lucknow-0001' })
+    expect(f.calls.every((c) => c.headers['x-live-key'] === 'captain-key')).toBe(true)
+  })
+
+  it('shows the server’s "needs the captain key" message when a rider-key device tries a captain action', async () => {
+    const f = fake({ getLiveKey: () => 'rider-key', getCaptainKey: () => undefined })
+    const store = createLiveStore(f.opts)
+    await store.ensureDay('lucknow')
+    f.state.respond = { ok: false, status: 403, body: { ok: false, code: 'needs_captain', error: 'This needs the captain key.' } }
+    await store.send('lucknow', { type: 'advanceDay' })
+    expect(f.errors).toEqual(['This needs the captain key.'])
+    // A refused key for the action's level is not a bad join key: the screen is not marked JOIN KEY REFUSED.
+    expect(store.getInfo('lucknow').problem).toBeUndefined()
+  })
+
+  it('when the server says the key typed as the rider key is really the captain key, it is moved out of the rider slot (it must never reach a QR code)', async () => {
+    const moved: string[] = []
+    const f = fake({ getLiveKey: () => 'k-typed', getCaptainKey: () => undefined, onKeyIsCaptain: (k) => void moved.push(k) })
+    f.state.respond = { ok: true, status: 200, body: { ok: true, role: 'captain' } }
+    const store = createLiveStore(f.opts)
+    await store.ensureDay('lucknow')
+    expect(moved).toEqual(['k-typed'])
+  })
+
+  it('does nothing about a rider key', async () => {
+    const moved: string[] = []
+    const f = fake({ getLiveKey: () => 'k-typed', onKeyIsCaptain: (k) => void moved.push(k) })
+    f.state.respond = { ok: true, status: 200, body: { ok: true, role: 'rider' } }
+    await createLiveStore(f.opts).ensureDay('lucknow')
+    expect(moved).toEqual([])
+  })
+})
+
 describe('live store', () => {
   it('ensures the day exists, reads it and starts listening', async () => {
     const f = fake()

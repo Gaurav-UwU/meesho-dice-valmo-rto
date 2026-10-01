@@ -169,6 +169,7 @@ export function RiderApp({ state, hub, rider, onSwitch }: Props) {
           key={`${otpFor}-${otp.attempts}`}
           purpose={otp.purpose}
           attempts={otp.attempts}
+          lockedUntil={otp.lockedUntil}
           onSubmit={(code) => void send({ type: 'submitOtp', orderId: otpFor, code })}
           onClose={() => setOtpFor(null)}
         />

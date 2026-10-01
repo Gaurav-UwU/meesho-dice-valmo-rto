@@ -7,6 +7,8 @@ const LENGTH = 4
 interface Props {
   readonly purpose: OtpPurpose
   readonly attempts: number
+  /** After five wrong tries the order is locked until this time (a cooldown, not for good) */
+  readonly lockedUntil?: number
   readonly onSubmit: (code: string) => void
   readonly onClose: () => void
 }
@@ -23,10 +25,12 @@ const COPY: Readonly<Record<OtpPurpose, { readonly title: string; readonly body:
 }
 
 /** Bottom sheet with four boxes. Remounted (via key) after a wrong code so the boxes clear. */
-export function OtpSheet({ purpose, attempts, onSubmit, onClose }: Props) {
+export function OtpSheet({ purpose, attempts, lockedUntil, onSubmit, onClose }: Props) {
   const [digits, setDigits] = useState<readonly string[]>(() => Array.from({ length: LENGTH }, () => ''))
   const refs = useRef<(HTMLInputElement | null)[]>([])
-  const locked = attempts >= MAX_OTP_ATTEMPTS
+  // Locked after five wrong tries, for a few minutes. (A record with no lock time is a lock from before cooldowns: it stays locked.)
+  const locked = attempts >= MAX_OTP_ATTEMPTS && (lockedUntil === undefined || Date.now() < lockedUntil)
+  const minutes = lockedUntil === undefined ? undefined : Math.max(1, Math.ceil((lockedUntil - Date.now()) / 60_000))
   const code = digits.join('')
   const complete = code.length === LENGTH
   const copy = COPY[purpose]
@@ -91,7 +95,7 @@ export function OtpSheet({ purpose, attempts, onSubmit, onClose }: Props) {
         </div>
         <div className="rider-otp-msg" role="alert">
           {locked
-            ? 'Too many wrong codes. This code is locked. Ask the ops team for help.'
+            ? `Too many wrong codes. This order is locked${minutes === undefined ? '' : ` for about ${minutes} more minute${minutes === 1 ? '' : 's'}`}. Ask the customer for the code again, or ask the hub for help.`
             : attempts > 0
               ? `Wrong code. ${MAX_OTP_ATTEMPTS - attempts} ${MAX_OTP_ATTEMPTS - attempts === 1 ? 'try' : 'tries'} left.`
               : ''}

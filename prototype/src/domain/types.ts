@@ -85,6 +85,8 @@ export interface OtpRecord {
   /** Sim time it was issued: it expires 10 sim-minutes later */
   readonly issuedSim: number
   readonly attempts: number
+  /** After 5 wrong tries the order is locked until this wall time (ms), then the rider gets fresh tries. A lock is a cooldown, never for good. */
+  readonly lockedUntil?: number
   /** For a refusal OTP: why the customer refuses, as the rider recorded it */
   readonly refusalReason?: RefusalReason
 }

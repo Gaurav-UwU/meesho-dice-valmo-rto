@@ -119,7 +119,7 @@ export function Setup() {
         <p className={isLocal ? 'land-muted land-warn' : 'land-muted'}>
           {isLocal ? 'You are on localhost, which a phone cannot reach: use the deployed link. ' : ''}
           {shared
-            ? 'Scanning opens the screen on the shared day and brings the join key along, so nobody types anything. Keep these codes to your own phones: they contain the key.'
+            ? 'Scanning opens the screen on the shared day and brings the RIDER key along, so nobody types anything. A rider key can only deliver, attempt or refuse: the captain key (for the captain, Desk, clock and pilot buttons) is never put in a code. Keep these codes to your own phones: they still contain the rider key.'
             : 'In Demo mode a phone keeps its own separate day (only windows of one browser share a day). To put phones on the same day, choose "Several devices (shared day)" on the left first, then scan.'}
         </p>
       </aside>

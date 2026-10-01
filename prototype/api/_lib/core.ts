@@ -26,7 +26,9 @@ export interface Db {
   findBinding(phone: string): Promise<Binding | null>
   bindingsFor(hubId: HubId): Promise<readonly Binding[]>
   saveBinding(b: Binding): Promise<void>
-  /** Remember a Twilio MessageSid. Returns false if it was already seen (a retry or a replay). */
+  /** Has this Twilio MessageSid already been applied? */
+  wasSeen(messageSid: string): Promise<boolean>
+  /** Remember a Twilio MessageSid once its reply was applied. */
   markSeen(messageSid: string): Promise<boolean>
 }
 
@@ -92,6 +94,8 @@ function stamp(deps: Deps, input: ActionInput): Action {
   if (input.type === 'submitOtp') return { ...input, at, code: hashOtp(deps.pepper, input.orderId, input.code) }
   // The code the customer shows at the counter is compared with its stored hash, like an OTP.
   if (input.type === 'deskHandover') return { ...input, at, code: hashOtp(deps.pepper, input.parcelId, input.code) }
+  // Who made a Desk inspection is decided here, never by the screen: a browser is always the hub operator (only the simulation's own bots are 'bot').
+  if (input.type === 'deskInspect') return { ...input, at, by: 'operator' }
   return { ...input, at } as Action
 }
 
@@ -244,18 +248,27 @@ export async function handleInbound(
   location?: LatLng,
   messageSid?: string,
 ): Promise<Result | { readonly ok: true; readonly ignored: string }> {
-  // Twilio retries and replays carry the same MessageSid: apply each reply once.
-  if (messageSid && !(await deps.db.markSeen(messageSid))) return { ok: true, ignored: 'duplicate' }
+  // Twilio retries and replays carry the same MessageSid: apply each reply once. It is recorded only AFTER the reply was applied, so a reply
+  // that failed (a busy day) is not lost: the retry is applied.
+  if (messageSid && (await deps.db.wasSeen(messageSid))) return { ok: true, ignored: 'duplicate' }
   const binding = await deps.db.findBinding(phone)
   if (!binding) return { ok: true, ignored: 'unknown sender' }
   const day = await deps.db.loadDay(binding.hubId)
-  if (!day || dayShape(day) !== 'ok') return { ok: true, ignored: 'no day' }
+  if (!day || dayShape(day) !== 'ok') {
+    if (messageSid) await deps.db.markSeen(messageSid)
+    return { ok: true, ignored: 'no day' }
+  }
   const offers = day.messages.filter((m) => m.orderId === binding.orderId && m.direction === 'out' && m.buttons)
   const action = actionFromReply(
     { orderId: binding.orderId, lastOffer: offers.at(-1), parcelId: parcelForOrder(day, binding.orderId)?.id },
     body,
     location,
   )
-  if (!action) return { ok: true, ignored: 'not understood' }
-  return runAction(deps, binding.hubId, action, 'webhook')
+  if (!action) {
+    if (messageSid) await deps.db.markSeen(messageSid)
+    return { ok: true, ignored: 'not understood' }
+  }
+  const result = await runAction(deps, binding.hubId, action, 'webhook')
+  if (messageSid && result.ok) await deps.db.markSeen(messageSid)
+  return result
 }

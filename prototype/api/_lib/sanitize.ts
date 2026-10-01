@@ -19,11 +19,29 @@ export function redactMessage(m: WaMessage, maskOnlyFor?: ReadonlySet<string>): 
  * customer is played by the in-app phone (Customer screen, on any device), and that phone has to be able to show the code.
  * Left out, every OTP message is masked. Stored codes (`otps`) are always hashed, so a rider's screen still cannot read them.
  */
+const coarse = (x: number): number => Math.round(x * 100) / 100
+
+/**
+ * An order tied to a real WhatsApp number carries that customer's own spot once they share it. The stored day is readable by anyone, so its pin
+ * is rounded to about 1 km (the exact point is only needed once, to score the order, and is not kept).
+ */
+function coarsePins(state: DayState, bound: ReadonlySet<string>): DayState['stops'] {
+  return Object.fromEntries(
+    Object.entries(state.stops).map(([id, st]) => [
+      id,
+      bound.has(id) && st.location !== undefined
+        ? { ...st, order: { ...st.order, lat: coarse(st.order.lat), lng: coarse(st.order.lng) }, location: { lat: coarse(st.location.lat), lng: coarse(st.location.lng) } }
+        : st,
+    ]),
+  )
+}
+
 export function toStorable(state: DayState, pepper: string, maskOnlyFor?: ReadonlySet<string>): DayState {
   const otps = Object.fromEntries(
     Object.entries(state.otps).map(([orderId, otp]) => [orderId, isPlainOtp(otp.code) ? { ...otp, code: hashOtp(pepper, orderId, otp.code) } : otp]),
   )
   // A pickup code is stored like an OTP: a peppered hash, bound to the parcel.
   const parcels = state.parcels.map((p) => (p.pickup && isPlainOtp(p.pickup.code) ? { ...p, pickup: { ...p.pickup, code: hashOtp(pepper, p.id, p.pickup.code) } } : p))
-  return { ...state, otps, parcels, messages: state.messages.map((m) => redactMessage(m, maskOnlyFor)) }
+  const stops = maskOnlyFor ? coarsePins(state, maskOnlyFor) : state.stops
+  return { ...state, otps, parcels, stops, messages: state.messages.map((m) => redactMessage(m, maskOnlyFor)) }
 }

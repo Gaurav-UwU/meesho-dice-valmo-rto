@@ -2,7 +2,10 @@ import type { AloneReason } from './types.ts'
 
 /** Where a tab remembers its mode and the live key. Per tab (sessionStorage) so a key is never kept on disk. */
 export const MODE_STORAGE = 'rescue-mode'
+/** The RIDER key: what the rider and customer QR codes carry. */
 export const LIVE_KEY_STORAGE = 'rescue-live-key'
+/** The CAPTAIN key: the team's own, kept for this tab only and never put in a link or QR code. */
+export const CAPTAIN_KEY_STORAGE = 'rescue-captain-key'
 
 export interface JoinRequest {
   readonly mode?: 'live' | 'demo'

@@ -9,7 +9,7 @@ export async function POST(request: Request): Promise<Response> {
   if (!allow(ip)) return Response.json({ ok: false, error: 'Slow down a little' }, { status: 429 })
   try {
     const { env, deps } = runtime()
-    return await handleAction(request, deps, { liveKey: env.LIVE_KEY })
+    return await handleAction(request, deps, { liveKey: env.LIVE_KEY, captainKey: env.CAPTAIN_KEY })
   } catch (e) {
     console.error('action failed', e instanceof Error ? e.message : 'unknown')
     return Response.json({ ok: false, error: 'Something went wrong on the server' }, { status: 500 })

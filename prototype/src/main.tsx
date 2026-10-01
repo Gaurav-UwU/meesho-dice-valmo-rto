@@ -6,7 +6,7 @@ import { ErrorBoundary } from './ui/ErrorBoundary.tsx'
 import { showToast } from './ui/toast.ts'
 import { loadGeo } from './store/geo.ts'
 import { createLiveStore } from './store/live.ts'
-import { chooseMode, liveAvailable, LIVE_KEY_STORAGE, MODE_STORAGE, parseJoin } from './store/join.ts'
+import { CAPTAIN_KEY_STORAGE, chooseMode, liveAvailable, LIVE_KEY_STORAGE, MODE_STORAGE, parseJoin } from './store/join.ts'
 import { askOnce, tabSecrets } from './store/secrets.ts'
 import { createLocalStore, type ChannelLike, type KeyValue } from './store/local.ts'
 import type { Store } from './store/types.ts'
@@ -78,7 +78,14 @@ function chooseStore(): Store {
     return createLiveStore({
       feed: createSupabaseFeed(url, anon),
       call: (path, init) => fetch(path, init),
-      getLiveKey: () => askOnce(tabSecrets, (q) => window.prompt(q), LIVE_KEY_STORAGE, 'Live key (ask the team, or scan the QR code on the landing page)'),
+      getLiveKey: () => askOnce(tabSecrets, (q) => window.prompt(q), LIVE_KEY_STORAGE, 'Rider key (ask the team, or scan the QR code on the landing page)'),
+      // The captain key is asked for only when a captain-level button is pressed, kept for this tab, and never put in a link or QR code.
+      getCaptainKey: () => askOnce(tabSecrets, (q) => window.prompt(q), CAPTAIN_KEY_STORAGE, 'Captain key (the team’s own key; it is never in a QR code)'),
+      onKeyIsCaptain: (key) => {
+        tabSecrets.set(CAPTAIN_KEY_STORAGE, key)
+        tabSecrets.set(LIVE_KEY_STORAGE, '')
+        showToast('That was the captain key. It is kept for this tab only and never put in a QR code; phone QR codes need the rider key.')
+      },
       getAdminToken: () => askOnce(tabSecrets, (q) => window.prompt(q), 'rescue-admin-token', 'Admin token (ask the team)'),
       onError: (message) => showToast(message),
       isHidden: () => document.visibilityState === 'hidden',

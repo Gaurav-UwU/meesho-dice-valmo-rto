@@ -1,11 +1,6 @@
-import { loadEnv } from '../api/_lib/env.ts'
+import { handleHealth } from '../api/_lib/http.ts'
 
-/** Says whether the server is configured, naming any missing variables (never their values). */
+/** Says only whether the server is configured. It never names a missing variable or shows a value. */
 export function GET(): Response {
-  try {
-    loadEnv(process.env)
-    return Response.json({ ok: true })
-  } catch (e) {
-    return Response.json({ ok: false, error: e instanceof Error ? e.message : 'not configured' }, { status: 503 })
-  }
+  return handleHealth(process.env)
 }

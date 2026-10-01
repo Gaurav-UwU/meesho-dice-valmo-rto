@@ -149,7 +149,7 @@ describe('handleInbound', () => {
     await bindPhone(h.deps, { phone: PHONE, hubId: HUB, orderId })
     const spot = { lat: day.hub.lat + 0.02, lng: day.hub.lng + 0.02 }
     await handleInbound(h.deps, PHONE, '', spot)
-    expect(h.db.days.get(HUB)!.stops[orderId].location).toEqual(spot)
+    expect(h.db.days.get(HUB)!.stops[orderId].location).toEqual({ lat: Math.round(spot.lat * 100) / 100, lng: Math.round(spot.lng * 100) / 100 })
   })
 
   it('answers the failed-attempt check and flags a suspect attempt', async () => {
@@ -181,6 +181,17 @@ describe('handleInbound', () => {
     await runAction(h.deps, HUB, { type: 'deskSecondChance', parcelId: `P-${orderId}` })
     await handleInbound(h.deps, PHONE, '1')
     expect(h.db.days.get(HUB)!.parcels[0].state).toBe('recovered')
+  })
+})
+
+describe('Desk inspection: who made it is decided by the server', () => {
+  it('ignores a client that says the inspection was made by a bot', async () => {
+    const { h, orderId } = await started()
+    await runAction(h.deps, HUB, { type: 'riderRefuse', orderId, reason: 'not_ordered' })
+    await runAction(h.deps, HUB, { type: 'submitOtp', orderId, code: '4321' })
+    const parcelId = `P-${orderId}`
+    await runAction(h.deps, HUB, { type: 'deskInspect', parcelId, unopened: true, sealOk: true, invoiceOutside: true, by: 'bot' })
+    expect(h.db.days.get(HUB)!.parcels.find((p) => p.id === parcelId)?.inspection?.by).toBe('Hub operator')
   })
 })
 

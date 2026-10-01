@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createDay } from '../../domain/day.ts'
 import { getHub } from '../../engine/hubs.ts'
 import { syntheticGeo } from '../../engine/synthetic-geo.ts'
-import { LIVE_KEY_STORAGE } from '../../store/join.ts'
+import { CAPTAIN_KEY_STORAGE, LIVE_KEY_STORAGE } from '../../store/join.ts'
 import { createLiveStore } from '../../store/live.ts'
 import { createLocalStore } from '../../store/local.ts'
 import { tabSecrets } from '../../store/secrets.ts'
@@ -32,6 +32,28 @@ const siteHasSharedDay = (has: boolean): void => {
   vi.stubEnv('VITE_SUPABASE_URL', has ? 'https://example.supabase.co' : '')
   vi.stubEnv('VITE_SUPABASE_ANON_KEY', has ? 'anon-key' : '')
 }
+
+describe('Setup: the captain key never reaches a link or a QR code', () => {
+  it('even when this device holds it, every link carries only the rider key', async () => {
+    tabSecrets.set(LIVE_KEY_STORAGE, 'the-rider-key')
+    tabSecrets.set(CAPTAIN_KEY_STORAGE, 'the-secret-captain-key')
+    const day = createDay(syntheticGeo(getHub('lucknow')), { seed: 1, orders: 20, riders: 4 })
+    const store = createLiveStore({
+      feed: { fetchDay: async () => day, watch: () => () => undefined },
+      call: async () => ({ ok: true, status: 200, json: async () => ({ ok: true }) }),
+      getLiveKey: () => 'the-rider-key',
+      getCaptainKey: () => 'the-secret-captain-key',
+      getAdminToken: () => 't',
+      onError: () => undefined,
+      pollMs: 0,
+    })
+    await store.ensureDay('lucknow')
+    show(store)
+    const html = document.body.innerHTML
+    expect(html).not.toContain('the-secret-captain-key')
+    expect(html).toContain('the-rider-key')
+  })
+})
 
 describe('Setup: phones can join the same day without typing keys', () => {
   it('in Demo mode it says ALONE, offers the shared day only if the site has it, and opens plain links', () => {
@@ -72,6 +94,7 @@ describe('Setup: phones can join the same day without typing keys', () => {
     const hrefs = within(setup).getAllByRole('link').map((a) => a.getAttribute('href'))
     expect(hrefs).toEqual(['/ops?hub=lucknow&mode=live#k=the-key', '/rider?hub=lucknow&mode=live#k=the-key', '/customer?hub=lucknow&mode=live#k=the-key', '/captain?hub=lucknow&mode=live#k=the-key'])
     expect(screen.getByText(/nobody types anything/i)).toBeTruthy()
+    expect(screen.getByText(/captain key .* is never put in a code/i)).toBeTruthy()
     expect((screen.getByRole('button', { name: 'One device (Demo)' }) as HTMLButtonElement).disabled).toBe(false)
   })
 })
