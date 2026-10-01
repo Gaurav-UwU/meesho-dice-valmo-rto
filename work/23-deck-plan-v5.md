@@ -6,7 +6,7 @@
 
 ---
 
-## 0. The three sentences the whole deck now rests on
+## 0. The three sentences the whole deck now rests on (a fourth is added in §9: the fallback story)
 1. **We pay riders ₹15 only for the hard orders, and we test it fairly:** riders are paired on past delivery rate, a coin decides who gets the bonus, and GO needs even the **low end** of the range to pay for itself.
 2. **If it doesn't pay we never re-read the data.** We change one lever (the top 10% or a smaller bonus) and run **Pilot 2** with its rule locked first.
 3. **Every refused parcel takes its cheapest legal recovery,** and we **hold a parcel for a new buyer only where even the low end of the demand forecast clears break-even (5.5%).**
@@ -138,3 +138,27 @@ Use the Lucknow hub. Do not show any real phone number or AWB (the real-order sc
 | Fri 2 Oct, before 3 pm | Drop in screenshots (§6), QR, final numbers | Freeze: screenshots, QR, 90 s video (Demo mode, one browser) |
 | Sat 3 Oct | Dry run, **submit** | No new features |
 | Sun 4 Oct | Buffer only | |
+
+---
+
+## 9. ADDENDUM (2 Oct): the fallback story and fake-attempt control (source: `24-fake-attempt-control-plan.md`)
+**The fourth sentence of the deck:** *"If the bonus fails in the 30-day pilot, we already have a concrete plan that does not depend on it, built and tested in our prototype: (1) fake-attempt control run by the hub captain, and (2) the Refused-Parcel Router with local re-home."* **Never write "proven"**: both are built and tested in simulation, and the real pilot measures them. The old idea of two parallel pilots is **dropped**: do not mention it.
+
+**Why fake-attempt control belongs next to the bonus:** the bonus pays a rider to push through a hard stop; a fake attempt ("customer unavailable", logged from far away) is how a rider avoids that stop. The control makes giving up **visible and costly** and **recovers the delivery** through another rider, so the parcel is not sent back. It works with the bonus off, in both arms.
+
+**Slide-by-slide edits**
+| Slide | Edit |
+|---|---|
+| 1 Executive summary | One line: "Even if the bonus fails, two bonus-independent plans stand: fake-attempt control and the Router." |
+| 4 How the bonus works | Replace the "fake-attempt check" bullet with the **hub-captain flow**: suspicious attempts (phone far from the address, or the customer says nobody came) go to the **hub captain**, who sees the evidence and can **confirm, order a free re-attempt, or strike**. **Strike ladder (a proposal):** 1 warning and coaching; 2 every failed attempt reviewed for 14 days (and any bonus blocked); 3 escalated to the hub manager. Strikes expire after 30 days; Ops can overturn within 48 h; the rider sees every strike and its reason. Add a **monitoring** line: "a rider monitor flags riders with 3 disputes in 7 days and twice the hub median". Screenshots: the captain screen, the rider monitor, the rider's strike meter. |
+| 5 Economics and test | "If it doesn't pay: **Pilot 2 with one lever changed, and the fallback keeps running either way.**" State that fake-attempt control runs in **both arms from the 8-week baseline**, so the bonus effect is measured **on top of it** (it may be a little smaller than without it). |
+| 6 Refused parcels | Label the Router as **fallback part 2**: local re-home gated on the forecast's low end. |
+| 7 30-60-90 | New row **"Fake-attempt control":** starts day 0 in every pilot hub, both arms. Metrics: disputed rate, confirmed rate, recovered deliveries, ₹ saved against review cost, overturn rate, time to decide. **Re-tune if** more than 1 in 3 strikes are overturned, or reviews cost more than they recover. |
+| 8 Risks | Add: **captain conflict of interest** (guard: Ops overturn, a sample audit of decisions, a scorecard); **unfair strikes** (reasons, 30-day expiry, appeal); **gig-worker labour and data rules** (a real rollout needs a captain login and a documented process); **rider backlash**. Update "uplift below break-even": "RE-PRICE → Pilot 2; the fallback continues". |
+
+**Numbers to use (all simulated or assumed; label them):**
+- The simulation assumes **4%** of attempts are fake. **No real rate is known**; the "15% of failed deliveries are fake" claim is on the do-not-use list. The baseline measures the real one.
+- **Break-even of a review:** a ₹10 human review pays if more than about **1 in 10** reviewed disputes ends in a delivery (₹120 return avoided − ₹21 re-attempt = ₹99; 10 ÷ 99 ≈ 10%).
+- ₹ saved = recovered deliveries × ₹99 − reviews × ₹10 (shown per hub in the prototype's KPI panel once built).
+
+**Screenshots to add to the §6 shot-list (after the feature exists):** the captain queue with an evidence card; the rider monitor with a "Watch" rider; the rider app's banner and strike meter. Until then the deck uses the existing Exception-queue screenshot, relabelled "being replaced by the hub-captain screen".
