@@ -125,3 +125,12 @@ COD 80% of Valmo orders · COD RTO 20% · prepaid RTO 5% · forward ₹50 (FM Hu
 | Node margins: a large 3PL nets ~15 paise an order (2.86% EBITDA) | Shadowfax financials, as cited in `06-solution-inventory-recovery.md` (**URL to add**; else say "reportedly") | S |
 | Vendor RTO claims are self-reported (Delhivery "up to 20%", GoKwik, Shadowfax "almost 60%") | Vendor sites, see `01-valmo-research.md` §C | C (self-reported; that is the point) |
 | Meesho allocates lanes by lowest cost, no fixed Valmo share | Q1 FY27 earnings call, 23 Jul 2026 (see fact-check log above) | P |
+
+## Source lines still MISSING (checked 2 Oct, Session 16)
+The deck's "Is it new?" claim ("we found none") rests on peers that have **no source line in this file yet**. Nothing was invented: each needs a URL, a date read and one quoted sentence before it goes on a slide (or cut the peer from the slide).
+| Peer | What the deck says | What is missing |
+|---|---|---|
+| **Meituan** | A model-driven rider bonus, but for order *acceptance* | The paper is cited as "arXiv 2202.10695, 2022" in the footer, but there is no URL line, date read or quote here. Open the paper and copy the sentence that says the incentive is for accepting orders. |
+| **Uber Eats / DoorDash** | Extra pay for harder orders, also at acceptance | No source line at all. Needs the Uber fare/earnings guide URL (the footer cites "Uber fare guide") and a DoorDash Dasher pay page, each with a quote. |
+| **Ekart** | A first-attempt incentive on all orders | No source line at all. Needs the Ekart (Flipkart) delivery-partner incentive page or a news report, with a quote. |
+Also still open: the novelty wording must stay "we found none (searched [date])", and the Delhivery QC-RVP URLs listed in `28-deck-plan-final.md`.
