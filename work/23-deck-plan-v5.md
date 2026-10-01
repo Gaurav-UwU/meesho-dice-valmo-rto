@@ -1,6 +1,6 @@
 # 23: Deck plan v5 (1 Oct 2026): what the prototype now lets us say, slide by slide
 
-> **2 Oct: superseded for building by `28-deck-plan-final.md`** (this file + 14 merged slide by slide, with the fake-attempt diagnosis added to slides 1 to 3). Keep this file as the record of why each change was made.
+> **2 Oct: superseded for building by `28-deck-plan-final.md`** (this file + 14 merged slide by slide; slides 0 to 3 stay the Round 1 slides, unchanged). Keep this file as the record of why each change was made.
 
 **Use with `14-deck-handoff.md` (v4).** v4 is still the base for look, structure and sources. This file is the **delta**: it replaces every "PENDING" number in v4, rewrites the slides the last two build sessions changed (5, 6, 4, 7, 8), and gives a screenshot shot-list. Everything marked *simulated* comes from our synthetic prototype and must be labelled "in simulation" and "to be measured in the 30-day pilot".
 

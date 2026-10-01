@@ -1,6 +1,6 @@
 # 28: The complete Round 2 deck plan (final, consolidated 2 Oct 2026)
 
-**Build the deck from this file only.** It merges `14-deck-handoff.md` (v4) and `23-deck-plan-v5.md` (with §9 and §10) and adds the fake-attempt diagnosis to slides 1 to 3. Still use 14 for the **look and feel (§3)** and the **do-not-use list (§7)**, and `10-sources.md` for every footer. Ignore `16-deck-changes-prototype-v2.md` and the HTML copy of 14 (both are history).
+**Build the deck from this file only.** It merges `14-deck-handoff.md` (v4) and `23-deck-plan-v5.md` (with §9 and §10). **Slides 0 to 3 are the Round 1 slides and are not changed**; the fake-attempt control is shown on slides 4, 7 and 8. Still use 14 for the **look and feel (§3)** and the **do-not-use list (§7)**, and `10-sources.md` for every footer. Ignore `16-deck-changes-prototype-v2.md` and the HTML copy of 14 (both are history).
 
 **Format:** 10 slides including the cover (rules allow 6 to 10), Round 1 look: 20 × 11.25 in, about 350–400 words a slide, a full-sentence headline, three numbered panels (navy ①②③), ➢ bullets, at least one native chart or diagram, a pink "so what" callout, a grey sources footer. Colours: pink #ED0B7D, navy #120A4A, text #2B2650, purple #2A0680, GO green #4FBF83, callout #FCF0F6, cream #FFF3D7; Valmo app screens keep Valmo navy #092D5E.
 
@@ -16,46 +16,47 @@
 
 ---
 
+> **Slides 0 to 3 are the Round 1 slides: copied word for word from `14-deck-handoff.md`. Do not change them** (Gaurav, 2 Oct). The fake-attempt material lives on slides 4, 7 and 8.
+
 ## Slide 0: Cover
-Same as Round 1: "REDUCING RTO: GETTING MORE ORDERS DELIVERED · Business Track · Team GPS, IIT Bombay". Optionally "Round 2: Detailed Submission".
+Same as Round 1: "REDUCING RTO: GETTING MORE ORDERS DELIVERED · Business Track · Team GPS, IIT Bombay". Optionally add "Round 2: Detailed Submission".
 
 ---
 
-## Slide 1: Executive summary (ask ①)
-**Headline:** Price the hard stop, and check it was really tried: 3 more of every 100 orders delivered
-**Message:** Valmo pays the same for easy and hard stops, so hard stops fail. We carry Meesho's risk signal to the door, pay for the hard delivery, and check that failed attempts were real.
+## Slide 1: Executive summary *(ask ①)*
+**Headline:** Price the hard stop: 3 more of every 100 orders delivered
+**Message:** Valmo pays the same for easy and hard stops, so hard stops fail. We carry Meesho's risk signal to the door and price the difficulty.
 
-**① The problem** (big-number tiles)
-- **17%** of Valmo orders fail (data pack: 80% COD × 20% + 20% prepaid × 5%)
-- **₹170 vs ₹50** per failed vs delivered order (₹50 forward + ₹120 reverse)
-- **96%** of failures are COD
-- **2 in 3** fail at the door
-- Visual: mini bar, RTO by distance from the hub: 15% / 17% / 22% (about 2 / 5 / 10 km+)
+**① The problem**
+- Big-number tiles:
+  - **17%** of Valmo orders fail (data pack: 80% × 20% + 20% × 5%)
+  - **₹170 vs ₹50** per failed vs delivered order
+  - **96%** of failures are COD
+  - **2 in 3** fail at the door
+- *Visual:* mini bar, RTO by distance from hub: 15% / 17% / 22% (~2 / 5 / 10 km+)
 
 **② What we found**
-- Two-sided friction: the customer pays nothing; the rider is paid flat and only on success.
-- Valmo's rider contract pays per successful delivery; its only incentive tracks the *overall* first-attempt rate.
-- **Some failed attempts are not real attempts:** riders shed hard stops by logging "customer unavailable". About **9% of RTOs** in our cause blend are "no real attempt"; Valmo already phones customers to verify failed attempts, and Flipkart asks the customer on WhatsApp. (The true rate is unknown; the 8-week baseline measures it.)
-- TrustMesh's risk signal stops before dispatch.
+- Two-sided friction (customer: nothing paid; rider: flat pay, paid only on success)
+- Valmo's own rider contract: paid per successful delivery; the only incentive tracks the *overall* first-attempt rate
+- TrustMesh's signal stops before dispatch
 - Evidence line: 12 rider interviews · buyer survey **[n PENDING]** · real test orders · Valmo contract
+- *Visual:* one rider quote (from Round 1)
 
-**③ What we recommend** (stacked cards)
-- **Now: Rescue Bonus.** −3 RTO points, **₹62 cr (conservative) to ₹184 cr (case) a year**, if a 30-day paired-rider pilot confirms it.
-- **Now, alongside: fake-attempt control.** Suspicious attempts go to the hub captain; strikes are visible to the rider. Works with or without the bonus.
-- **Next: Refused-Parcel Router.** ₹50–140 cr a year (up to ₹270 cr).
-- **Long-term: pay by difficulty.**
-- One line under the cards: *"Even if the bonus fails, two bonus-independent plans stand: fake-attempt control and the Router."*
+**③ What we recommend** *(three stacked cards)*
+- **Now:** Rescue Bonus: −3 RTO pts, ₹62 cr (conservative) to ₹184 cr (case) a year, **if a 30-day paired-rider pilot confirms it**
+- **Next:** Refused-Parcel Router: ₹50–140 cr/yr (up to ₹270 cr)
+- **Long-term:** pay by difficulty
 
-**Callout band:** the brief's three tests: delivery cost ↓ · rider earnings ↑ · customer speed and ease unchanged. Plus the prototype **QR code** (from the Demo landing page, never a shared-day QR) and the live link.
-**Footer:** Valmo economics use the case data pack; Meesho-wide trends use the RHP and shareholder letters.
+**Callout band:** a constraint scorecard for the brief's three tests: delivery cost ↓ · rider earnings ↑ · customer speed/ease unchanged (faster for buyer 2). Plus the prototype QR code **[PENDING]**.
+**Footer:** "Valmo economics use the case data pack; Meesho-wide trends use the RHP and shareholder letters."
 
 ---
 
-## Slide 2: Where and why RTO happens (ask ②)
+## Slide 2: Where and why RTO happens *(ask ②)*
 **Headline:** Two-thirds of RTOs happen at a door a rider can still save
-**Message:** Most failures are rescuable at the door, and both the customer and the rider have reasons not to make it happen, including attempts that were never really made.
+**Message:** Most failures are rescuable at the door, and both the customer and the rider have reasons not to make it happen.
 
-**① Where** (horizontal grouped bar; same numbers as Round 1)
+**① Where** *(horizontal grouped bar; replaces the Round 1 pie, same numbers)*
 ```
 All RTOs (100%)
 ├ At the door, rescuable ..... 66%
@@ -65,64 +66,80 @@ All RTOs (100%)
 ├ Before the door (system) ... 22%
 │  Unclear address ........... 13
 │  Far / wrong hub ............ 9
-├ No real attempt ............. 9%   ← highlight: the fake-attempt problem
+├ No real attempt ............. 9%
 └ Other ....................... 3%
 ```
-Label: "Our blend of rider interviews, buyer survey, industry mix, data pack." The build-up (source and n per slice) is **[PENDING]** from the research teammate. If the build-up cannot support 9%, label the slice "our estimate, to be measured".
+Label: "Our blend of rider interviews, buyer survey, industry mix, data pack." The build-up is **[PENDING]** from the research teammate.
 
-**② Who fails most** (native charts: COD vs prepaid; distance)
-- COD fails **22.3%** vs prepaid **2.7%** (about 8×). COD is **96%** of failures while being 77% of shipments.
-- Distance (data pack): **15% → 17% → 22%**. New or unclear addresses fail more.
-- India isn't one market: **18%** in Vadodara vs **35%** in Patna; RTO rises from 22% to 35% as delivery time goes from 1–2 to 5+ days (Shipway 2025).
-- Sidebar: RTO 21.2% → 18.6% → 17.8% (FY23–25, derived from RHP); about **70%** of the drop came from the prepaid shift; COD success fell 78.6% (FY24) → 75.9% (H1 FY26), so that lever is spent.
+**② Who fails most** *(native charts: COD vs prepaid; distance bar)*
+- COD fails **22.3%** vs prepaid **2.7%** (~8x). COD is **96%** of failures while being 77% of shipments.
+- Distance (data pack): **15% → 17% → 22%** at ~2 / 5 / 10 km+. New or unclear addresses fail more.
+- India isn't one market: **18%** in Vadodara vs **35%** in Patna. RTO rises from 22% to 35% as delivery time goes from 1–2 to 5+ days (Shipway 2025).
+- Sidebar:
+  - RTO 21.2% → 18.6% → 17.8% (FY23–25, derived from RHP).
+  - **~70%** of the drop came from the shift to prepaid.
+  - Yet COD success fell 78.6% → 75.9%, so that lever is spent.
 
-**③ Why: two-sided friction** (loop diagram + two quotes)
-- **Customer:** nothing paid, so refusing is free; price-shopping while the parcel travels (Round 1 survey quote).
-- **Rider:** paid only on success, flat per stop, so effort goes to likely successes. **The cheapest way out of a hard stop is a weak or fake attempt:** two calls and move on, or "customer unavailable" logged without knocking (Round 1 rider quote).
-- **The industry already treats this as real:** Valmo's contract has it verify failed attempts by phone; Flipkart asks the customer "Did the rider reach you? Did you ask to reschedule?"
-- Loop: expected to fail → less effort → fails → expectation confirmed.
+**③ Why: two-sided friction** *(small loop diagram + two quotes)*
+- **Customer:** nothing paid, so refusing is free; price-shopping while the parcel travels (Round 1 survey quote)
+- **Rider:** paid only on success, flat per stop, so effort goes to likely successes (Round 1 rider quote)
+- Loop: expected to fail → less effort → fails → expectation confirmed
 
-**"We placed a real order" strip** (redrawn; the raw screenshot shows the rider's number and the AWB)
-1. COD order placed → the app promised **3 Oct**
+**"We placed a real order" strip** (timeline):
+1. COD order placed → app promised **3 Oct**
 2. Arrived **28 Sep**, 5 days early, with no heads-up
 3. Valmo WhatsApp "Arriving Today": one-way, no availability question, no pay-now option
-4. **The rider called twice and didn't wait** (a weak attempt)
+4. The rider called twice and didn't wait
 5. "Failed Delivery… we will try again in 24–48 hrs"
 
-**Footer:** 12 rider interviews (Mumbai hubs) · buyer survey **[n PENDING]** · real test orders on Meesho + Flipkart · rider/hub calls **[PENDING]** · RHP, Q4 FY26 and Q1 FY27 letters · Valmo Delivery Services Agreement · case data pack · Shipway. Italic: *"What we don't know: whether riders cause COD failure or correctly predict it, and how many failed attempts are fake. The pilot's Control group and the 8-week baseline measure both."*
+Use a redrawn version, not the raw screenshot (it shows the rider's number).
+
+**Footer: methods strip**
+- 12 rider interviews (Mumbai hubs) · buyer survey, Hindi/English **[n PENDING]** · real test orders on Meesho + Flipkart · rider/hub calls **[PENDING]**
+- RHP, Q4 FY26 & Q1 FY27 letters · Valmo Delivery Services Agreement · case data pack · Shipway
+- Italic line: *"What we don't know: whether riders cause COD failure or correctly predict it. The pilot's control group separates the two."*
 
 ---
 
-## Slide 3: Prioritised solutions with expected impact (ask ③)
-**Headline:** Rescue first: the levers that need no new system
-**Message:** Five levers scored with numbers. The bonus goes first because it runs on what Valmo already has; fake-attempt control runs alongside it and does not depend on it.
+## Slide 3: Prioritised solutions with expected impact *(ask ③)*
+**Headline:** Rescue first: the only lever that needs no new system
+**Message:** Five levers scored with numbers. The bonus goes first because it runs on what Valmo already has.
 
-**① Scored table**
+**① Scored table (the main element)**
+
 | Lever (R1 code) | Pool | Assumed effect | RTO pts | ₹ cr/yr | Confidence | Effort | Order |
 |---|---|---|---|---|---|---|---|
-| **Rescue Bonus** (R1) | Riskiest 20% | +15 deliveries per 100 flagged | −3.0 | 62 (conservative) – 184 (case, +20) net | Med | Low | 1 · now |
-| **Fake-attempt control** (R2 "proof of attempt", sharpened) | "No real attempt": about 9% of RTOs, so **at most about 1.5 RTO points** (9% × 17%) | Measured in the 8-week baseline; a ₹10 review pays if more than about **1 in 10** reviewed disputes ends in a delivery | up to −1.5 (not claimed) | not claimed until measured | Low–Med | **Low**: a review queue on evidence Valmo already collects | 1 · now, all hubs, both groups, **independent of the bonus** |
+| **Rescue Bonus** (R1) | Riskiest 20% | +15 deliveries / 100 flagged | −3.0 | 62 (conservative) – 184 (case, +20) net | Med | Low | 1 · now |
 | **Refused-Parcel Router** (C1) | All refused parcels | 2.5–13.5% re-homed + cheaper returns | 0 (recovers cost) | 50–270 | Low–Med | Med | 2 · day 30+ |
-| **Two-way WhatsApp** (P1, sharpened) | Not home 18% + unreachable 12% | fixes ⅕ | −1.0 | about 95 gross | Low–Med | **Low**: Valmo already sends WhatsApp | 3 · day 31+ |
-| **Address confidence + fix before dispatch** (P2) | Address 13% + wrong hub 9% | fixes ¼ | −0.9 | about 80 gross | Med | Med (builds on GeoIndia) | 4 · day 60+ |
-Keep a small thumbnail of the Round 1 matrix.
+| **Two-way WhatsApp** (P1, sharpened) | Not home 18% + unreachable 12% | fixes ⅕ | −1.0 | ~95 gross | Low–Med | **Low**: Valmo already sends WhatsApp | 3 · day 31+ |
+| **Address confidence + fix before dispatch** (P2) | Address 13% + wrong hub 9% | fixes ¼ | −0.9 | ~80 gross | Med | Med (builds on GeoIndia) | 4 · day 60+ |
+| Proof of attempt (R2) | No real attempt 9% | Mostly in play already (Valmo verification call + refusal OTP), so it's folded into the Rescue Bonus controls | | | | | — |
+
+Keep a small thumbnail of the Round 1 matrix for continuity.
 
 **② Evidence for P1: Flipkart does it, Valmo doesn't**
+
 | Moment | Flipkart | Valmo |
 |---|---|---|
 | Asks if you'll be home | ✅ button | ❌ |
 | Replies to your answer | ✅ | ❌ one-way |
 | Delay notice with new date | ✅ | ❌ |
-| **Checks attempt and reschedule claims with you** | ✅ | ❌ |
+| Checks reschedule claims with you | ✅ | ❌ |
 | Rider contact | masked number + PIN | direct number shown |
-Visual: Valmo's real "Arriving Today" message next to ours with ✅ I'm home · 🕐 Change time · 📍 Fix address · 💳 Pay now (UPI).
+
+*Visual:* before/after. Valmo's real "Arriving Today" message next to ours, with the buttons ✅ I'm home · 🕐 Change time · 📍 Fix address · 💳 Pay now (UPI).
 
 **③ Already in play · excluded by design**
-- In play: prepaid push (about 37% prepaid, Q1 FY27), TrustMesh (166 mn active listings; RTO down >10%), predictive routing, GeoIndia, verification call + refusal OTP.
-- Excluded by design: partial COD, COD restriction, convenience fees, forced prepaid, extra checkout steps (the brief rules out ordering friction).
+- **In play:**
+  - prepaid push (~37% prepaid, Q1 FY27; Pay Before Delivery, shareable UPI)
+  - TrustMesh (monitors 166 mn active listings; RTO down >10%)
+  - predictive routing
+  - GeoIndia address model
+  - verification call + refusal OTP
+- **Excluded by design:** partial COD, COD restriction, convenience fees, forced prepaid, extra checkout steps. The brief rules out friction in ordering, and Meesho already runs the risk side.
 
-**Callout:** **1 RTO point on Valmo ≈ 7.6 mn parcels ≈ ₹92 cr a year** of reverse cost. Small: *"Effects are planning assumptions the pilot replaces. P1, P2 and fake-attempt control overlap the bonus pool, so don't add them up."*
-**Footer:** Q1 FY27 and Q4 FY26 letters · Valmo Delivery Services Agreement · Tata Comms × Shiprocket case (vendor-reported) · real test orders.
+**Callout:** **1 RTO point on Valmo ≈ 7.6 mn parcels ≈ ₹92 cr/yr** of reverse cost. Note: "Effects are planning assumptions the pilot replaces. P1/P2 overlap the bonus pool, so don't add them up."
+**Footer:** Q1 FY27 & Q4 FY26 letters · Valmo Delivery Services Agreement · Tata Comms × Shiprocket case (vendor-reported: −45% RTO losses) · real test orders.
 
 ---
 
@@ -157,6 +174,7 @@ Visual: Valmo's real "Arriving Today" message next to ours with ✅ I'm home · 
 | Farms the bonus | ₹300 a day cap per rider |
 | Learns which areas get flagged | The score is never shown; monitored by pin code |
 | Flags creep up | Fixed 20% cap; score accuracy re-checked monthly |
+One line under the table: **"Fake-attempt control stands on its own.** It is Round 1's proof-of-visit, sharpened: the pool is the 'no real attempt' 9% of RTOs on slide 2 (at most about 1.5 RTO points; not claimed until the baseline measures it). It runs in both pilot groups from day 0, independent of the bonus, and a ₹10 review pays if more than about 1 in 10 ends in a delivery."
 Small line: *"Every prototype day is checked by 14 automatic tests, for example nothing delivered without a verified OTP."*
 Screenshots: the rider chip (shot 4); the hub-captain queue and the rider's strike meter **once built** (until then the Ops exception queue, labelled "being replaced by the hub-captain screen").
 **Footer:** Valmo Delivery Services Agreement (Annex A, §3) · Meituan (arXiv 2202.10695) · Uber fare guide · Flipkart WhatsApp flow (real orders).
