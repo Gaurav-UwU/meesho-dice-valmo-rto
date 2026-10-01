@@ -1,6 +1,6 @@
 # Team GPS: Round 2 deck handoff
 
-> **READ FIRST (2 Oct, latest): build the deck from `28-deck-plan-final.md`.** It merges this file and 23 slide by slide. **Slides 0 to 3 stay exactly as written here (Gaurav, 2 Oct: do not change the Round 1 slides).** Use this file only for the look and feel (§3), the do-not-use list (§7) and sources.
+> **READ FIRST (2 Oct, latest): build the deck from `28-deck-plan-final.md`.** **The deck opens with the real Round 1 slides exactly as submitted (`GPS_IIT Bombay.pptx`), not with this file's slides 1 to 3**, then six Round 2 slides (Gaurav, 2 Oct). Use this file only for the look and feel (§3), the do-not-use list (§7) and sources.
 >
 > **Earlier note (2 Oct): `23-deck-plan-v5.md` overrides this file for slides 4 to 8, the numbers cheat sheet and the screenshots.** It has the final pilot numbers (smallest effect ~4 per 100, GO about 97 in 100 if the true effect is +15 and about 6 in 10 at +12), the Refused-Parcel Desk rewrite for slide 6, the fallback story (fake-attempt control + the Router), the hub-captain controls for slide 4, and the pilot-design decisions of 2 Oct (§10). Look, structure, sources and slides 0 to 3 and 9 still come from this file.
 
