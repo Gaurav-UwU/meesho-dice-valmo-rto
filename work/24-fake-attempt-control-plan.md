@@ -26,6 +26,7 @@
 
 ### 3.2 Who decides: the hub captain
 - A new **`/captain?hub=`** screen. Each hub has a synthetic captain name (for example "Captain Ramesh, Lucknow").
+- **A strike needs corroboration (agreed 2 Oct):** a customer's "the rider never came" alone is not enough. It needs supporting evidence (phone more than 500 m away, no calls, no wait, or a repeated pattern) **or** a written captain note. When the attempt has strong at-the-door evidence (high confidence), the screen suggests **Confirm valid** by default.
 - Choices: **Confirm valid**, **Free re-attempt**, **Strike**. A strike needs a **reason chip**: "Phone far from the address", "Customer says nobody came", "Repeated pattern", "Other", plus an optional note.
 - **Ops becomes read-only** on this queue (who, time left, outcome, "captain did not decide"). **No login in the demo** (labelled "demo, no login"); Live mode uses the live key; a real rollout needs a captain login.
 - **24 h with no decision** = a free re-attempt, no strike, marked **"captain did not decide"** and counted on the captain's scorecard and shown to Ops.

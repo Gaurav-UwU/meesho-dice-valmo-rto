@@ -162,3 +162,31 @@ Use the Lucknow hub. Do not show any real phone number or AWB (the real-order sc
 - ₹ saved = recovered deliveries × ₹99 − reviews × ₹10 (shown per hub in the prototype's KPI panel once built).
 
 **Screenshots to add to the §6 shot-list (after the feature exists):** the captain queue with an evidence card; the rider monitor with a "Watch" rider; the rider app's banner and strike meter. Until then the deck uses the existing Exception-queue screenshot, relabelled "being replaced by the hub-captain screen".
+
+---
+
+## 10. ADDENDUM 2 (2 Oct): pilot-design decisions (all agreed by Gaurav)
+**Pilot 1 stays as built** (riders paired on past delivery rate inside each of 4 hubs, a coin in each pair, a concurrent Control group, rule locked before day 1). What changes is what the slides say about it, plus a hub-level price test in the next phase.
+
+**Slide 5: add these lines**
+- **One-sentence version for judges:** *"In each hub, two riders who delivered equally well last month form a pair; a coin decides which one gets ₹15. After 30 days we compare every pair."*
+- **Why not simply compare with last year (before/after):** *"Meesho's RTO moved from 21.2% to 17.8% in two years (FY23–25) and COD success fell from 78.6% to 75.9%, mostly from the prepaid shift. The bonus is expected to move network RTO by about 1.7 points at break-even. That is the same size as normal drift and festive-season swings, so a before/after could credit the bonus with a change it did not cause. A Control group living through the same weeks removes that."* (Sources: RHP, as in the cheat sheet.)
+- **We still use history:** riders are paired on their past delivery rate, and an 8-week baseline runs before day 1.
+- **Fairness inside a hub:** *"Bags are assigned by the system (no swapping; any swap is logged), and Control riders get the bonus once the 30 days end (a stepped rollout)."*
+- **The conservative line:** label it *"extra cost per rescue of about ₹18 to ₹21"* (a rider fee or a second attempt): break-even **10.3 to 10.7** extra deliveries per 100.
+- **The two safety rules, final wording:** (1) normal orders: Bonus riders no more than 1 point below Control; (2) **fake attempts: Bonus riders' suspected fake rate no more than 2 points above Control** (changed from an absolute 5%, so the rule measures what the bonus *causes*; judged once there are 30 attempts).
+- **Watched, not a stop rule:** returns and complaints, Bonus vs Control, because a false delivery is the bonus's real fraud risk. They are shown in the pilot results; a jump triggers a review.
+- **Quote both effect sizes:** at +15 (the deck's case) GO about 97 in 100; at +12 about a coin flip. The prototype's "Deck assumption" button is set to +15 to match the deck (a prototype change in the build prompt).
+
+**Slide 7 (30-60-90): the price test moves to the region phase**
+- Days 31–90, **if Pilot 1 says GO or RE-PRICE:** extend to one region (**about 40 hubs**). Hubs are **randomly** given **₹0, ₹10 or ₹15** (and, as a second lever, the top 10% or top 20%), and each hub is compared with **its own 8-week baseline and with the ₹0 hubs over the same weeks** (a before/after with a same-time control: "difference-in-differences").
+- Why not now: with 4 hubs, each price would get 1 or 2 hubs, and cities differ far more than the bonus effect (Vadodara 18% vs Patna 35% RTO, Shipway). With about 40 hubs, random assignment makes the comparison trustworthy.
+- Line on the slide: *"Pilot 1 answers 'does ₹15 work?'; the region phase answers 'which price and which cut?'"*
+
+**Slide 8: add two risk rows**
+| Risk | Move | Likelihood | Guard |
+|---|---|---|---|
+| A trend or the festive season makes the bonus look better or worse than it is | Rescue | Med | A same-time Control group; never a before/after alone |
+| Hub differences hide the price effect | Rescue | High at 4 hubs | Price test only at region scale (about 40 hubs), hubs assigned at random, compared with their own baseline and the ₹0 hubs |
+
+**Small text fixes (anywhere they appear):** say "about ₹112 net" for a hub pickup (the prototype books ₹111 after messages); write "we found no marketplace that re-homes refused parcels from the last-mile hub (desk search, Sep 2026)" instead of an absolute "no marketplace does this"; the Surat theft figure and the patents are sourced in `13-refused-parcels.md` (copy them into `10-sources.md`).

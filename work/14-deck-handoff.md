@@ -1,5 +1,7 @@
 # Team GPS: Round 2 deck handoff
 
+> **READ FIRST (2 Oct): `23-deck-plan-v5.md` overrides this file for slides 4 to 8, the numbers cheat sheet and the screenshots.** It has the final pilot numbers (smallest effect ~4 per 100, GO about 97 in 100 if the true effect is +15 and about 6 in 10 at +12), the Refused-Parcel Desk rewrite for slide 6, the fallback story (fake-attempt control + the Router), the hub-captain controls for slide 4, and the pilot-design decisions of 2 Oct (§10). Look, structure, sources and slides 0 to 3 and 9 still come from this file.
+
 **Meesho DICE 3.0 · Business track · Case: Valmo, reducing RTO · Team GPS, IIT Bombay**
 
 This file has everything you need to build our Round 2 deck: the story, how each slide should look, the exact numbers with sources, and what's still coming in from research and the prototype.
@@ -353,7 +355,7 @@ Line under it: *"A tighter score is cheaper per order and easier to prove, but t
 2. **Same parcels:** check that both groups carry the same mix of risky parcels (3 risk bands). Parcels stay on their normal routes.
 3. **30 days:** about 100 flagged orders a hub a day, **~12,000 flagged orders**. An 8-week baseline comes before it.
 4. **Simple maths:** for each pair, the bonus rider's delivery rate minus the partner's. **Effect = the average; range = average ± about 2 × spread ÷ √24.**
-   - The smallest effect this pilot can reliably see is **~7.5 per 100**. This replaces "12k orders detects +3", which is wrong: it treated orders as independent.
+   - The smallest effect this pilot can reliably see is **~4 per 100** (24 pairs; it was ~7.5 under the older method). This replaces "12k orders detects +3", which is wrong: it treated orders as independent.
 5. **The rule, locked before day 1:**
 
 | Verdict | Rule |
@@ -366,7 +368,7 @@ Line under it: *"A tighter score is cheaper per order and easier to prove, but t
 - *"Changing the rule after seeing the result makes it invalid."* This answers "did you pick the threshold after seeing the data?"
 - One honest line: *"₹15 → more rider effort → more deliveries is our assumption. The pilot measures it."*
 - *Visual:* the prototype's range diagram (bar vs the "pays above" and "stop below" lines) **[PENDING screenshot]**
-- Example to quote (prototype, simulated): *"If the bonus truly adds +15 per 100, this pilot says GO about 2 times in 3. At +12 it usually says RE-PRICE, so we'd run Pilot 2."* **[final numbers PENDING the Oct 2 prototype rebuild]**
+- Example to quote (prototype, simulated): *"If the bonus truly adds +15 per 100, this pilot says GO about 97 times in 100. At +12 it is about a coin flip (6 in 10). At +10 or less it usually says RE-PRICE, and we'd run Pilot 2."* (Final numbers, 2 Oct.)
 
 **Callout:** "₹120 to haul a parcel back; ₹15 to make the hard stop worth it. If it doesn't pay, we change one lever and test again; we never re-read the data."
 **Footer:** case data pack · Swiggy/Zomato rain pay (the Indian precedent for per-order difficulty pay) · Butschek et al., *Labour Economics* 2022 (responses vary by worker, so pilot first).
@@ -500,7 +502,7 @@ Use these exact figures. If a number isn't here, ask before using it.
 | Baseline of flagged orders | 60% delivered without the bonus (top 20%); 51% (top 10%) | **Our assumption**, calibrated to the data pack's 17%; the Control group measures it |
 | Top 10% option | Break-even 7.3; 76.5 mn flagged a year; ₹62 cr/yr at +15 | Our model (data pack) |
 | Pilot size | 4 hubs · 12 riders a hub = 24 pairs · ~100 flagged a hub a day · 30 days ≈ 12,000 flagged orders | Our pilot design |
-| Smallest effect the pilot can see | ~7.5 extra deliveries per 100 **[final after Oct 2 rebuild]** | Prototype /pilot |
+| Smallest effect the pilot can see | ~4 extra deliveries per 100 (24 pairs; ~5 at the top 10%) | Prototype /pilot, simulated |
 | Rescue Score accuracy | Top 20% catch ~46% of RTOs (random 20%) | **Simulation only**; to be measured on Valmo data |
 | 1 RTO point | ≈ 7.6 mn parcels ≈ ₹92 cr/yr | Our calculation |
 | Hold & Re-home | ₹145 saved per match; ₹8 to hold; break-even 5.5% | Our model (data pack) |
@@ -537,7 +539,7 @@ Research showed a few Round 1 lines were slightly off. Correct them in Round 2.
 - "NDR recovery 30–40%": a vendor blog, no source
 - Any Pareto or "80/20" figure about Meesho products: unsourced
 - Partial COD or COD restriction as *our* idea: the brief rules out checkout friction
-- "12,000 orders detects +3 per 100": per-order maths; riders' orders aren't independent (use ~7.5)
+- "12,000 orders detects +3 per 100": per-order maths; riders' orders aren't independent (use ~4, from the paired design)
 - "X% of risky orders delivered" as the bonus's result: some would have been delivered anyway; say what the bonus **caused** vs Control
 - "GO at +9": GO now needs the **low end of the range** above break-even
 - Any real-world Rescue Score accuracy figure: we only have a simulation number
