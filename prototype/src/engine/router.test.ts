@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_ROUTER_PARAMS,
+  FORECAST_GATE,
   REFUSAL_REASONS,
   batchBySeller,
+  holdBlockers,
   holdEv,
   holdGates,
   isSoftReason,
@@ -338,5 +340,36 @@ describe('day summary', () => {
       { sellerId: 's1', parcelIds: ['c'] },
       { sellerId: 's2', parcelIds: ['d'] },
     ])
+  })
+})
+
+describe('Router v3: what blocks Hold, said apart from what the forecast says', () => {
+  const forecastOf = (priorRate: number, strength: number, orders: number): DemandForecast => ({ ...pointForecast(priorRate), ...posterior(priorRate, strength, orders, 336), exactOrders: orders, confidence: 'Medium', evidence: 'test', keywords: [], similar: [], similarOrders: 0 })
+  const clear = forecastOf(0.006, 10, 3)
+  const thin = forecastOf(0.006, 2, 1)
+  const blockers = (o: Partial<RefusedParcel>) => holdBlockers(holdGates(parcel(o)))
+
+  it('has nothing blocking when every gate passes', () => {
+    expect(blockers({ forecast: clear, demandRate: 0 })).toEqual({ forecastCloses: false, others: [] })
+  })
+
+  it('names the gates that block Hold even when the forecast alone would allow it', () => {
+    const b = blockers({ forecast: clear, demandRate: 0, sellerState: 'GJ', sellerOptedIn: false })
+    expect(b.forecastCloses).toBe(false)
+    expect(b.others).toEqual(['Same state', 'Seller opted in'])
+  })
+
+  it('says it is the forecast when that is the only gate that fails', () => {
+    expect(blockers({ forecast: thin, demandRate: 0.3 })).toEqual({ forecastCloses: true, others: [] })
+  })
+
+  it('reports both when a gate and the forecast fail', () => {
+    const b = blockers({ forecast: thin, demandRate: 0.3, sealOk: false })
+    expect(b.forecastCloses).toBe(true)
+    expect(b.others).toEqual(['Seal intact'])
+  })
+
+  it('uses one constant for the forecast gate name', () => {
+    expect(holdGates(parcel({ forecast: clear, demandRate: 0 })).some((g) => g.name === FORECAST_GATE)).toBe(true)
   })
 })

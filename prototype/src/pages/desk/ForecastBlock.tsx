@@ -6,13 +6,15 @@ import { pct } from '../../ui/format.ts'
 interface ForecastBlockProps {
   readonly parcel: RefusedParcel
   readonly params: RouterParams
+  /** Hold gates OTHER than the forecast that are failing, so the verdict line does not claim Hold is allowed when something else blocks it */
+  readonly blockedBy?: readonly string[]
 }
 
 /**
  * The match forecast on a Desk card: the chance that a buyer for THE SAME listing turns up in the hold window, as a range, against the
  * break-even line. A model on synthetic history, not data. Only the exact listing is ever re-homed; similar ones are evidence of demand only.
  */
-export function ForecastBlock({ parcel, params }: ForecastBlockProps) {
+export function ForecastBlock({ parcel, params, blockedBy = [] }: ForecastBlockProps) {
   const f = parcel.forecast
   if (!f) return null
   const b = beliefOf(parcel, params)
@@ -47,7 +49,11 @@ export function ForecastBlock({ parcel, params }: ForecastBlockProps) {
       </div>
       <p className="desk-forecast-legend">{pct(be)} break-even (₹8 ÷ ₹145): the dashed line</p>
       <p className={clears ? 'desk-forecast-verdict is-ok' : 'desk-forecast-verdict is-no'}>
-        {clears ? 'Low end clears break-even: Hold & Re-home is allowed' : 'Low end is below break-even: Hold & Re-home is closed'}
+        {!clears
+          ? 'Low end is below break-even: the forecast closes Hold & Re-home'
+          : blockedBy.length > 0
+            ? `Low end clears break-even, so the forecast alone would allow Hold & Re-home. It is blocked by: ${blockedBy.join(', ')}`
+            : 'Low end clears break-even: the forecast allows Hold & Re-home'}
       </p>
       <p className="desk-forecast-evidence">{f.evidence}</p>
       {f.keywords.length > 0 ? (

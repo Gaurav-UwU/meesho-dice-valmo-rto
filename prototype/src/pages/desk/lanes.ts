@@ -31,6 +31,14 @@ export function toggleableGate(gate: GateResult): WhatIfGate | null {
   }
 }
 
+/** The hold part of a card's expected-value line: the rupees, or exactly what is in the way (a gate, the forecast, or both). */
+export function holdEvText(h: { readonly hold: number | null; readonly others: readonly string[]; readonly forecastCloses: boolean }): string {
+  if (h.hold !== null) return signedRupees(h.hold)
+  const gates = h.others.length > 0 ? `blocked by ${h.others.join(', ')}` : ''
+  if (h.forecastCloses) return gates ? `${gates}, and the forecast low end is under break-even` : 'closed: the forecast low end is under break-even'
+  return gates || 'not available'
+}
+
 export const isDone = (state: ParcelState): boolean => state === 'recovered' || state === 'picked_up' || state === 'rehomed' || state === 'batched'
 
 export const effectRange = (min: number, max: number): string => `${signedRupees(min)} to ${signedRupees(max)}`

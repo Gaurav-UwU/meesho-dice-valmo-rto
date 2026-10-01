@@ -1,11 +1,11 @@
 import type { DeskItem } from '../../domain/selectors.ts'
 import { useState } from 'react'
 import type { ActionInput } from '../../store/types.ts'
-import { DEFAULT_ROUTER_PARAMS, factsOf, REFUSAL_LABEL, SKIP_LABEL } from '../../engine/router.ts'
+import { DEFAULT_ROUTER_PARAMS, factsOf, holdBlockers, REFUSAL_LABEL, SKIP_LABEL } from '../../engine/router.ts'
 import { whatIf, type WhatIfFlips, type WhatIfGate } from '../../engine/whatif.ts'
 import { rupees, signedRupees } from '../../ui/format.ts'
 import { GateList } from './GateList.tsx'
-import { effectRange, LANE_LABEL, STATE_LABEL } from './lanes.ts'
+import { effectRange, holdEvText, LANE_LABEL, STATE_LABEL } from './lanes.ts'
 import { ForecastBlock } from './ForecastBlock.tsx'
 import { InspectBlock } from './InspectBlock.tsx'
 import { ParcelActions } from './ParcelActions.tsx'
@@ -36,6 +36,7 @@ export function ParcelCard({ item, send, simNow, secondChanceHours, holdHours }:
     })
   }
   const sameState = parcel.sellerState === parcel.hubState && parcel.buyerState === parcel.hubState
+  const blockers = holdBlockers(decision.gates)
 
   return (
     <article className={`card desk-card desk-card--${decision.lane}`} aria-label={`Refused parcel ${parcel.awb}`}>
@@ -72,7 +73,7 @@ export function ParcelCard({ item, send, simNow, secondChanceHours, holdHours }:
 
       <p className="desk-ev" aria-label="Expected values of each lane">
         Expected value: second chance <strong>{signedRupees(decision.ev.secondChance)}</strong> ({(decision.inputs.pAccept * 100).toFixed(0)}% accept) · hold{' '}
-        <strong>{decision.ev.hold === null ? 'not allowed' : signedRupees(decision.ev.hold)}</strong> ({(decision.inputs.pMatch * 100).toFixed(0)}% on average, {(decision.inputs.pMatchLow * 100).toFixed(0)}% at the low end, for a buyer in {holdHours} h) ·
+        <strong>{holdEvText({ hold: decision.ev.hold, ...blockers })}</strong> (forecast: {(decision.inputs.pMatch * 100).toFixed(0)}% on average, {(decision.inputs.pMatchLow * 100).toFixed(0)}% at the low end, for a buyer in {holdHours} h) ·
         batched <strong>{signedRupees(decision.ev.consolidated)}</strong>
       </p>
       <p className="desk-effect">
@@ -80,7 +81,7 @@ export function ParcelCard({ item, send, simNow, secondChanceHours, holdHours }:
         <span>{decision.effect.label}</span>
       </p>
 
-      <ForecastBlock parcel={parcel} params={item.options.params ?? DEFAULT_ROUTER_PARAMS} />
+      <ForecastBlock parcel={parcel} params={item.options.params ?? DEFAULT_ROUTER_PARAMS} blockedBy={blockers.others} />
 
       <GateList
         gates={decision.gates}

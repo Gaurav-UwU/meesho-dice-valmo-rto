@@ -112,3 +112,25 @@ describe('the backtest panel', () => {
     expect(within(rules).getByText('Hold every parcel')).toBeTruthy()
   })
 })
+
+describe('the forecast block says what the FORECAST decides, not what Hold decides', () => {
+  const clear = forecastOf(0.006, 10, 3)
+
+  it('says the forecast allows Hold when nothing else blocks it', () => {
+    render(<ForecastBlock parcel={parcel(clear)} params={DEFAULT_ROUTER_PARAMS} blockedBy={[]} />)
+    expect(screen.getByText(/low end clears break-even: the forecast allows Hold & Re-home/i)).toBeTruthy()
+  })
+
+  it('does not claim Hold is allowed when another gate blocks it: it names the gate', () => {
+    render(<ForecastBlock parcel={parcel(clear)} params={DEFAULT_ROUTER_PARAMS} blockedBy={['Same state', 'Seller opted in']} />)
+    const line = screen.getByText(/low end clears break-even/i).textContent ?? ''
+    expect(line).toMatch(/forecast alone would allow/i)
+    expect(line).toMatch(/blocked by: Same state, Seller opted in/)
+    expect(line).not.toMatch(/Hold & Re-home is allowed/)
+  })
+
+  it('says the forecast closes Hold when the low end is under break-even', () => {
+    render(<ForecastBlock parcel={parcel(forecastOf(0.006, 2, 1, { confidence: 'Low' }))} params={DEFAULT_ROUTER_PARAMS} blockedBy={[]} />)
+    expect(screen.getByText(/low end is below break-even: the forecast closes Hold & Re-home/i)).toBeTruthy()
+  })
+})

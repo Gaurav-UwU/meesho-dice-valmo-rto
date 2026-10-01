@@ -51,6 +51,15 @@ export const SKIP_LABEL: Readonly<Record<SkipReason, string>> = {
 /** The hold gates that depend on the parcel itself (not on the shelf, a rider's bag or the forecast): the ones that may never be overridden. */
 export const PARCEL_GATES: readonly string[] = ['Inspected', 'Unopened', 'Seal intact', 'Same state', 'Seller opted in', 'Invoice outside the parcel', 'Item condition OK']
 
+/** The one hold gate that reads the match forecast (its low end against break-even). */
+export const FORECAST_GATE = 'Match forecast clears break-even (low end)'
+
+/** Why Hold is closed, kept apart: the other gates that fail, and whether the FORECAST fails. A screen must not blame one for the other. */
+export function holdBlockers(gates: readonly Gate[]): { readonly forecastCloses: boolean; readonly others: readonly string[] } {
+  const failing = gates.filter((g) => !g.pass)
+  return { forecastCloses: failing.some((g) => g.name === FORECAST_GATE), others: failing.filter((g) => g.name !== FORECAST_GATE).map((g) => g.name) }
+}
+
 const INSPECTED_FACTS: readonly string[] = ['Unopened', 'Seal intact', 'Invoice outside the parcel']
 
 export interface RouterParams {
@@ -280,7 +289,7 @@ export function holdGates(p: RefusedParcel, opts: RouteOptions = {}): readonly G
       note: opts.riderHasSpace === false ? 'No rider has room in the bag for a re-homed parcel' : 'A rider has room for the re-homed parcel',
     },
     {
-      name: 'Match forecast clears break-even (low end)',
+      name: FORECAST_GATE,
       pass: clearsBreakEven(belief),
       note: `P(match in ${params.holdHours} h) ${(belief.mean * 100).toFixed(1)}% on average, ${(belief.p10 * 100).toFixed(1)}% at the low end to ${(belief.p90 * 100).toFixed(1)}% at the high end, against ${(breakEvenMatch() * 100).toFixed(1)}% break-even. Hold only if the low end clears it. Expected value ${ev >= 0 ? '+' : '−'}₹${Math.abs(ev).toFixed(1)} (${(belief.mean * 100).toFixed(1)}% x ₹${ROUTER.savedPerMatch} − ₹${ROUTER.holdCost})`,
     },
