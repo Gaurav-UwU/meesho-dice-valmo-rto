@@ -5,7 +5,7 @@
 ## 1. Why this, and why separately
 - **It is independent of the bonus.** It must work with the bonus off, in both the Bonus and the Control arm, and its consequences must not rely on the bonus. If the 30-day bonus pilot fails, this still stands.
 - **It solves the same problem the bonus solves, from the other side.** The bonus pays a rider to push through a hard stop. A fake attempt ("customer unavailable", logged from far away) is how a rider avoids that stop. The control makes giving up **visible and costly**, and **recovers the delivery** through another rider, so the parcel is not returned.
-- **It is the fallback story for the deck:** *"If the bonus fails in the 30-day pilot, we already have a concrete plan, built and tested in our prototype, that does not depend on it: (1) fake-attempt control run by the hub captain, and (2) the Refused-Parcel Router with local re-home."* (Say "built and tested in our prototype", never "proven". The real pilot measures both.)
+- **It is the fallback story for the deck:** *"If the bonus fails in the 30-day pilot, we already have a concrete plan that does not depend on it: (1) fake-attempt control (the review queue is built and tested in our prototype; the hub-captain version is this build), and (2) the Refused-Parcel Router with local re-home, built and tested in our prototype."* (Say "built and tested in our prototype", never "proven". The real pilot measures both.)
 
 ## 2. What exists today (read from the code on 2 Oct)
 - **The bonus rule (confirmed by Gaurav on 2 Oct):** ₹15 is paid when a flagged order is delivered on **any attempt** (first, second or later). A rider whose own earlier attempt on that order looked fake does not get it; the rider who then delivers it does. So on a given order a fake attempt never earns the bonus; the gaming risks are effort shifting to normal orders, false deliveries, and riders avoiding stops worth more than ₹15 of effort.
@@ -22,7 +22,7 @@
 2. The strike **ladder below does not mention the bonus**; the bonus block is an extra consequence only when a bonus exists.
 3. It runs for **every rider in both arms** from the baseline period (see Q4).
 4. It has its **own KPIs, Audit checks and screens**; none read the verdict.
-5. The existing pilot safety rule (suspected fake attempts of Bonus riders above 5%) stays as it is.
+5. The pilot's fake-attempt safety rule changes (2 Oct) to: Bonus riders' suspected fake rate no more than 2 points above Control, judged once there are 30 attempts (a code change in this build).
 
 ### 3.2 Who decides: the hub captain
 - A new **`/captain?hub=`** screen. Each hub has a synthetic captain name (for example "Captain Ramesh, Lucknow").

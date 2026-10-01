@@ -36,7 +36,7 @@ Add `?hub=lucknow|powai|whitefield|gaya` to any link. Open Ops, Rider and Custom
 4. `/customer` read the OTP, type it into the rider sheet. ₹15 shows as pending; ops updates live.
 5. `/rider` mark another stop **Attempted**, then on `/customer` answer **No, the agent never came**: it lands in the ops suspect queue and blocks the bonus.
 6. `/rider` **Refused** on demo stops. The first four give four different Router outcomes on `/desk`: Hold & Re-home (press **Record inspection** first: Hold needs it), second chance, out-of-state seller, broken seal.
-7. `/pilot` move the uplift slider (riders are paired on past delivery rate, the range is worked out pair by pair): at the top 20%, +8 gives RE-PRICE, +12 or more gives GO, 0 gives KILL. Look for the ✔ Fair comparison line. The landing page (`/`) has the full walkthrough.
+7. `/pilot` move the uplift slider (riders are paired on past delivery rate, the range is worked out pair by pair): at the top 20%, +8 gives RE-PRICE, +12 gives GO on the default seed (about 6 runs in 10 at +12; about 97 in 100 at +15), 0 gives KILL. Look for the ✔ Fair comparison line. The landing page (`/`) has the full walkthrough.
 
 ## Modes
 

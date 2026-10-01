@@ -69,11 +69,12 @@ URL: https://www.valmo.in/static-assets/valmo-partner-app/documents/valmo-app-de
 | Item | Source | Cred. |
 |---|---|---|
 | Direct resale of in-transit returns | sellers.skipreturns.com | B |
-| Patents for a local return centre shipping to a new buyer | USPTO 11315069, 11810060 | P |
+| Patents for a local return centre shipping to a new buyer | USPTO 11315069, 11810060; also Pitney Bowes US 7,299,198 (expired 2025) and Formula Labs US 9,760,854 (see `13-refused-parcels.md` C11) | P |
 | Amazon Grade & Resell / Liquidations (US/EU) | aboutamazon.com | P |
 | Batched returns $3–5 vs $8–14 per parcel | closo.co 2026 (Happy Returns guide) | B |
 | Couriers make up to 3 attempts over 24–72h, then hold 5–7 days | icarry.in; clickpost.ai | B (the two agree) |
-| No Indian player redirects refused parcels locally | Negative search result | — |
+| We found no marketplace re-homing refused parcels from the last-mile hub (desk search, Sep 2026); one small fulfiller (Merch Factory) re-routes RTO stock from its own hub (see `13-refused-parcels.md`) | Negative search result + 13 | P |
+| Surat, Apr 2026: 33,035 Meesho parcels (₹1.35 cr) falsely marked delivered via OTP loopholes | deshgujarat.com, 13 Apr 2026 (see `13-refused-parcels.md` C8; copied 2 Oct, not re-verified) | P |
 
 ## Legal (Hold & Re-home gates)
 | Rule | Source |

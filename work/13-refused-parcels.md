@@ -18,7 +18,7 @@ Researched 2026-09-29 (three web-research agents), building on `06-solution-inve
 | C8 | **Custody / pilferage** | Surat, Apr 2026: 33,035 Meesho parcels (₹1.35 cr) falsely marked "delivered" by exploiting OTP loopholes (DeshGujarat, 13 Apr 2026). | Scan-in/scan-out, old AWB linked to new AWB, OTP to the new buyer, 48h cap, daily shelf count, no cash handling at the desk. |
 | C9 | **Asset-light doctrine** | Aatrey: warehousing "tends to have lower ROI". Hubs are 150–500 sq ft. | A shelf on existing floor space, max 48h, software only. |
 | C10 | **Case brief** | "without hurting delivery cost, rider earnings, or speed/ease of ordering". | Buyer 2's ordering is unchanged, they get it faster, and the rider gets an extra paid drop. |
-| C11 | **Patents** | Pitney Bowes US 7,299,198 (reroute a return to a secondary buyer): **expired 2025**. Shopify US 11,315,069 (to 2039), Formula Labs US 9,760,854 (to 2033). All US-only [verify there are no Indian filings]. | The concept is proven and free to use. Differentiate on execution (last-mile hub, same-state, seller rules). |
+| C11 | **Patents** | Pitney Bowes US 7,299,198 (reroute a return to a secondary buyer): **expired 2025**. Shopify US 11,315,069 (to 2039), Formula Labs US 9,760,854 (to 2033). All US-only [verify there are no Indian filings]. | Prior art exists; the earliest patent expired in 2025 and the others are US-only [verify there are no Indian filings]. Differentiate on execution (last-mile hub, same-state, seller rules). |
 
 ---
 
@@ -77,7 +77,7 @@ Every refused parcel is scanned at the hub desk (Valmo Operations app → a new 
 - Left: why it matters. ₹120 = 45% of the ₹265 average order, Meesho bears it, ~130M parcels a year.
 - Centre: the Router, with its 3 lanes and a legal-status tick on each.
 - Right: the Hold & Re-home break-even (5.5%), the same-state rule, and "non-GST sellers are same-state by law".
-- Footer: precedents (Happy Returns −40%, Cainiao stations, Merch Factory, the expired Pitney Bowes patent) + "no marketplace does this from the last-mile hub".
+- Footer: precedents (Happy Returns −40%, Cainiao stations, Merch Factory, the expired Pitney Bowes patent) + "we found no marketplace doing this from the last-mile hub (desk search, Sep 2026)".
 
 ## Sources
 Agents' URLs:

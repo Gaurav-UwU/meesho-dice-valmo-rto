@@ -753,3 +753,22 @@ Screenshot: `research/order1-valmo-whatsapp.jpg`. **Redact the rider's phone num
   3. **The deck says:** if the 30-day bonus pilot fails, a concrete plan stands that does not depend on the bonus, "built and tested in our prototype" (never "proven"): fake-attempt control and the Router with local re-home.
   4. **The bonus rule is confirmed: ₹15 when a flagged order is delivered on ANY attempt** (first, second or later), except to a rider whose own earlier attempt on that order looked fake. This is what the prototype already does (`completeDelivery` calls `accrueBonus` on every delivery). For a moment I wrongly suggested a first-attempt-only rule; nothing was changed in the code. The rule is now written into `CONTEXT.md`, `00-MASTER.md`, `14-deck-handoff.md`, `15-prototype-v2-handoff.md` (decision table), plan 24 and deck plan 23.
 - **Not done:** the five "do now" items in `26` (deck assets on the current build, a banner on `14-deck-handoff.md` for its stale numbers, a Demo-page QR, logging the mentor call, the code and security review agents), the real-phone run, the Supabase Reset.
+
+### Session 15 (cont.): 2 Oct: pilot-design decisions, three independent reviews, deck fixes, the all-changes build prompt
+- **Decided by Gaurav:**
+  - Close the parking gap: hold the ₹15 for the captain's review after a weak same-rider attempt, auto-release when the customer confirmed, release by default.
+  - A strike needs corroboration.
+  - The fake-attempt rule becomes relative: Bonus no more than 2 points above Control.
+  - Returns and complaints are watched, not a stop rule.
+  - **Option A for the pilot:** Pilot 1 stays as built (paired riders, a same-time Control). The price test and hub-level design move to the region phase (about 40 hubs, hubs randomly at ₹0/₹10/₹15, difference-in-differences). A before/after alone is rejected because Meesho's RTO and COD success drift by about as much as the bonus's expected effect.
+- **Deck docs updated:**
+  - `23-deck-plan-v5.md` §10 (slides 5, 7 and 8 wording, two risk rows, small fixes).
+  - `14-deck-handoff.md`: a READ FIRST banner, the stale numbers fixed, the 5% rule replaced.
+  - `00-MASTER`, `CONTEXT`, `10-sources`, `13`, `24`, `NEXT-SESSION`, the README and `26` are corrected.
+- **Three independent read-only reviews** (security, correctness, docs). Findings are in `26-plan-review-2-oct.md`, "Independent reviews (2 Oct)". The prototype is green: 1,104 tests and `tsc` clean.
+- **New build prompt: `27-build-prompt-all-changes.md`** (supersedes 25). Its parts:
+  - Step 0: rollback tag, assets, mentor notes, preview deploys.
+  - Part 1: the relative fake rule, returns watched, 10 correctness fixes.
+  - Part 2: fake-attempt control with the hub captain and the parking-gap hold.
+  - Part 3: Live-mode security, with role-split keys and longer keys.
+- **Not done:** no code changed this session. The deck assets, the mentor-call log and the real-phone run are still open.

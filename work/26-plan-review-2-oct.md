@@ -11,7 +11,7 @@ Checked against the code, the docs and the live site on 2 Oct. Items marked **ve
 - **Method is honest:** one verdict rule everywhere, the rule locked in advance, "low end clears break-even", Control group, labelled assumptions, "in simulation" wording, a Pilot 2 loop instead of re-reading data.
 
 ## DO NOW (high priority)
-1. **The schedule is the biggest risk.** Freeze is today 3 pm, submit tomorrow. The notes still list the **screenshots, QR and 90-second video as not done**, and two sizeable features (hub captain, parallel-pilot button) are planned on a working public site. *Fix:* take the screenshots, QR and video **first** on the current build; tag a known-good commit (`git tag freeze-candidate-2026-10-02`) and write down the current production deployment as the rollback; build new work on a branch and use a **preview deploy** (`vercel deploy` without `--prod`), promoting only after checks; **no production deploys on Saturday except a hotfix**. If time is short, ship neither feature and show them in the deck as designed.
+1. **The schedule is the biggest risk.** Freeze is today 3 pm, submit tomorrow. The notes still list the **screenshots, QR and 90-second video as not done**, and one sizeable feature (fake-attempt control with the hub captain; the parallel-pilot button was dropped) is planned on a working public site. *Fix:* take the screenshots, QR and video **first** on the current build; tag a known-good commit (`git tag freeze-candidate-2026-10-02`) and write down the current production deployment as the rollback; build new work on a branch and use a **preview deploy** (`vercel deploy` without `--prod`), promoting only after checks; **no production deploys on Saturday except a hotfix**. If time is short, ship neither feature and show them in the deck as designed.
 2. **`14-deck-handoff.md` still contains the old numbers and has no pointer to the new plan.** It still says "smallest effect ~7.5", "GO about 2 times in 3", and its own "do not use" list tells the teammate to use 7.5. If she builds from 14 she will put wrong numbers on slide 5. *Fix:* add a banner at the top of 14 ("numbers and slides 4 to 8 are superseded by `23-deck-plan-v5.md`") or edit those lines directly. Five minutes.
 3. **A shared-day QR code carries the live key.** The join key is in the link after `#k=`. If the QR on the deck or in the video comes from the shared-day screen, it publishes the key. *Fix:* make the deck and video QR from the **Demo-mode** landing page (a plain link), and never screenshot the shared-day QR codes. Rotate the live key if one ever leaks.
 4. **The mentor call happened and its answers are not logged.** *Fix:* write them into `R2-HANDOVER.md` now (rider pay, TrustMesh after dispatch, SKU history, which screen matters) and turn any change into deck edits.
@@ -70,3 +70,50 @@ The deck PPTX (the teammate's), the 90-second video, the survey and calls, how m
 - **F6 A customer's word alone should not produce a strike (S6):** require corroboration (far GPS, no calls, a pattern) or a captain note; with strong at-the-door evidence the default is "confirm valid".
 - **F7 Thresholds are guesses** (5% limit, 4% assumed rate): set the limit from the 8-week baseline and lock it before day 1.
 - **F8 Code comment** in `attempts.ts` says the check stops fakes being used "to claim a Rescue Bonus": misleading, since a fake attempt never earns the bonus on that order; reword.
+
+---
+
+## Independent reviews (2 Oct): security, correctness, document consistency
+Three read-only reviewers ran in parallel. The prototype: `tsc -b` clean, 1,104 tests pass (one cold run timed out under load; reruns clean). The core economics recompute correctly. Fixes are in `27-build-prompt-all-changes.md`.
+
+**Security (Live mode only; Demo mode is unaffected)**
+- HIGH: the live key carries full authority. Anyone holding it (for example from a rider QR) can confirm their own fake attempt, strike a rival, close the pilot or move the clock. Fix: split rider and captain keys and map each action to a role on the server.
+- HIGH: `/api/day` has no rate limit, so the key can be guessed. The minimum key length is only 6. Fix: require 20+ characters, rate-limit `/api/day`, add a Vercel Firewall rule.
+- MEDIUM: five wrong OTP tries lock an order for good. Anonymous Supabase reads expose the day, including customer location rounded to about 110 m. A webhook reply can be lost when its message ID is recorded before the reply succeeds.
+- LOW: `/api/health` lists missing variable names. `deskInspect.by` can be set by the client. The rate-limiter map is never pruned. There is no CSP `frame-ancestors`.
+- Fine: secrets are not in the bundle or the repo, the Twilio signature is checked, codes are HMAC-hashed, zod strips unknown keys, there is no injection or SSRF, and the key in the URL fragment is stripped from the address bar.
+
+**Correctness (new issues; known ones excluded)**
+- MEDIUM:
+  - The normal-order floor ignores failed (open) orders.
+  - A failed re-home books the reverse cost twice and a batch saving.
+  - A second chance can exceed `maxAttempts`.
+  - The ₹21 second-chance leg is not booked when the order fails.
+  - A suspect attempt can be washed out by a later attempt, so the same rider still gets the bonus.
+- LOW:
+  - A second chance is marked sent even when the 4-message cap rejected it, and the reducer does not enforce the lane order.
+  - The headline's bonus cost ignores blocked and clawed-back bonuses.
+  - With no normal-order pairs, the normal-order rule is silently skipped.
+  - A held parcel with no rider bag space is never expired.
+
+**Documents: fixed on 2 Oct, except the items marked open**
+- Fixed:
+  - The absolute 5% fake-attempt rule became "Bonus no more than 2 points above Control" everywhere.
+  - The "Deck assumption" decision: quote both +15 and +12, and the button stays at +12.
+  - The fallback sentence no longer claims the unbuilt hub-captain control is built.
+  - The RE-PRICE path: Pilot 2 first, and the region price test follows a GO.
+  - Stale "not deployed" lines.
+  - `00-MASTER` pointed the teammate at the v3 HTML and at file 16. It now points to 14 + 23.
+  - The COD-success years.
+  - The slide 4 payment row.
+  - "proves it" became "decides it" or "confirms it".
+  - The novelty claims became "we found none".
+  - The patent wording.
+  - `CONTEXT.md` no longer lists local disposal as a lane.
+  - The README's "+12 or more gives GO".
+  - "about ₹112".
+  - The jargon and ₹62 cr footnotes.
+  - The Surat and patent source lines were copied into `10-sources.md`.
+- Open:
+  - Source lines for the novelty peers (Meituan, Uber Eats/DoorDash, Ekart) are still missing from `10-sources.md`.
+  - Re-read the Backtest panel before quoting its per-1,000 totals.

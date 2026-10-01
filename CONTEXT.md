@@ -49,7 +49,7 @@ The end-of-pilot decision: GO (scale), RE-PRICE (real effect, bonus needs tuning
 _Avoid_: Outcome, result
 
 **Refused-Parcel Router**:
-The decision applied to each Refused Parcel at the last-mile hub. It sends the parcel to its cheapest recovery lane: second chance, Hold & Re-home, local disposal (only if the seller opted in), or a consolidated return. Hold & Re-home is the flagship lane.
+The decision applied to each Refused Parcel at the last-mile hub. It sends the parcel to its cheapest recovery lane: second chance, Hold & Re-home, or a consolidated return. (Local disposal is deferred: legally grey and not built.)
 _Avoid_: Reverse optimisation, RTO engine
 
 ### Prototype

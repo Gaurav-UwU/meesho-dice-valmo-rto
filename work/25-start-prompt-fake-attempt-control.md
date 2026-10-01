@@ -1,5 +1,7 @@
 # 25: Prompt to start the Fake-Attempt Control build (new session)
 
+> **SUPERSEDED on 2 Oct by `27-build-prompt-all-changes.md`**, which includes this build plus the pilot-rule fixes, the code-review fixes and the security fixes. Use 27.
+
 Plan: `work/24-fake-attempt-control-plan.md` (decisions settled except the seven in its section 7, which carry recommended answers). Paste the block below into a new session.
 
 ```
