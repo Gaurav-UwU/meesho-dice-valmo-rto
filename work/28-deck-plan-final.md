@@ -1,5 +1,7 @@
 # 28: The complete Round 2 deck plan (final, consolidated 2 Oct 2026)
 
+**The real Round 1 submission is `Meesho/GPS_IIT Bombay - Round 1 submitted.pdf`** (cover + 3 slides: "RTOs are down, but COD remains the biggest RTO challenge" with the cause pie · "Five New Levers: Where Should We Act First?" · "Make the hard stop worth the same effort"). `round1-deck.html` and `Meesho DICE R1 - ValMo RTO.pptx` are earlier drafts; never quote them as Round 1.
+
 **Build the deck from this file only.** It merges `14-deck-handoff.md` (v4) and `23-deck-plan-v5.md` (with §9 and §10). **Slides 0 to 3 are the Round 1 slides and are not changed**; the fake-attempt control is shown on slides 4, 7 and 8. Still use 14 for the **look and feel (§3)** and the **do-not-use list (§7)**, and `10-sources.md` for every footer. Ignore `16-deck-changes-prototype-v2.md` and the HTML copy of 14 (both are history).
 
 **Format:** 10 slides including the cover (rules allow 6 to 10), Round 1 look: 20 × 11.25 in, about 350–400 words a slide, a full-sentence headline, three numbered panels (navy ①②③), ➢ bullets, at least one native chart or diagram, a pink "so what" callout, a grey sources footer. Colours: pink #ED0B7D, navy #120A4A, text #2B2650, purple #2A0680, GO green #4FBF83, callout #FCF0F6, cream #FFF3D7; Valmo app screens keep Valmo navy #092D5E.
@@ -30,8 +32,8 @@
 
 **The frame (from Round 1, kept):** Prevent · **Rescue** · **Recover**. On slides 4–9 a small breadcrumb in the top-right corner shows where we are: Rescue (4, 5), Recover (6), Plan (7), Risks (8), 10x (9). It is not added to slides 1–3.
 
-**One order runs through the deck.** Slide 2's real order (COD, arrived early with no warning, "the rider called twice and didn't wait", "Failed Delivery") is the thread. Each slide from 4 to 7 ends with one italic line saying what would have happened to *that* order:
-- **Slide 4:** the rider sees "+₹15 Bonus Eligible"; the two calls with no wait are a weak attempt, so it lands in the hub captain's queue and the customer is asked "Did the rider reach you?"
+**One order runs through the deck.** Slide 2's real order (COD, **arrived 5 days before the promised date with no warning**, "the rider called twice and didn't wait", "Failed Delivery") is the thread. It is the "not ready" failure in one picture: early, no heads-up, a weak attempt. Each slide from 4 to 7 ends with one italic line saying what would have happened to *that* order:
+- **Slide 4:** a heads-up would have said "arriving early, today: pay by UPI or keep 3 Oct"; the rider sees "+₹15 Bonus Eligible" and has a reason to wait or offer UPI; the two calls with no wait are a weak attempt, so it lands in the hub captain's queue and the customer is asked "Did the rider reach you?"
 - **Slide 5:** across 12,000 orders like it, the pilot measures whether ₹15 makes the rider wait and knock.
 - **Slide 6:** if the customer still says no, a second chance on WhatsApp, then a nearby buyer, then a batched return, never an automatic ₹120 trip.
 - **Slide 7:** a captain ruling on that attempt is one of the numbers that decides day 31.
@@ -43,23 +45,37 @@ Judges score research quality first. Slides 1–3 show the research; slides 4–
 | # | What we found | So we designed | Slide |
 |---|---|---|---|
 | 1 | The brief rules out customer-side levers (no COD gating, fees or checkout friction). The rider is the only person who meets the customer | Work on the system side: the rider and the hub | 4 |
-| 2 | Riders are not lazy: they re-attempt to earn more. But they give prepaid 2–3 calls and COD almost none ("COD = will cancel") (12 rider interviews) | **Remove the barrier, don't add effort:** give a flagged COD order the prepaid playbook | 4 |
-| 3 | ₹15 nearly doubles pay on that order (₹18–25 per delivery, reportedly). It buys cheap effort (more calls, a 10-minute wait, asking a neighbour), not a second trip (which costs the rider about 2 other deliveries, ≈ ₹40) | ₹15, not ₹50: priced for cheap effort | 4 |
-| 4 | Round 1 assumed the hub pays the rider. **Valmo's own contract shows Valmo pays the rider directly and already has an "Additional Incentive" line** | The ₹15 goes straight to the rider; no hub pass-through problem | 4 |
+| 2 | Riders are not lazy: they re-attempt to earn more. But for prepaid they "call three or four times and wait"; for COD "once or twice… and we do not go back" (Round 1, 12 rider interviews). **In Round 2 field research, metro and Tier 3/4, riders said they are interested in a per-order bonus** (stated interest: the pilot measures behaviour) | **Remove the barrier, don't add effort:** give a flagged COD order the prepaid playbook | 4 |
+| 3 | ₹15 nearly doubles pay on that order (₹18 base in our Round 1 bag). It buys cheap effort (more calls, a 10-minute wait, offering UPI, asking a neighbour), not a second trip (which costs the rider about 2 other deliveries, ≈ ₹40) | ₹15, not ₹50: priced for cheap effort | 4 |
+| 4 | **Hubs are paid ₹5 per delivered parcel** (Round 2 field research). The rider's stake in a hard stop is ₹18; the hub's is ₹5. Round 1 said the bonus rides Valmo's rider bonus system; **Round 2 found the clause: §3 "Additional Incentive" in Valmo's own rider contract** | The ₹15 (3× the hub's whole fee) goes straight to the rider, not through the hub. And since a hub earns only on delivery, a fake attempt costs the hub too: the **hub captain is a natural reviewer** | 4 |
+| 4b | **Orders arrive before the promised date, so the customer has no cash ready** (Round 2 field research, Tier 3/4; our own Meesho test order came 5 days early with no warning). Round 1's survey already listed "no cash" as a refusal trigger: this is *why* | A big share of "refused" is **not ready, not unwilling**. Fix the moment, not the customer: an early-arrival heads-up with "pay by UPI or keep my promised date", the rider offering UPI at the door, a second chance at a set time | 4, 6, 7 |
 | 5 | Hubs are multi-platform: the same bag carries Flipkart parcels | The bonus also wins rider effort for Meesho's hard stops | 4 |
 | 6 | Valmo's contract already phones customers to verify failed attempts; Flipkart asks the customer "Confirm delivery reschedule" | Fake-attempt control routes those answers to the hub captain, using evidence Valmo already collects | 4 |
 | 7 | RTO rises with slow delivery (22% at 1–2 days → 35% at 5+), with distance (15 → 22%), for new addresses, and in the ₹500–1,000 order band (28%, the worst) | These become Rescue Score signals | 4 |
 | 8 | **No Indian vendor's RTO-reduction claim is independently audited** (Delhivery "up to 20%", GoKwik, Shadowfax "almost 60%": all self-reported) | We test with a same-time Control group a sceptic would accept | 5 |
 | 9 | RTO swings with the season (D2C ~39% in Nov 2025 → ~21% in Feb 2026), more than the bonus's whole effect | No before/after; a same-time Control group | 5 |
 | 10 | Tier-2/3 cities are 66% of new D2C orders, and India is not one market (Vadodara 18% vs Patna 35%) | 2 of the 4 pilot hubs are smaller-town hubs | 5 |
-| 11 | Node margins are razor thin (a large 3PL nets about 15 paise an order) | Meesho funds the bonus, paid only on success; the hub bears no new cost | 5, 8 |
+| 11 | Hubs earn ₹5 per delivered parcel (our field research), and node margins are thin across the industry | Meesho funds the bonus, paid only on success; the hub bears no new cost. A re-homed parcel is a delivered parcel, so the hub earns its ₹5 again: the hub has a reason to hold and re-home | 5, 6, 8 |
 | 12 | E-way bills are a red herring (₹50,000 threshold). **The real constraint is GST place of supply** (Notif. 34/2023), plus FDI Press Note 2 and the Carriage by Road Act s.15 (a carrier can't sell goods) | Re-home only within one state, with seller opt-in; the seller stays the seller | 6 |
 | 13 | The two halves already exist in India: Ecom Express runs dark stores at its delivery centres; Delhivery's doorstep QC lifted AJIO's resaleable returns from 25% to 98%. Nobody has joined them at the refused parcel | The Router joins them: inspect at the hub, re-home locally | 6 |
 | 14 | Prior art: Amazon's 2012 patent (US 8,615,473) offers the cost of a return as a discount to a nearby buyer | We name it first: the same principle, pushed to the last-mile hub, where India's COD economics make it pay | 6 |
 | 15 | Meesho allocates lanes by lowest cost, with no fixed Valmo share (Q1 FY27 call) | Allocate by cost per *successful* delivery instead | 9 |
 | 16 | Predicting *when* the customer is home cut delivery cost by up to 10.2% (Kandula et al., *Decision Support Systems* 2021) | Time slot is one of the inputs to the difficulty price | 9 |
 
-**State the research limits ourselves** (credibility): the rider interviews are a metro sample and riders willing to talk are the least busy; no published Indian RTO cause split exists, so ours is a labelled blend; every vendor number is self-reported. The pilot's Control group answers the biggest unknown: do riders *cause* COD failure or correctly *predict* it?
+**State the research limits ourselves** (credibility): riders willing to talk are the least busy; stated interest in a bonus is not behaviour; no published Indian RTO cause split exists, so ours (the Round 1 pie) is a labelled blend of rider + buyer research, the industry NDR mix and the data pack; every vendor number is self-reported. **Not a limit any more: Round 2 research covered Tier 3/4 towns as well as metro hubs.** The pilot's Control group answers the biggest unknown: do riders *cause* COD failure or correctly *predict* it?
+
+## Why orders fail: the reason map (synthesis of everything we know)
+
+Round 1's pie (slide 2) says *where* RTOs happen. Round 2 research says *why*, and the why sorts every reason into three kinds of failure. **Each kind needs a different fix, and that is the logic of our whole solution set.**
+
+| Kind | The reasons (with our evidence) | Share of RTOs (Round 1 pie) | What fixes it | Slide |
+|---|---|---|---|---|
+| **Not ready**: the customer wants it, but the moment is wrong | **Arrived before the promised date, no cash ready** (Tier 3/4 research; our test order 5 days early, no warning) · not home: work, travel, asleep (R1 survey) · phone unreachable, often because there was no heads-up · the opposite timing failure, too late: intent decays after 5+ days (RTO 22% → 35%, Shipway) | Not home 18 + unreachable 12 + the "no cash" part of refused 36 | **Rescue:** the ₹15 makes the rider wait, call again, offer UPI, come back at a set time · **heads-up** before an early arrival: "pay by UPI, or keep my promised date" (P1, sharpened) · **second chance:** different time / pay now by UPI / hub pickup | 4, 6, 7 |
+| **Not wanting**: the customer changed their mind | Found it cheaper on another app ("we keep watching prices… nothing is paid, so there is no loss", R1 survey) · changed mind in transit · COD used to see the item first | The "better deal / changed mind" part of refused 36 | Effort can't fix this, so **don't pay to try**: **Recover** it instead: re-home to a nearby buyer of the same item, or a batched return (Router) | 6 |
+| **Not reached**: the system failed before the customer could decide | Unclear address 13 · far / wrong hub 9 (distance 15% → 22%) · **no real attempt 9**: one or two calls and leave, or "unavailable" logged without a knock (R1 rider quote; Valmo's contract already verifies failed attempts by phone) | 13 + 9 + 9 = 31 | **Fake-attempt control** (hub captain; the hub earns only on delivery, so it is on our side) · address fix (P2) | 4, 7 |
+
+**The one-line insight for the deck:** *"Much of what is logged as 'refused' is not 'didn't want it', it's 'wasn't ready': the parcel came early and the cash wasn't there. You can't make a customer want an order, but you can make the moment right."*
+**What we don't claim:** how the 36% "refused" splits between *not ready* and *not wanting*. The pilot's second-chance replies ("different time" or "pay by UPI" = not ready; "cancel" = not wanting) measure it, per hub, from day 1. If the survey has the split, put it here.
 
 **How fake attempts fit the story (without touching slides 1–3):** slide 2 diagnoses it (the 9% "no real attempt" slice and the real order); slide 3 says proof of attempt is part of the bonus's controls; **slide 4 shows those controls and adds that they do not need the bonus to work**; slide 7 runs them from day 0 in both groups and keeps them if the bonus is killed; slide 8 guards the captain against bias. Read in order, this is one line of thought, not a contradiction: *built as the bonus's guard, strong enough to stand alone.*
 
@@ -196,8 +212,9 @@ Keep a small thumbnail of the Round 1 matrix for continuity.
 **Headline:** Same app, same payout rail: ₹15 for the hard delivery, and a check that every failed attempt was real
 **Message:** The Rescue Bonus runs on systems Valmo already has, is new in how it targets, and is built so gaming doesn't pay; suspicious attempts go to the hub captain.
 **Story beat:** slide 3 chose Rescue; this is how it works. Two halves: pay for the hard delivery (top), and make sure the effort was real (bottom).
-**"Why the rider" strip (one line, above the flow; insights 1–3):** *"The brief rules out customer-side levers, and the rider is the only person who meets the customer. Riders re-attempt for pay but give COD almost none of the 2–3 calls prepaid gets. ₹15 nearly doubles pay on that order and buys exactly that cheap effort (calls, a 10-minute wait, a neighbour), not a second trip."*
-**"What research changed since Round 1" tag (one line, under the flow; insight 4):** *"Round 1 assumed the hub pays the rider. Valmo's contract shows Valmo pays riders directly, with an 'Additional Incentive' line, so the ₹15 goes straight to the rider."*
+**Top band: "Three kinds of failure, one fix each"** (three small boxes, the reason map in one glance; it bridges slide 2's pie to the solutions): **Not ready** (the parcel came early, no cash; not home; unreachable) → *Rescue + heads-up + second chance* · **Not wanting** (cheaper elsewhere, changed mind) → *Recover (slide 6)* · **Not reached** (no real attempt, bad address) → *fake-attempt control + address fix*. Under it, the one-line insight: *"Much of 'refused' is not 'didn't want it' but 'wasn't ready': the parcel came before the promised date and the cash wasn't there."*
+**"Why the rider" strip (one line; insights 1–3):** *"The brief rules out customer-side levers, and the rider is the only person who meets the customer. Riders give COD 'once or twice' and leave; in metro and Tier 3/4 hubs they told us a per-order bonus interests them. ₹15 nearly doubles pay on that order and buys cheap effort (calls, a wait, offering UPI, coming back at a set time), not a second trip."*
+**"What research added since Round 1" tag (one line, under the flow; insight 4):** *"Round 1 said the bonus rides Valmo's rider bonus system; we found the clause (§3 'Additional Incentive' in Valmo's rider contract). Hubs earn ₹5 per delivered parcel, so the ₹15 goes to the rider, not the hub."*
 
 **Top: 5-step flow (chevrons)**
 1. **Score:** TrustMesh + last-mile signals
@@ -278,7 +295,7 @@ Watched, not a stop rule: returns and complaints, Bonus vs Control.
 - **Speaker notes, ready if asked** *"Why not just compare with last year?"*: Meesho's RTO moved 21.2% → 17.8% (FY23–25) and COD success fell 78.6% → 75.9%; the bonus should move network RTO by about 1.7 points at break-even, the same size as normal drift and festive swings. A same-time Control group removes that.
 - Example (simulated): *"If the bonus truly adds +15 per 100, this pilot says GO about 97 times in 100; at +12 it is about a coin flip (6 in 10); at +10 or less it usually says RE-PRICE and we'd run Pilot 2."* Small type: *"the simulation has no good-month and bad-month luck in riders, so a real pilot will be noisier."*
 - *"₹15 → more rider effort → more deliveries is our assumption. The pilot measures it, and its Control group also answers the question nobody has answered: do riders cause COD failure, or correctly predict it?"*
-- One line: *"Meesho funds the ₹15, paid only on success; the hub, whose margin is paise per order, bears no new cost."* (insight 11)
+- One line: *"Meesho funds the ₹15, paid only on success; the hub, which earns ₹5 per delivered parcel, bears no new cost and gains ₹5 on every rescue."* (insight 11)
 - Visual: the prototype's range diagram with the ✔ Fair comparison line (shot 1); optional shot 2 (RE-PRICE with "Next: Pilot 2").
 **Callout:** "₹120 to haul a parcel back; ₹15 to make the hard stop worth it. If it doesn't pay, we change one lever and test again, and the fallback keeps running."
 **Bridge (italic, last line):** *"Even with the bonus, some customers will still say no at the door. What happens to those parcels?"*
@@ -294,7 +311,7 @@ Watched, not a stop rule: returns and complaints, Bonus vs Control.
 **① Why it matters:** a return costs **₹120 = 45%** of Meesho's ₹265 average order; Meesho bears it; about **130 mn** RTO parcels a year (763.5 mn × 17%); the default is to send it back (Shopee: refuse once → return to sender). **We found no marketplace that re-homes refused parcels from the last-mile hub** (desk search, Sep 2026). **The two halves already exist in India** (insight 13): Ecom Express runs dark stores at its delivery centres, and Delhivery's doorstep quality check lifted AJIO's resaleable returns from 25% to 98%. Nobody has joined them at the refused parcel. **We name the prior art first** (insight 14): Amazon's 2012 patent offers the cost of a return as a discount to a nearby buyer (also Pitney Bowes, expired 2025; Formula Labs). Ours is that principle pushed to the last-mile hub, where India's COD economics make it pay.
 
 **② The Router, 3 lanes** (decision diagram, a legal tick on each lane; each chosen by expected value: chance × saving − cost)
-1. **Second chance** (24 h WhatsApp, legally clean): **Deliver again · Different time · Pay now by UPI · Pick up at hub** (48 h, a pickup code; saves the ₹120 return, about ₹112 net of the ₹8 shelf; never counts as a delivery or pays a bonus).
+1. **Second chance** (24 h WhatsApp, legally clean) **for the "not ready" refusals**: **Deliver again · Different time · Pay now by UPI · Pick up at hub** (48 h, a pickup code; saves the ₹120 return, about ₹112 net of the ₹8 shelf; never counts as a delivery or pays a bonus). "Different time" and "Pay now by UPI" answer exactly the early-arrival, no-cash refusal. Hub pickup is an option Valmo already offers (Round 1 slide 3); we offer it at the moment of refusal.
 2. **Hold & Re-home** (clean if same state): **inspected first** (unopened, seal intact, invoice outside, photo); **seller state = hub state = buyer state**; the seller has opted in for that product (never overridden); damaged or wrong items never re-homed ("seller claim / QC" flag). **Hold only where the low end of the demand forecast clears break-even (5.5%)**: only the **same seller and the same listing** is ever re-homed; similar listings (matched on title words, same category, price within 30%) are evidence of demand only, never a substitute.
 3. **Batched return** (clean): everything else, grouped by seller (US programmes report 20–40% cheaper).
 - 30 shelf slots shared by Hold and pickup; savings count only on real outcomes.
@@ -306,7 +323,8 @@ Watched, not a stop rule: returns and complaints, Bonus vs Control.
 - The forecast shows a chance with a range and a confidence label; in a synthetic backtest it is calibrated on average. **Do not claim the low-end rule earns more in total**; say *"it holds fewer parcels and each pays more often; we choose it to limit custody risk and wrong calls."*
 - Small type: *"History is synthetic: this shows the mechanism; real calibration comes from the pilot. Kill the Hold lane if the match rate is below 3% after 30 days, or on any custody incident."*
 - Screenshots: a Desk parcel card (shot 7), the money tiles (shot 8), the four second-chance options (shot 9).
-**Callout:** the pilot first measures how long refused parcels sit at the hub today, the share of "maybe later" refusals, and the match rate.
+**Why the hub will do it:** a re-homed parcel is a delivered parcel, so the hub earns its ₹5 again (insight 11).
+**Callout:** the pilot first measures how long refused parcels sit at the hub today, the share of "not ready" vs "not wanting" refusals (from the second-chance replies), and the match rate.
 **Bridge (italic, last line):** *"Our real order: if the customer still said no, a WhatsApp second chance, then a nearby buyer of the same item, then a batched return. Never an automatic ₹120 trip."*
 **Footer:** GST s.2(85), IGST s.10(1)(a), Notif. 34/2023-CT · FDI Press Note 2 (2018) · Consumer Protection (E-Com) Rules 2020 · DPDP Act 2023 · Carriage by Road Act 2007 s.15 · CGST Rule 138 (e-way bill) · Amazon US 8,615,473 · Ecom Express DRHP p.181 · Delhivery QC-RVP (AJIO) · UPS Happy Returns / Optoro · Meesho RHP.
 
@@ -322,7 +340,7 @@ Watched, not a stop rule: returns and complaints, Bonus vs Control.
 | **Rescue Bonus** | Pilot 1: 4 hubs, 24 rider pairs, top 20%, rule locked | **If GO:** one region (~40 hubs) with a **price test**: hubs randomly at ₹0 / ₹10 / ₹15 (and top 10% vs 20%), each compared with its own baseline and the ₹0 hubs over the same weeks. **If RE-PRICE:** Pilot 2 with one lever changed, rule locked first | Scale decision; start difficulty-priced tiers |
 | **Fake-attempt control** | Day 0 in every pilot hub, both groups: hub-captain review, strikes, rider monitor | Tune the evidence thresholds and the ladder from baseline data | Roll out with the bonus, or alone if the bonus is killed |
 | **Refused-Parcel Router** | UP cluster (3 hubs): measure dwell time + soft refusals; second chance live | Manual Hold & Re-home with 30–50 opted-in same-state sellers (non-GST first); batched returns | Automate matching if match rate ≥ 5.5% |
-| **P1 / P2** | — | Two-way WhatsApp on bonus orders in pilot hubs; address fix in 1 small-town hub | Decide on each |
+| **P1 / P2** | **Early-arrival heads-up** in pilot hubs (zero build: one WhatsApp when a COD parcel will arrive before its promised date: "pay by UPI, or keep my promised date") | Two-way WhatsApp on bonus orders; address fix in 1 small-town hub | Decide on each |
 | **Success metric** | Low end of the range ≥ +8.6; normal orders ≥ Control − 1 pt; suspected fakes ≤ Control + 2 pts | Cost per rescued order ≤ ₹120; match rate vs 5.5%; WhatsApp reply rate; recovered deliveries from reviews | Valmo RTO and cost per successful delivery vs baseline |
 | **Kill / re-tune** | Uplift < +3, or a safety rule breaks | Match rate < 3%; any custody incident; more than 1 in 3 strikes overturned, or reviews cost more than they recover | Net ₹ negative for 2 months |
 - Loop picture: **Pilot 1 → learn → Pilot 2 → scale**, "one lever changed, rule locked first". Line: *"Pilot 1 answers 'does ₹15 work?'; the region phase answers 'which price and which cut?'"*
@@ -344,7 +362,8 @@ Layout: ① risk matrix (likelihood × impact) · ② the table · ③ a "who wo
 | Uplift below break-even | Rescue | Med | RE-PRICE → Pilot 2 with one lever changed; **the fallback (fake-attempt control + Router) continues** |
 | Riders correctly *predict* COD failure rather than cause it (then effort can't fix it) | Rescue | Med | This is exactly what the Control group measures; a KILL is a cheap, 30-day answer to the case's central unknown |
 | The hub, not Valmo, sets rider pay (the bonus leaks) | Rescue | Low | Valmo's contract pays riders directly; the ₹15 rides the existing "Additional Incentive" line |
-| Our evidence is a metro sample | All | Med | 2 of 4 pilot hubs are smaller-town; the 8-week baseline measures the real cause mix and fake-attempt rate |
+| Riders' interest in a bonus is stated, not shown | Rescue | Med | The pilot measures behaviour (deliveries vs Control), never stated interest; research covered metro and Tier 3/4 hubs; 2 of 4 pilot hubs are smaller-town |
+| An early-arrival heads-up nudges some buyers to cancel | P1 | Low–Med | Offer "keep my promised date" as the default choice, not cancel; measure cancels vs a no-message hub |
 | A trend or the festive season distorts the result | Rescue | Med | A same-time Control group; never a before/after alone |
 | Moving the goalposts after seeing results | Rescue | Low | Rule locked before day 1; a changed rule makes the verdict invalid |
 | Unfair groups | Rescue | Low | Riders paired on past rate, coin in each pair, parcel-risk mix checked |
@@ -392,7 +411,11 @@ Layout: ① risk matrix (likelihood × impact) · ② the table · ③ a "who wo
 | Pilot | 4 hubs, 24 pairs, ~12,000 flagged orders, 30 days, 8-week baseline; smallest effect ~4 per 100 | Our design / prototype |
 | Chance of GO at +8 / +10 / +12 / +15 | 3 / 18 / 58 / 97% (top 20%) | Prototype, simulated |
 | Score accuracy | top 20% catch ~46% of RTOs (random 20%) | Simulation only |
-| Fake attempts | "no real attempt" ~9% of RTOs (our blend, build-up pending); ≤ ~1.5 RTO points addressable; review break-even ~1 in 10 | Our estimate / our model |
+| Fake attempts | "no real attempt" ~9% of RTOs (Round 1 pie: our blend of rider + buyer research, industry NDR mix, data pack); ≤ ~1.5 RTO points addressable; review break-even ~1 in 10 | Our research blend / our model |
+| Cause split (Round 1 pie) | Refused 36 · not home 18 · unclear address 13 · unreachable 12 · far/wrong hub 9 · no real attempt 9 · other 3 | Round 1 slide 2, our research blend |
+| Hub pay | ₹5 per delivered parcel | Our Round 2 field research |
+| Rider base pay | ₹18 per delivery (Round 1 bag) | Our research; "reportedly ₹18–25" in franchise write-ups |
+| Early arrival | Orders arrive before the promised date; customers have no cash ready (our test order: 5 days early) | Our Round 2 field research (Tier 3/4) + real order |
 | 1 RTO point | ≈ 7.6 mn parcels ≈ ₹92 cr a year | Our calculation |
 | Hold & Re-home | ₹145 per match, ₹8 to hold, break-even 5.5%; ₹50 / 140 / 270 cr | Our model |
 | Hub pickup | about ₹112 net; never a delivery, never a bonus | Our model |
@@ -414,7 +437,7 @@ Layout: ① risk matrix (likelihood × impact) · ② the table · ③ a "who wo
 11. *(After the hub-captain build)* the captain queue and the rider's strike meter (slide 4).
 
 ## Still to arrive (placeholders until then)
-Survey n and results, rider/hub call findings (incentive size, dwell time, soft refusals), the cause-chart build-up (including the 9% "no real attempt" slice), more test orders, the mentor's feedback, the redrawn Flipkart-vs-Valmo visuals, source lines for Meituan / Uber Eats / DoorDash / Ekart, URLs for Delhivery QC-RVP and the Shadowfax margin.
+**Resolved 2 Oct:** the cause split is the Round 1 pie (our research blend), so the 9% "no real attempt" is ours and labelled as such; Round 2 research covered Tier 3/4 (early arrival → no cash; riders interested in a bonus; hubs paid ₹5 per delivered parcel). **Still useful:** the Round 2 n (riders, hubs, towns), any survey split of "not ready" vs "not wanting", rider/hub call findings (dwell time, who decides a failed attempt today), more test orders, the mentor's feedback, the redrawn Flipkart-vs-Valmo visuals, source lines for Meituan / Uber Eats / DoorDash / Ekart, URLs for Delhivery QC-RVP and the Shadowfax margin.
 
 **Where the Round 2 field research goes when it arrives** (slides 1–3 only get their `[PENDING]` boxes filled; their wording stays):
 | Finding | Goes to |
