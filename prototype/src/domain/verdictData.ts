@@ -32,9 +32,12 @@ function armSample(s: DayState, stops: readonly StopRecord[]): ArmSample {
  */
 function guardrailReadings(s: DayState): GuardrailReadings {
   const of = (type: string, arm: Arm): number => s.events.filter((e) => e.type === type && e.arm === arm).length
+  // Only exceptions opened because the attempt LOOKS fake count. One opened because a rider is on the enhanced-review step (every failed attempt is
+  // reviewed) says nothing about this attempt, so it is left out.
+  const suspected = (arm: Arm): number => s.events.filter((e) => e.type === 'EXCEPTION_OPENED' && e.arm === arm && e.data.enhanced !== true).length
   const rate = (arm: Arm): { readonly attempts: number; readonly rate: number } => {
     const attempts = of('ATTEMPT_LOGGED', arm)
-    return { attempts, rate: attempts === 0 ? 0 : of('EXCEPTION_OPENED', arm) / attempts }
+    return { attempts, rate: attempts === 0 ? 0 : suspected(arm) / attempts }
   }
   const bonus = rate('bonus')
   const control = rate('control')

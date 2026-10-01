@@ -1,4 +1,5 @@
 import { holdGates, PARCEL_GATES } from '../engine/router.ts'
+import { activeCount, BONUS_HOLD_WINDOW_MS, captainName, STRIKE_REASONS } from './captain.ts'
 import { ruleHash } from '../engine/verdict.ts'
 import { eventsOf } from './events.ts'
 import { ledgerTotals } from './ledger.ts'
@@ -19,7 +20,7 @@ export interface AuditCheck {
 const list = (items: readonly string[], max = 5): string => `${items.slice(0, max).join('; ')}${items.length > max ? `; and ${items.length - max} more` : ''}`
 
 /**
- * The fourteen checks on the day's own record (prototype spec, Audit tab). Each is green or red. They read the event log and the
+ * The eighteen checks on the day's own record (prototype spec, Audit tab). Each is green or red. They read the event log and the
  * lifecycle, so an action that forgot to log itself, or a screen that shows a different ₹ figure, turns a check red.
  */
 export function runAudit(s: DayState): readonly AuditCheck[] {
@@ -49,7 +50,9 @@ export function runAudit(s: DayState): readonly AuditCheck[] {
   const totals = ledgerTotals(s)
   const k = kpis(clean)
   const shownOnRiders = s.riders.reduce((t, r) => t + riderEarnings(clean, r.id).bonusPending, 0)
-  const expected = { liability: sumEvents('BONUS_ACCRUED') - sumEvents('BONUS_RELEASED') - sumEvents('BONUS_CLAWED_BACK'), released: sumEvents('BONUS_RELEASED'), clawedBack: sumEvents('BONUS_CLAWED_BACK'), blocked: sumEvents('BONUS_BLOCKED') }
+  // A bonus the captain withheld AFTER it accrued leaves the liability (its BONUS_BLOCKED event says so); one blocked at accrual never entered it.
+  const withheldAfter = eventsOf(s, 'BONUS_BLOCKED').filter((e) => e.data.afterAccrual === true).reduce((t, e) => t + Number(e.data.amount), 0)
+  const expected = { liability: sumEvents('BONUS_ACCRUED') - sumEvents('BONUS_RELEASED') - sumEvents('BONUS_CLAWED_BACK') - withheldAfter, released: sumEvents('BONUS_RELEASED'), clawedBack: sumEvents('BONUS_CLAWED_BACK'), blocked: sumEvents('BONUS_BLOCKED') }
   const ledgerOk =
     totals.liability === expected.liability &&
     totals.released === expected.released &&
@@ -90,6 +93,25 @@ export function runAudit(s: DayState): readonly AuditCheck[] {
     ...s.parcels.filter((p) => p.state === 'picked_up' && s.stops[p.orderId]?.status !== 'hub_pickup').map((p) => p.orderId),
   ]
   const overCapacity = [...eventsOf(s, 'HELD'), ...reservedEvents].filter((e) => typeof e.data.slot !== 'number' || typeof e.data.capacity !== 'number' || e.data.slot > e.data.capacity)
+
+  // Fake-attempt control (plan 24): the strike log, the captain's decisions, and the bonus-off and bonus-hold rules.
+  const strikeEvents = eventsOf(s, 'STRIKE')
+  const badStrikes = s.strikeLog.filter((k) => {
+    const decided = s.exceptions.find((e) => e.orderId === k.orderId && e.status === 'resolved' && e.action === 'strike' && e.auto !== true && e.captainName !== undefined)
+    return !STRIKE_REASONS.includes(k.reason) || k.captainName !== captainName(s.hub) || decided === undefined || decided.captainName !== k.captainName
+  })
+  const strikeLogOk = badStrikes.length === 0 && strikeEvents.length === s.strikeLog.length && s.exceptions.every((e) => e.action !== 'strike' || e.auto !== true)
+  const strikeBlocked = s.ledger.filter((l) => l.status === 'blocked' && l.reason?.includes('active strikes') && activeCount(s, l.riderId, l.deliveredSim) < 2)
+  const bonusOff = !(s.config.bonus > 0)
+  const bonusRows = s.ledger.length + s.events.filter((e) => e.type.startsWith('BONUS_')).length
+  const heldBad = s.ledger.filter((l) => {
+    const r = l.review
+    if (r === undefined) return false
+    if (r.state === 'withheld') return r.reason === undefined || !STRIKE_REASONS.includes(r.reason) || r.captainName === undefined || l.status !== 'blocked'
+    if (r.state === 'default_released') return r.decidedSim === undefined || r.decidedSim < l.deliveredSim + BONUS_HOLD_WINDOW_MS || l.status !== 'released'
+    if (r.state === 'waiting') return l.status !== 'pending' && l.status !== 'accrued'
+    return false
+  })
 
   return [
     { id: 'orders-balance', label: 'Orders = terminal + open', ok: terminal.length + open === stops.length && missing.length === 0, detail: missing.length === 0 ? `${stops.length} orders = ${terminal.length} in a terminal state + ${open} still open` : `orders with no record: ${list(missing)}` },
@@ -137,6 +159,37 @@ export function runAudit(s: DayState): readonly AuditCheck[] {
       label: 'The shelf was never above capacity',
       ok: overCapacity.length === 0,
       detail: overCapacity.length === 0 ? `${eventsOf(s, 'HELD').length + reservedEvents.length} shelf slots taken (holds and pickups share them), each within the capacity at that moment` : `slot taken beyond capacity: ${list(overCapacity.map((e) => `${e.orderId ?? '?'} (slot ${String(e.data.slot)} of ${String(e.data.capacity)})`))}`,
+    },
+    {
+      id: 'strike-decided',
+      label: 'Every strike has a captain decision with a reason',
+      ok: strikeLogOk,
+      detail: strikeLogOk
+        ? s.strikeLog.length === 0
+          ? 'no strike has been issued yet'
+          : `${s.strikeLog.length} strike${s.strikeLog.length === 1 ? '' : 's'}, each decided by ${captainName(s.hub)} with a reason chip, none by anyone else and none by the 24 h default`
+        : `strikes without a captain's decision, a valid reason, or the right captain: ${list(badStrikes.length > 0 ? badStrikes.map((k) => k.orderId) : ['the strike log and the STRIKE events disagree'])}`,
+    },
+    {
+      id: 'strike-expiry',
+      label: 'No strike counted after it expired',
+      ok: strikeBlocked.length === 0,
+      detail: strikeBlocked.length === 0 ? 'every bonus blocked for strikes had 2 active strikes (inside 30 days, not overturned) at the time' : `blocked on strikes that were not active: ${list(strikeBlocked.map((l) => l.orderId))}`,
+    },
+    {
+      id: 'bonus-off-clean',
+      label: 'A day with the bonus off creates no ledger rows',
+      ok: !bonusOff || bonusRows === 0,
+      detail: !bonusOff ? 'the bonus is on for this day, so this check has nothing to test' : bonusRows === 0 ? 'the bonus is off and nothing was booked: fake-attempt control ran without it' : `the bonus is off but ${bonusRows} bonus rows or events exist`,
+    },
+    {
+      id: 'bonus-hold-decided',
+      label: 'Every held bonus was decided by the captain, or released by default after 7 days',
+      ok: heldBad.length === 0,
+      detail:
+        heldBad.length === 0
+          ? `${s.ledger.filter((l) => l.review !== undefined).length} bonuses went through the parking-gap check: withheld ones have a captain and a reason, default releases came after the 7-day window`
+          : `held bonuses that do not add up: ${list(heldBad.map((l) => l.orderId))}`,
     },
   ]
 }

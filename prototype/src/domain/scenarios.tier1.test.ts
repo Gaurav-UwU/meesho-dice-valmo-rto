@@ -8,7 +8,8 @@ import { eventsOf } from './events.ts'
 import { costLedger, ledgerTotals, savingsLedger } from './ledger.ts'
 import { reduce } from './reducer.ts'
 import { deskItems, kpis, stopsOf } from './selectors.ts'
-import { AT, advanceHours, deliverOrder, forceParcel, heroStops, inspectParcel, refuseOrder, run, setPayment, startedDay } from './testkit.ts'
+import { AT, advanceHours, deliverOrder, forceParcel, forgedStrikes, heroStops, inspectParcel, refuseOrder, run, setPayment, startedDay } from './testkit.ts'
+import { activeCount } from './captain.ts'
 import type { DayState } from './types.ts'
 
 /**
@@ -79,10 +80,10 @@ describe('bonus blocks at accrual', () => {
   })
 
   it('a rider with 2 confirmed strikes earns nothing new', () => {
-    const struck: DayState = { ...day, strikes: { [owner]: 2 } }
+    const struck: DayState = { ...day, strikeLog: forgedStrikes(day, owner, 2) }
     const s = deliverOrder(struck, bonusId)
     expect(ledgerOf(s, bonusId)[0]).toMatchObject({ status: 'blocked' })
-    expect(ledgerOf(s, bonusId)[0].reason).toMatch(/2 confirmed/i)
+    expect(ledgerOf(s, bonusId)[0].reason).toMatch(/2 active strikes/i)
   })
 
   it('a rider is capped at ₹300 of bonus in a sim day', () => {
@@ -169,8 +170,9 @@ describe('scenario 3: a fake attempt becomes an exception and a free re-attempt 
   })
 
   it('"strike" adds a strike to the rider and also gives a free re-attempt', () => {
-    const s = run(faked, { type: 'resolveException', at: AT + 2, orderId: bonusId, action: 'strike' })
-    expect(s.strikes[owner]).toBe(1)
+    const s = run(faked, { type: 'resolveException', at: AT + 2, orderId: bonusId, action: 'strike', reason: 'phone_far' })
+    expect(activeCount(s, owner)).toBe(1)
+    expect(s.strikeLog[0]).toMatchObject({ riderId: owner, orderId: bonusId, reason: 'phone_far' })
     expect(eventsOf(s, 'STRIKE')).toHaveLength(1)
     expect(s.stops[bonusId].status).toBe('out_for_delivery')
     expect(s.stops[bonusId].riderId).not.toBe(owner)
@@ -188,12 +190,13 @@ describe('scenario 3: a fake attempt becomes an exception and a free re-attempt 
     expect(s.exceptions[0]).toMatchObject({ status: 'resolved', action: 'free_reattempt', auto: true })
     expect(s.stops[bonusId].status).toBe('out_for_delivery')
     expect(s.stops[bonusId].failedAttempts).toBe(0)
-    expect(s.strikes[owner] ?? 0).toBe(0)
+    expect(s.strikeLog).toHaveLength(0)
+    expect(s.exceptions[0]).toMatchObject({ captainMissed: true })
   })
 
   it('an exception can only be resolved once, and only while the order is a failed attempt', () => {
     const done = run(faked, { type: 'resolveException', at: AT + 2, orderId: bonusId, action: 'confirm' })
-    expect(reduce(done, { type: 'resolveException', at: AT + 3, orderId: bonusId, action: 'strike' })).toBe(done)
+    expect(reduce(done, { type: 'resolveException', at: AT + 3, orderId: bonusId, action: 'strike', reason: 'phone_far' })).toBe(done)
     expect(reduce(day, { type: 'resolveException', at: AT, orderId: bonusId, action: 'confirm' })).toBe(day)
   })
 
@@ -440,7 +443,7 @@ describe('the Audit is green after a full Autopilot day and Close pilot', () => 
 
   it('every check passes', () => {
     const checks = runAudit(closed)
-    expect(checks).toHaveLength(14)
+    expect(checks).toHaveLength(18)
     const red = checks.filter((c) => !c.ok)
     expect(red.map((c) => `${c.id}: ${c.detail}`)).toEqual([])
   })

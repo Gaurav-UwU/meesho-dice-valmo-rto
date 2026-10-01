@@ -2,6 +2,7 @@ import { costPerSuccessfulDelivery } from '../engine/economics.ts'
 import { mean } from '../engine/math.ts'
 import { type DaySummary, type Lane, type RouteDecision, type RouteOptions } from '../engine/router.ts'
 import type { Arm, Rider } from '../engine/types.ts'
+import { activeCount } from './captain.ts'
 import { isDelivered, isSettled, isTerminal } from './lifecycle.ts'
 import { ledgerTotals } from './ledger.ts'
 import { decisionFor, routeOptionsFor } from './routing.ts'
@@ -246,7 +247,7 @@ export interface RiderAttemptRecord {
 export function attemptRecords(s: DayState): readonly RiderAttemptRecord[] {
   return s.riders.map((r) => {
     const attempts = s.events.filter((e) => e.type === 'ATTEMPT_LOGGED' && e.riderId === r.id).length
-    const strikes = s.strikes[r.id] ?? 0
+    const strikes = activeCount(s, r.id)
     return { riderId: r.id, attempts, strikes, fakeRate: attempts === 0 ? 0 : strikes / attempts }
   })
 }

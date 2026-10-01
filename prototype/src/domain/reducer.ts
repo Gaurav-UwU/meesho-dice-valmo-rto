@@ -24,6 +24,7 @@ import {
   replyAck,
   rescheduleCheckText,
 } from './messages.ts'
+import { askReview, overturnStrike, reviewBonus } from './captain.ts'
 import { closeAsRto, confidenceOf, openException, overtakeException, resolveExceptionFor, retryOne } from './orders.ts'
 import { buildParcel, SHOWCASE } from './parcels.ts'
 import { plannedRuleHash } from './rule.ts'
@@ -252,6 +253,8 @@ function riderAttempt(s: S, a: Extract<Action, { type: 'riderAttempt' }>): S {
       confidence,
       attemptRiderId: st.riderId,
       failedSim: s.simNow,
+      // Every failed attempt stays on the order, so a later attempt never erases what an earlier one looked like.
+      attemptLog: [...(st.attemptLog ?? []), { riderId: st.riderId, simAt: s.simNow, confidence, ...(a.evidence ? { evidence: a.evidence } : {}), reached: null }],
     },
   })
   next = emit(
@@ -288,7 +291,8 @@ function customerReach(s: S, a: Extract<Action, { type: 'customerReach' }>): S {
   const st = s.stops[a.orderId]
   if (!st || st.status !== 'ndr' || st.answers.riderReached !== null) return s
   let next = tap(s, a.at, a.orderId, a.reached ? 'Yes, the agent reached me' : 'No, the agent never came')
-  next = patchStop(next, a.orderId, { answers: { ...st.answers, riderReached: a.reached } })
+  const log = (st.attemptLog ?? []).map((e, i, all) => (i === all.length - 1 ? { ...e, reached: a.reached } : e))
+  next = patchStop(next, a.orderId, { answers: { ...st.answers, riderReached: a.reached }, attemptLog: log })
   next = emit(next, a.at, 'ATTEMPT_CHECK_ANSWERED', { reached: a.reached }, { orderId: a.orderId })
   if (a.reached && st.claim === 'reschedule_requested') {
     return sendProactive(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'reschedule_check', text: rescheduleCheckText, buttons: YES_NO })
@@ -391,7 +395,13 @@ function apply(s: S, a: Action): S {
     case 'dispatchNextDay':
       return dispatchNextDay(s, a)
     case 'resolveException':
-      return resolveExceptionFor(s, a.orderId, a.action, a.at)
+      return resolveExceptionFor(s, a.orderId, a.action, a.at, false, { reason: a.reason, note: a.note })
+    case 'overturnStrike':
+      return overturnStrike(s, a)
+    case 'riderAskReview':
+      return askReview(s, a)
+    case 'reviewBonus':
+      return reviewBonus(s, a)
     case 'openReturn':
       return openReturn(s, a)
     case 'reconcileCod':

@@ -72,7 +72,7 @@ export function createDay(geo: HubGeo, opts: DayOptions = DEFAULT_DAY): DayState
     feed: [],
     events: [],
     exceptions: [],
-    strikes: {},
+    strikeLog: [],
     router: DEFAULT_ROUTER_PARAMS,
     rejectedTransitions: [],
     nextId: 1,

@@ -55,7 +55,7 @@ export function isDayState(x: unknown): x is DayState {
     Array.isArray(x.rejectedTransitions) &&
     Array.isArray(x.events) &&
     Array.isArray(x.exceptions) &&
-    isObj(x.strikes) &&
+    Array.isArray(x.strikeLog) &&
     isObj(x.router)
   )
 }

@@ -231,7 +231,7 @@ describe('exceptions and the false-attempt record', () => {
   })
 
   it('counts attempts and confirmed fakes per rider', () => {
-    const struck = run(faked, { type: 'resolveException', at: AT + 2, orderId: bonusId, action: 'strike' })
+    const struck = run(faked, { type: 'resolveException', at: AT + 2, orderId: bonusId, action: 'strike', reason: 'phone_far' })
     const owner = day.stops[bonusId].riderId
     const rec = attemptRecords(struck).find((r) => r.riderId === owner)!
     expect(rec).toMatchObject({ attempts: 1, strikes: 1, fakeRate: 1 })
@@ -253,7 +253,7 @@ describe('exceptions and the false-attempt record', () => {
   })
 
   it('keeps confirmed strikes as a separate, stricter number', () => {
-    const struck = run(faked, { type: 'resolveException', at: AT + 2, orderId: bonusId, action: 'strike' })
+    const struck = run(faked, { type: 'resolveException', at: AT + 2, orderId: bonusId, action: 'strike', reason: 'phone_far' })
     expect(dayVerdictData(struck).readings).toMatchObject({ falseAttemptRate: 1, strikes: 1 })
   })
 

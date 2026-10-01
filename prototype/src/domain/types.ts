@@ -36,6 +36,8 @@ export interface StopRecord {
   readonly confidence?: AttemptConfidence
   /** The rider who logged the last failed attempt (the one an exception is about) */
   readonly attemptRiderId?: string
+  /** Every failed attempt on this order, in order, with what the rider's phone recorded and what the customer answered. A later attempt never erases an earlier one. */
+  readonly attemptLog?: readonly AttemptEntry[]
   /** Every rider whose own attempt on this order looked fake (the customer said nobody came). A later attempt never washes it out; a captain confirming the attempt valid clears that rider. */
   readonly suspectRiderIds?: readonly string[]
   /** Sim time of the last failed attempt: a failed order is decided at the next day's start */
@@ -60,6 +62,17 @@ export interface StopRecord {
   readonly manual: boolean
   /** Set when this stop is a re-homed parcel (buyer 2): its own cohort, outside the pilot metrics */
   readonly rehomedFrom?: string
+}
+
+/** One failed attempt on an order. `reached` is the customer's WhatsApp answer to "did the rider come?" (null until they answer). */
+export interface AttemptEntry {
+  readonly riderId: string
+  readonly simAt: number
+  readonly confidence: AttemptConfidence
+  readonly evidence?: AttemptEvidence
+  readonly reached: boolean | null
+  /** The hub captain confirmed this attempt was valid: it is never a reason to hold the bonus */
+  readonly cleared?: boolean
 }
 
 export type OtpPurpose = 'delivery' | 'refusal'
@@ -124,6 +137,25 @@ export interface LedgerEntry {
   readonly cod: boolean
   /** Why it was blocked or clawed back */
   readonly reason?: string
+  /** The parking-gap hold: this rider's own earlier attempt on the order was weak, so the bonus waits for the hub captain inside the 7-day window */
+  readonly review?: BonusReview
+}
+
+/**
+ * waiting: the captain has not decided (released by default when the 7-day window ends). cleared: nothing to decide (the customer confirmed the rider
+ * came, or the captain released it). withheld: the captain withheld it (a reason chip is required). default_released: the window ended with no decision.
+ */
+export interface BonusReview {
+  readonly state: 'waiting' | 'cleared' | 'withheld' | 'default_released'
+  /** What made the earlier attempt weak, for the captain's screen and the rider's line */
+  readonly why: string
+  /** The weak attempt the review is about */
+  readonly weak: { readonly gpsDistM: number | null; readonly calls: number | null; readonly waitMin: number | null; readonly reached: boolean | null }
+  readonly auto?: 'customer_confirmed'
+  readonly decidedSim?: number
+  readonly reason?: StrikeReason
+  readonly note?: string
+  readonly captainName?: string
 }
 
 export type ParcelState = 'queued' | 'second_chance_sent' | 'recovered' | 'held' | 'pickup_reserved' | 'picked_up' | 'rehomed' | 'batched'
@@ -207,6 +239,25 @@ export interface RejectedTransition {
 
 export type ExceptionAction = 'confirm' | 'free_reattempt' | 'strike'
 
+/** Why a captain strikes a rider, or withholds a bonus. A strike without one is rejected. */
+export type StrikeReason = 'phone_far' | 'customer_says_nobody_came' | 'repeated_pattern' | 'other'
+
+/** One strike. Active for 30 days unless Ops overturns it within 48 h. Every strike keeps its reason, who decided it and when. */
+export interface StrikeRecord {
+  readonly id: string
+  readonly riderId: string
+  readonly orderId: string
+  readonly simAt: number
+  readonly reason: StrikeReason
+  readonly note?: string
+  /** The hub captain who decided it (synthetic name in the demo) */
+  readonly captainName: string
+  /** Ops overturned it (within 48 h) */
+  readonly overturnedSim?: number
+  /** The rider tapped "Ask for a review": Ops sees it flagged */
+  readonly reviewAskedSim?: number
+}
+
 /** A failed attempt Ops has to look at because its evidence is weak or the customer disputes it. */
 export interface ExceptionItem {
   readonly id: string
@@ -219,6 +270,16 @@ export interface ExceptionItem {
   readonly action?: ExceptionAction
   /** Resolved by the 24 h default, not by a person */
   readonly auto?: boolean
+  /** The hub captain did not decide in 24 h: a free re-attempt with no strike, counted on the captain's scorecard */
+  readonly captainMissed?: boolean
+  /** Who decides: the hub captain. Ops reads it and can overturn a strike within 48 h. */
+  readonly owner?: 'hub_captain'
+  readonly captainName?: string
+  /** The reason chip and note the captain gave (strike reason, or why a free re-attempt) */
+  readonly reason?: StrikeReason
+  readonly note?: string
+  /** Opened because the rider is on the enhanced-review step of the ladder (every failed attempt is reviewed), not because the evidence was weak */
+  readonly enhanced?: boolean
   readonly resolvedSim?: number
 }
 
@@ -248,8 +309,8 @@ export interface DayState {
   /** The append-only typed event log. The feed above is the human-readable view. */
   readonly events: readonly DomainEvent[]
   readonly exceptions: readonly ExceptionItem[]
-  /** Confirmed fake attempts per rider */
-  readonly strikes: Readonly<Record<string, number>>
+  /** The strike log: every strike with its reason and captain. A rider's active count is derived from it (30 days, not overturned). */
+  readonly strikeLog: readonly StrikeRecord[]
   readonly rejectedTransitions: readonly RejectedTransition[]
   /** Router assumptions, editable on the Desk */
   readonly router: RouterParams
@@ -288,8 +349,14 @@ export type Action =
   | { readonly type: 'reattempt'; readonly at: number; readonly orderId: string; readonly riderId?: string }
   /** A rescheduled order's new time has arrived: back into the bag (override; normally the clock does this). */
   | { readonly type: 'dispatchNextDay'; readonly at: number; readonly orderId: string }
-  /** Ops decision on a disputed attempt */
-  | { readonly type: 'resolveException'; readonly at: number; readonly orderId: string; readonly action: ExceptionAction }
+  /** The hub captain's decision on a disputed attempt. A strike needs a reason chip and corroboration. */
+  | { readonly type: 'resolveException'; readonly at: number; readonly orderId: string; readonly action: ExceptionAction; readonly reason?: StrikeReason; readonly note?: string }
+  /** Ops overturns a strike within 48 h of it being issued */
+  | { readonly type: 'overturnStrike'; readonly at: number; readonly strikeId: string }
+  /** The rider asks for a review of a strike: Ops sees it flagged */
+  | { readonly type: 'riderAskReview'; readonly at: number; readonly strikeId: string }
+  /** The hub captain releases or withholds a bonus held for the parking gap. Withholding needs a reason chip. */
+  | { readonly type: 'reviewBonus'; readonly at: number; readonly orderId: string; readonly decision: 'release' | 'withhold'; readonly reason?: StrikeReason; readonly note?: string }
   /** A customer return is opened on a delivered order: inside the 7-day window the bonus is clawed back */
   | { readonly type: 'openReturn'; readonly at: number; readonly orderId: string }
   /** Hub button: reconcile the riders' cash now instead of at 20:00 */

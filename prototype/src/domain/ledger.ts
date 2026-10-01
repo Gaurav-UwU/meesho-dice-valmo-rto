@@ -1,3 +1,4 @@
+import { activeCount, parkingGapReview } from './captain.ts'
 import { emit } from './events.ts'
 import { DAY_MS, codReconciliationTime, dayIndex } from './clock.ts'
 import { bookCost, feedAdd, riderName, WHATSAPP_COST, type S } from './helpers.ts'
@@ -36,7 +37,7 @@ export function normalFloorBreached(s: S, riderId: string): boolean {
 export function blockReason(s: S, orderId: string, riderId: string, at: number): string | undefined {
   const st = s.stops[orderId]
   if (st.suspectRiderIds?.includes(riderId) || (st.assessment?.bonusBlocked && st.attemptRiderId === riderId)) return 'an earlier attempt by this rider on this order looked fake'
-  if ((s.strikes[riderId] ?? 0) >= STRIKE_LIMIT) return `rider has ${STRIKE_LIMIT} confirmed fake attempts`
+  if (activeCount(s, riderId) >= STRIKE_LIMIT) return `rider has ${STRIKE_LIMIT} active strikes (confirmed fake attempts in the last 30 days)`
   const today = dayIndex(s.simNow)
   const earnedToday = s.ledger.filter((l) => l.riderId === riderId && l.status !== 'blocked' && l.status !== 'clawed_back' && dayIndex(l.deliveredSim) === today).reduce((t, l) => t + l.amount, 0)
   if (earnedToday + s.config.bonus > DAILY_CAP) return `daily bonus cap of ₹${DAILY_CAP} reached`
@@ -51,12 +52,16 @@ const setEntry = (s: S, id: string, patch: Partial<LedgerEntry>): S => ({ ...s, 
 export function accrueBonus(s: S, orderId: string, at: number): S {
   const st = s.stops[orderId]
   if (!st.flagged || st.arm !== 'bonus') return s
+  // A day with the bonus off (bonus 0) creates no ledger rows at all: fake-attempt control works the same without a bonus.
+  if (!(s.config.bonus > 0)) return s
   const amount = s.config.bonus
   const riderId = st.riderId
   const reason = blockReason(s, orderId, riderId, at)
   const cod = st.order.payment === 'COD'
+  // The parking gap: a weak earlier attempt by this same rider makes the bonus wait for the hub captain (it never blocks it outright).
+  const review = reason ? undefined : parkingGapReview(st, riderId)
   const status: LedgerStatus = reason ? 'blocked' : cod ? 'accrued' : 'pending'
-  const entry: LedgerEntry = { id: `l${s.nextId}`, orderId, riderId, amount, status, at, deliveredSim: s.simNow, cod, ...(reason ? { reason } : {}) }
+  const entry: LedgerEntry = { id: `l${s.nextId}`, orderId, riderId, amount, status, at, deliveredSim: s.simNow, cod, ...(reason ? { reason } : {}), ...(review ? { review } : {}) }
   let next: S = { ...s, ledger: [...s.ledger, entry], nextId: s.nextId + 1 }
   if (reason) {
     next = emit(next, at, 'BONUS_BLOCKED', { amount, reason }, { orderId, riderId })
@@ -64,6 +69,10 @@ export function accrueBonus(s: S, orderId: string, at: number): S {
   }
   next = emit(next, at, 'BONUS_ACCRUED', { amount }, { orderId, riderId })
   if (!cod) next = emit(next, at, 'BONUS_PENDING', { amount }, { orderId, riderId })
+  if (review?.state === 'waiting') {
+    next = emit(next, at, 'BONUS_HELD', { amount, why: review.why }, { orderId, riderId })
+    next = feedAdd(next, at, 'bonus', `₹${amount} for ${riderName(s, riderId)} waits for the hub captain: ${review.why}`, orderId)
+  }
   return feedAdd(
     next,
     at,
@@ -102,8 +111,10 @@ export function releaseDue(s: S, at: number): S {
   let next = s
   for (const l of s.ledger) {
     if (l.status !== 'pending' || next.simNow < l.deliveredSim + RETURN_WINDOW_MS) continue
-    next = setEntry(next, l.id, { status: 'released' })
-    next = emit(next, at, 'BONUS_RELEASED', { amount: l.amount }, { orderId: l.orderId, riderId: l.riderId })
+    // A captain's silence never costs an honest rider: a held bonus nobody decided is released by default when the 7-day window ends.
+    const defaulted = l.review?.state === 'waiting'
+    next = setEntry(next, l.id, { status: 'released', ...(defaulted && l.review ? { review: { ...l.review, state: 'default_released' as const, decidedSim: next.simNow } } : {}) })
+    next = emit(next, at, 'BONUS_RELEASED', { amount: l.amount, ...(defaulted ? { defaulted: true } : {}) }, { orderId: l.orderId, riderId: l.riderId })
     next = bookCost(next, at, 'Rescue bonus', l.amount, 'Valmo', 'bonus', l.orderId)
   }
   return next

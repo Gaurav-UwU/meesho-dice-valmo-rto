@@ -33,7 +33,10 @@ export const EVENT_FIELDS = {
   ATTEMPT_CHECK_ANSWERED: ['reached'],
   EXCEPTION_OPENED: ['confidence'],
   EXCEPTION_RESOLVED: ['action', 'auto'],
-  STRIKE: ['riderId'],
+  STRIKE: ['riderId', 'strikeId', 'reason', 'captainName'],
+  STRIKE_OVERTURNED: ['riderId', 'strikeId'],
+  REVIEW_ASKED: ['riderId', 'strikeId'],
+  RIDER_ESCALATED: ['riderId'],
   // Router
   ROUTER_LANE: ['lane', 'ev', 'inputs'],
   PARCEL_INSPECTED: ['unopened', 'sealOk', 'invoiceOutside', 'by'],
@@ -56,6 +59,9 @@ export const EVENT_FIELDS = {
   BONUS_RELEASED: ['amount'],
   BONUS_CLAWED_BACK: ['amount'],
   BONUS_BLOCKED: ['amount'],
+  /** The parking-gap hold: the bonus accrued but waits for the hub captain */
+  BONUS_HELD: ['amount', 'why'],
+  BONUS_REVIEWED: ['decision', 'captainName'],
   COD_RECONCILED: ['riderId', 'amount'],
   RETURN_OPENED: [],
   COST_BOOKED: ['line', 'amount', 'owner', 'stream'],

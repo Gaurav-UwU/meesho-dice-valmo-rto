@@ -57,3 +57,15 @@ export function inspectParcel(s: DayState, orderId: string, found: { unopened?: 
   const { unopened, sealOk, invoiceOutside } = rec.parcel
   return reduce(s, { type: 'deskInspect', at, parcelId: rec.id, unopened, sealOk, invoiceOutside, ...found })
 }
+
+/** A strike log with `n` strikes on a rider, as if a captain had decided them (for tests that start from "this rider already has strikes"). */
+export function forgedStrikes(s: DayState, riderId: string, n: number, simAt: number = s.simNow): DayState['strikeLog'] {
+  return Array.from({ length: n }, (_, i) => ({
+    id: `kt${i}`,
+    riderId,
+    orderId: s.stopOrder[i],
+    simAt,
+    reason: 'phone_far' as const,
+    captainName: 'Captain Test',
+  }))
+}
