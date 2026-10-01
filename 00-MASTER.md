@@ -2,7 +2,7 @@
 
 **Read this first in every new session.** It maps every file, says which one is current, and records the decisions that override older notes.
 For "where exactly we left off", read [`work/NEXT-SESSION.md`](work/NEXT-SESSION.md) next.
-Last updated: **2026-10-01 (2 Oct, Session 15: Desk v3 merged and deployed, 1,104 tests; next build is fake-attempt control, plan 24; the all-changes build prompt is `work/27-build-prompt-all-changes.md`)**.
+Last updated: **2 Oct, Session 16: prompt 27 built on branch `claude/bold-davinci-pw2kx4` (relative fake-attempt rule, hub-captain control, Live key split; 1,249 tests; NOT deployed). Earlier: (2 Oct, Session 15: Desk v3 merged and deployed, 1,104 tests; next build is fake-attempt control, plan 24; the all-changes build prompt is `work/27-build-prompt-all-changes.md`)**.
 
 ---
 
@@ -12,6 +12,7 @@ Last updated: **2026-10-01 (2 Oct, Session 15: Desk v3 merged and deployed, 1,10
 |---|---|
 | Competition | Meesho DICE 3.0 · Business track · Case: **Valmo, reduce RTO** · Team **GPS**, IIT Bombay |
 | Round 1 | ✅ Submitted (cover + 3 slides) → **shortlisted** |
+| **Session 16 build (2 Oct)** | **Built and tested, not deployed:** relative fake-attempt safety rule (Bonus no more than 2 points above Control), returns watched, ten correctness fixes, fake-attempt control with the hub captain (`/captain`, strike ladder, parking-gap hold, rider monitor, Hindi rider meter), Live rider/captain key split. Schema 8. Details and the pre-deploy checklist: Session 16 in `work/R2-HANDOVER.md` |
 | Round 2 deliverables | **10-slide deck (6–10 allowed)** + **working prototype** + 90s video |
 | Deadline | **Submit Sat 3 Oct 2026**; Sun 4 Oct is buffer only |
 | Mentor | Meesho mentor on Slack. **Mentor Connect call: Thu 1 Oct 2026, 3:30–4:00 pm IST.** Can't be rescheduled; at least one team member must attend; bring a prototype idea, wireframe, demo or WIP |
