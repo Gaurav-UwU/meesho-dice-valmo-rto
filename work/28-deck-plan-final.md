@@ -81,6 +81,21 @@ Round 1's pie says *where* RTOs happen. Round 2 research says *why*, and the why
 | **Not reached**: the system failed first | Unclear address 13 · far / wrong hub 9 (distance 15% → 22%) · **no real attempt 9**: one or two calls and leave, or "unavailable" logged without a knock (R1 rider quote; Valmo's contract already verifies failed attempts) | 13 + 9 + 9 = 31 | **R2 fake-attempt control** (hub captain; the hub earns only on delivery) · **P2** address fix | 4, 5, 8 |
 
 **The one-line insight:** *"Much of what is logged as 'refused' is not 'didn't want it', it's 'wasn't ready': the parcel came early and the cash wasn't there. You can't make a customer want an order, but you can make the moment right."*
+> **⚠ LAYOUT PLACEHOLDER: NOT DATA. Do not submit with these numbers presented as research.** Use them only to build the slide 4 chart now. Before submission, either replace them with the real survey split (with its n) or relabel the chart "Illustrative split; the pilot measures it".
+>
+> | Why the customer refused (share of refusals) | Placeholder % | Kind |
+> |---|---|---|
+> | Parcel came earlier than expected, no cash ready | 34 | Not ready |
+> | Not available at that moment / asked to come later | 12 | Not ready |
+> | Found it cheaper elsewhere | 22 | Not wanting |
+> | Changed mind / no longer needed | 20 | Not wanting |
+> | Took too long, bought elsewhere | 7 | Not wanting |
+> | Other | 5 | — |
+> | **Not ready ≈ 46 · Not wanting ≈ 49** | | |
+>
+> **Honest slide wording if no real split arrives:** *"Illustrative: if about half of refusals are 'not ready', that is ~18% of all RTOs (~3 RTO points, ~₹280 cr a year) fixable by a heads-up and a second chance. Even a third is ~2 points (~₹185 cr). The pilot's second-chance replies measure the real split from day 1."*
+> **If real answers arrive:** put the real %, and "COD buyer survey, n = X" under the chart.
+
 **What we don't claim:** how the 36% "refused" splits between *not ready* and *not wanting*. The second-chance replies ("different time" / "pay by UPI" = not ready; "cancel" = not wanting) measure it per hub from day 1. If the survey has the split, put it here.
 
 ---
