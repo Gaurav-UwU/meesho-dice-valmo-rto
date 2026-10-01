@@ -81,9 +81,10 @@ function chooseStore(): Store {
       getLiveKey: () => askOnce(tabSecrets, (q) => window.prompt(q), LIVE_KEY_STORAGE, 'Rider key (ask the team, or scan the QR code on the landing page)'),
       // The captain key is asked for only when a captain-level button is pressed, kept for this tab, and never put in a link or QR code.
       getCaptainKey: () => askOnce(tabSecrets, (q) => window.prompt(q), CAPTAIN_KEY_STORAGE, 'Captain key (the team’s own key; it is never in a QR code)'),
+      haveCaptainKey: () => tabSecrets.get(CAPTAIN_KEY_STORAGE),
       onKeyIsCaptain: (key) => {
         tabSecrets.set(CAPTAIN_KEY_STORAGE, key)
-        tabSecrets.set(LIVE_KEY_STORAGE, '')
+        tabSecrets.remove(LIVE_KEY_STORAGE)
         showToast('That was the captain key. It is kept for this tab only and never put in a QR code; phone QR codes need the rider key.')
       },
       getAdminToken: () => askOnce(tabSecrets, (q) => window.prompt(q), 'rescue-admin-token', 'Admin token (ask the team)'),

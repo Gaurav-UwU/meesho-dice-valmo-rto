@@ -154,6 +154,9 @@ export function handleHealth(raw: Readonly<Record<string, string | undefined>>):
   }
 }
 
+/** The most client keys a limiter remembers; past it the oldest are dropped */
+const MAX_KEYS = 5000
+
 export interface RateLimiter {
   (key: string): boolean
   /** How many keys are being remembered (for the pruning test) */
@@ -173,8 +176,9 @@ export function createRateLimiter(limit: number, windowMs: number, now: () => nu
   }
   const allow = (key: string): boolean => {
     const t = now()
-    // Sweep when a window has gone by, or when the map has grown large.
-    if (t - lastSweep >= windowMs || hits.size > 5000) sweep(t)
+    // Sweep at most once per window (so a flood of keys cannot make every request walk the whole map), and cap the map by dropping the oldest keys.
+    if (t - lastSweep >= windowMs) sweep(t)
+    if (hits.size > MAX_KEYS) for (const key of hits.keys()) { if (hits.size <= MAX_KEYS * 0.8) break; hits.delete(key) }
     const recent = (hits.get(key) ?? []).filter((x) => t - x < windowMs)
     if (recent.length >= limit) {
       hits.set(key, recent)

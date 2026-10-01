@@ -153,7 +153,8 @@ export interface Scorecard {
 }
 
 export function captainScorecard(s: DayState): Scorecard {
-  const resolved = s.exceptions.filter((e) => e.status === 'resolved')
+  // A dispute closed because a re-attempt was set up by hand (overtaken) was not decided by anyone: it is left out of both counts.
+  const resolved = s.exceptions.filter((e) => e.status === 'resolved' && e.overtaken !== true)
   const autoExpired = resolved.filter((e) => e.captainMissed === true).length
   const decided = resolved.length - autoExpired
   return {
@@ -223,7 +224,7 @@ export interface OutcomeKpis {
 
 export function outcomeKpis(s: DayState): OutcomeKpis {
   const attempts = s.events.filter((e) => e.type === 'ATTEMPT_LOGGED').length
-  const resolved = s.exceptions.filter((e) => e.status === 'resolved')
+  const resolved = s.exceptions.filter((e) => e.status === 'resolved' && e.overtaken !== true)
   const byPerson = resolved.filter((e) => e.captainMissed !== true)
   const recoveredItems = resolved.filter((e) => (e.action === 'free_reattempt' || e.action === 'strike') && isDelivered(s.stops[e.orderId]?.status ?? 'scored'))
   const costs = costLedger(s)

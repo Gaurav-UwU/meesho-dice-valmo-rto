@@ -84,9 +84,13 @@ export function strikeSupport(s: S, item: ExceptionItem): Corroboration {
     if (ev.calls === 0) signals.push('no calls were logged')
     if (ev.waitMin === 0) signals.push('no waiting time was logged')
   }
-  const others = s.events.filter(
-    (e) => e.type === 'EXCEPTION_OPENED' && e.riderId === item.riderId && e.orderId !== item.orderId && s.simNow - e.simAt < PATTERN_WINDOW_MS,
-  ).length
+  // Distinct OTHER orders disputed in the last 7 days, leaving out disputes the captain already confirmed valid: those are not a pattern.
+  const cleared = new Set(s.exceptions.filter((e) => e.action === 'confirm' && e.status === 'resolved' && e.overtaken !== true && e.auto !== true).map((e) => e.orderId))
+  const others = new Set(
+    s.events
+      .filter((e) => e.type === 'EXCEPTION_OPENED' && e.data.enhanced !== true && e.riderId === item.riderId && e.orderId !== item.orderId && e.orderId !== undefined && !cleared.has(e.orderId) && s.simNow - e.simAt < PATTERN_WINDOW_MS)
+      .map((e) => e.orderId),
+  ).size
   if (others >= PATTERN_MIN_OTHERS) signals.push(`a repeated pattern: ${others} other disputed attempts in 7 days`)
   return { ok: signals.length > 0, signals }
 }

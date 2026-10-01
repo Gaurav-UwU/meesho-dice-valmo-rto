@@ -1,5 +1,6 @@
 import { holdGates, PARCEL_GATES } from '../engine/router.ts'
 import { activeCount, BONUS_HOLD_WINDOW_MS, captainName, STRIKE_REASONS } from './captain.ts'
+import { STRIKE_LIMIT } from './ledger.ts'
 import { ruleHash } from '../engine/verdict.ts'
 import { eventsOf } from './events.ts'
 import { ledgerTotals } from './ledger.ts'
@@ -101,7 +102,7 @@ export function runAudit(s: DayState): readonly AuditCheck[] {
     return !STRIKE_REASONS.includes(k.reason) || k.captainName !== captainName(s.hub) || decided === undefined || decided.captainName !== k.captainName
   })
   const strikeLogOk = badStrikes.length === 0 && strikeEvents.length === s.strikeLog.length && s.exceptions.every((e) => e.action !== 'strike' || e.auto !== true)
-  const strikeBlocked = s.ledger.filter((l) => l.status === 'blocked' && l.reason?.includes('active strikes') && activeCount(s, l.riderId, l.deliveredSim) < 2)
+  const strikeBlocked = s.ledger.filter((l) => l.status === 'blocked' && l.reason?.includes('active strikes') && activeCount(s, l.riderId, l.deliveredSim) < STRIKE_LIMIT)
   const bonusOff = !(s.config.bonus > 0)
   const bonusRows = s.ledger.length + s.events.filter((e) => e.type.startsWith('BONUS_')).length
   const heldBad = s.ledger.filter((l) => {
@@ -109,7 +110,8 @@ export function runAudit(s: DayState): readonly AuditCheck[] {
     if (r === undefined) return false
     if (r.state === 'withheld') return r.reason === undefined || !STRIKE_REASONS.includes(r.reason) || r.captainName === undefined || l.status !== 'blocked'
     if (r.state === 'default_released') return r.decidedSim === undefined || r.decidedSim < l.deliveredSim + BONUS_HOLD_WINDOW_MS || l.status !== 'released'
-    if (r.state === 'waiting') return l.status !== 'pending' && l.status !== 'accrued'
+    // A held bonus whose order was returned inside the window is clawed back like any other: it leaves the hold, it is not an error.
+    if (r.state === 'waiting') return l.status !== 'pending' && l.status !== 'accrued' && l.status !== 'clawed_back'
     return false
   })
 

@@ -44,8 +44,8 @@ export function retryOne(s: S, orderId: string, at: number, riderId?: string): {
 export function overtakeException(s: S, orderId: string, at: number): S {
   const item = openExceptionFor(s, orderId)
   if (!item) return s
-  const next: S = { ...s, exceptions: s.exceptions.map((e) => (e.id === item.id ? { ...e, status: 'resolved', action: 'confirm', auto: false, resolvedSim: s.simNow } : e)) }
-  return emit(next, at, 'EXCEPTION_RESOLVED', { action: 'confirm', auto: false }, { orderId, riderId: item.riderId })
+  const next: S = { ...s, exceptions: s.exceptions.map((e) => (e.id === item.id ? { ...e, status: 'resolved', action: 'confirm', auto: false, overtaken: true, resolvedSim: s.simNow } : e)) }
+  return emit(next, at, 'EXCEPTION_RESOLVED', { action: 'confirm', auto: false, overtaken: true }, { orderId, riderId: item.riderId })
 }
 
 export const openExceptionFor = (s: S, orderId: string): ExceptionItem | undefined => s.exceptions.find((e) => e.orderId === orderId && e.status === 'open')

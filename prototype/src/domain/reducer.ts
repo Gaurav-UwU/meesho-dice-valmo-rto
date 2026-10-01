@@ -5,7 +5,7 @@ import { flagBonusEligible, rescueScore } from '../engine/rescue.ts'
 import { MINUTE_MS, nextDayStart } from './clock.ts'
 import { closePilot } from './close.ts'
 import { emit } from './events.ts'
-import { feedAdd, moveOrder, msgAdd, patchStop, riderName, sendProactive, tap, type S } from './helpers.ts'
+import { bookSecondChanceLeg, feedAdd, moveOrder, msgAdd, patchStop, riderName, sendProactive, tap, type S } from './helpers.ts'
 import { accrueBonus, clawBack, reconcileCod } from './ledger.ts'
 import { deliveredStatus, isDelivered } from './lifecycle.ts'
 import {
@@ -350,7 +350,9 @@ function reattempt(s: S, a: Extract<Action, { type: 'reattempt' }>): S {
 function dispatchNextDay(s: S, a: Extract<Action, { type: 'dispatchNextDay' }>): S {
   const st = s.stops[a.orderId]
   if (!st || st.status !== 'rescheduled') return s
-  const next = moveOrder(s, a.orderId, 'out_for_delivery', { at: a.at, reason: 'rescheduled time arrived' })
+  let next = moveOrder(s, a.orderId, 'out_for_delivery', { at: a.at, reason: 'rescheduled time arrived' })
+  // A second chance with a different time spends its ₹21 leg when the order goes back out, by the clock or by this override.
+  if (st.viaSecondChance && next.stops[a.orderId].status === 'out_for_delivery') next = bookSecondChanceLeg(next, a.orderId, a.at)
   return feedAdd(next, a.at, 'attempt', `${st.order.awb}: the rescheduled time has come, back in ${riderName(s, st.riderId)}'s bag as attempt ${st.failedAttempts + 1}`, a.orderId)
 }
 

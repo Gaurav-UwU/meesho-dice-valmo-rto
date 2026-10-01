@@ -8,6 +8,7 @@ import type { LatLng } from '../../src/engine/geo.ts'
 import type { HubGeo, HubId } from '../../src/engine/types.ts'
 import { dayShape } from '../../src/store/guards.ts'
 import type { ActionInput } from '../../src/store/types.ts'
+import { CUSTOMER_ACTIONS } from '../../src/domain/roles.ts'
 import { actionFromReply, formatOutbound } from './inbound.ts'
 import { hashOtp } from './otp.ts'
 import { toStorable } from './sanitize.ts'
@@ -26,10 +27,10 @@ export interface Db {
   findBinding(phone: string): Promise<Binding | null>
   bindingsFor(hubId: HubId): Promise<readonly Binding[]>
   saveBinding(b: Binding): Promise<void>
-  /** Has this Twilio MessageSid already been applied? */
-  wasSeen(messageSid: string): Promise<boolean>
-  /** Remember a Twilio MessageSid once its reply was applied. */
+  /** Claim a Twilio MessageSid before applying its reply. Returns false if it was already claimed (a retry or a replay): the claim is atomic. */
   markSeen(messageSid: string): Promise<boolean>
+  /** Give a claim back when the reply could not be applied (a busy day), so Twilio's retry is applied. */
+  releaseSeen(messageSid: string): Promise<void>
 }
 
 export interface Deps {
@@ -152,7 +153,6 @@ async function mutate(deps: Deps, hubId: HubId, change: (s: DayState) => DayStat
   return fail('The day is busy, please try again')
 }
 
-const CUSTOMER_ACTIONS = new Set<ActionInput['type']>(['customerReply', 'customerPayment', 'customerReach', 'customerAskedReschedule', 'customerSecondChance'])
 
 /** The order a customer action is about (a parcel id is "P-" + the order id). */
 const customerOrderOf = (input: ActionInput): string | undefined => {
@@ -248,27 +248,35 @@ export async function handleInbound(
   location?: LatLng,
   messageSid?: string,
 ): Promise<Result | { readonly ok: true; readonly ignored: string }> {
-  // Twilio retries and replays carry the same MessageSid: apply each reply once. It is recorded only AFTER the reply was applied, so a reply
-  // that failed (a busy day) is not lost: the retry is applied.
-  if (messageSid && (await deps.db.wasSeen(messageSid))) return { ok: true, ignored: 'duplicate' }
+  // Twilio retries and replays carry the same MessageSid: apply each reply once. The claim is atomic (two deliveries at once cannot both win),
+  // and it is given back if the reply could not be applied, so a reply lost to a busy day is applied when Twilio retries.
+  if (messageSid && !(await deps.db.markSeen(messageSid))) return { ok: true, ignored: 'duplicate' }
+  try {
+    const result = await applyInbound(deps, phone, body, location)
+    if (messageSid && 'ok' in result && result.ok === false) await deps.db.releaseSeen(messageSid)
+    return result
+  } catch (e) {
+    if (messageSid) await deps.db.releaseSeen(messageSid)
+    throw e
+  }
+}
+
+async function applyInbound(
+  deps: Deps,
+  phone: string,
+  body: string,
+  location?: LatLng,
+): Promise<Result | { readonly ok: true; readonly ignored: string }> {
   const binding = await deps.db.findBinding(phone)
   if (!binding) return { ok: true, ignored: 'unknown sender' }
   const day = await deps.db.loadDay(binding.hubId)
-  if (!day || dayShape(day) !== 'ok') {
-    if (messageSid) await deps.db.markSeen(messageSid)
-    return { ok: true, ignored: 'no day' }
-  }
+  if (!day || dayShape(day) !== 'ok') return { ok: true, ignored: 'no day' }
   const offers = day.messages.filter((m) => m.orderId === binding.orderId && m.direction === 'out' && m.buttons)
   const action = actionFromReply(
     { orderId: binding.orderId, lastOffer: offers.at(-1), parcelId: parcelForOrder(day, binding.orderId)?.id },
     body,
     location,
   )
-  if (!action) {
-    if (messageSid) await deps.db.markSeen(messageSid)
-    return { ok: true, ignored: 'not understood' }
-  }
-  const result = await runAction(deps, binding.hubId, action, 'webhook')
-  if (messageSid && result.ok) await deps.db.markSeen(messageSid)
-  return result
+  if (!action) return { ok: true, ignored: 'not understood' }
+  return runAction(deps, binding.hubId, action, 'webhook')
 }

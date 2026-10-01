@@ -23,9 +23,10 @@ export function weakWhy(t: Translate, weak: BonusReview['weak']): string {
 /** The one line the rider sees about a bonus under the parking-gap check, or undefined when there is nothing to say */
 export function holdLine(t: Translate, amount: number, review: BonusReview | undefined, status: string): string | undefined {
   if (review === undefined) return undefined
+  // Once the bonus left the hold (for example clawed back after a return) there is nothing waiting to say.
+  if (review.state === 'waiting' && status !== 'accrued' && status !== 'pending') return undefined
   if (review.state === 'waiting') return `₹${amount} ${t('waitingReview')}: ${weakWhy(t, review.weak)}`
   if (review.state === 'withheld') return `₹${amount} ${t('withheldBy')}${review.reason ? `: ${t(REASON_KEY[review.reason])}` : ''}`
   if (review.state === 'default_released') return `₹${amount} ${t('releasedByDefault')}`
-  void status
   return undefined
 }

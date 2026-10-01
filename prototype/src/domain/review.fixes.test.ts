@@ -288,3 +288,37 @@ describe('1c(ix): a held parcel with no rider bag space falls through to the 48 
     expect(eventsOf(late, 'HOLD_EXPIRED')).toHaveLength(1)
   })
 })
+
+describe('code review of 2 Oct: follow-up fixes', () => {
+  it('a dispute closed because a re-attempt was set up by hand is not a captain decision: the scorecard and KPIs leave it out', async () => {
+    const { captainScorecard, outcomeKpis } = await import('./captainView.ts')
+    let s = reduce(day, { type: 'riderAttempt', at: AT + 1, orderId: bonusId, claim: 'customer_unavailable', evidence: { gpsDistM: 900, calls: 0, waitMin: 0 } })
+    s = reduce(s, { type: 'reattempt', at: AT + 2, orderId: bonusId })
+    expect(s.exceptions[0]).toMatchObject({ status: 'resolved', overtaken: true })
+    expect(captainScorecard(s)).toMatchObject({ opened: 1, decided: 0, autoExpired: 0, decidedInTimeShare: undefined })
+    expect(outcomeKpis(s)).toMatchObject({ cleared: 0, autoExpired: 0 })
+  })
+
+  it('a held bonus whose order is returned is clawed back cleanly: the Audit stays green and the rider is no longer told it is waiting', async () => {
+    const { holdLine } = await import('../pages/rider/captainText.ts')
+    const { translator } = await import('../pages/rider/i18n.ts')
+    const { setPayment } = await import('./testkit.ts')
+    let s = setPayment(day, bonusId, 'PREPAID')
+    s = reduce(s, { type: 'riderAttempt', at: AT + 1, orderId: bonusId, claim: 'customer_unavailable', evidence: { gpsDistM: 150, calls: 0, waitMin: 2 } })
+    s = reduce(s, { type: 'reattempt', at: AT + 2, orderId: bonusId })
+    s = deliverOrder(s, bonusId, '2468', AT + 10)
+    expect(s.ledger[0].review?.state).toBe('waiting')
+    s = reduce(s, { type: 'openReturn', at: AT + 20, orderId: bonusId })
+    expect(s.ledger[0].status).toBe('clawed_back')
+    expect(runAudit(s).find((c) => c.id === 'bonus-hold-decided')?.ok).toBe(true)
+    expect(holdLine(translator('en'), 15, s.ledger[0].review, s.ledger[0].status)).toBeUndefined()
+  })
+
+  it('the dispatchNextDay override also books the ₹21 second-chance leg', () => {
+    const refused = forceParcel(refuseOrder(day, bonusId), bonusId, { reason: 'not_home' })
+    let s = run(refused, { type: 'deskSecondChance', at: AT + 2, parcelId: pid }, { type: 'customerSecondChance', at: AT + 3, parcelId: pid, accept: true, option: 'tomorrow' })
+    s = reduce(s, { type: 'dispatchNextDay', at: AT + 4, orderId: bonusId })
+    expect(s.stops[bonusId].status).toBe('out_for_delivery')
+    expect(costLedger(s).find((c) => c.line === 'Second-chance re-attempt leg')).toMatchObject({ amount: 21, count: 1 })
+  })
+})

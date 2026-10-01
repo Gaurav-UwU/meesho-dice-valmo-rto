@@ -274,6 +274,8 @@ export interface ExceptionItem {
   readonly auto?: boolean
   /** The hub captain did not decide in 24 h: a free re-attempt with no strike, counted on the captain's scorecard */
   readonly captainMissed?: boolean
+  /** A re-attempt was set up by hand while the dispute was open: it closed without a decision, so it is neither a captain decision nor a clearance */
+  readonly overtaken?: boolean
   /** Who decides: the hub captain. Ops reads it and can overturn a strike within 48 h. */
   readonly owner?: 'hub_captain'
   readonly captainName?: string

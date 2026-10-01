@@ -28,7 +28,7 @@ const hoursLeft = (state: DayState, item: ExceptionItem): number => Math.max(0, 
 export function ExceptionQueue({ state, onSelect }: Props) {
   const send = useSend(state.hub.id)
   const open = state.exceptions.filter((e) => e.status === 'open')
-  const done = state.exceptions.filter((e) => e.status === 'resolved')
+  const done = state.exceptions.filter((e) => e.status === 'resolved' && e.overtaken !== true)
   const strikes = state.strikeLog
   return (
     <section className="ops-card" aria-label="Exception queue">

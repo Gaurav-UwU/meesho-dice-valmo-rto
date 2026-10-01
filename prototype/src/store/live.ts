@@ -27,6 +27,8 @@ export interface LiveStoreOptions {
   readonly getLiveKey: () => string | undefined
   /** The CAPTAIN key: needed for the captain, desk, clock and pilot actions. Asked for when such a button is first pressed. */
   readonly getCaptainKey?: () => string | undefined
+  /** The captain key if this device already has one: never asks. Used for rider-level taps so a device that holds the captain key is not asked for a rider key too. */
+  readonly haveCaptainKey?: () => string | undefined
   /** The server said the key given as the rider key is really the captain key: keep it out of the rider slot so it can never reach a QR code */
   readonly onKeyIsCaptain?: (key: string) => void
   readonly getAdminToken: () => string | undefined
@@ -210,7 +212,7 @@ export function createLiveStore(opts: LiveStoreOptions): Store {
    */
   const liveHeaders = (type?: ActionInput['type']): Record<string, string> => {
     const captainLevel = type !== undefined && !roleCan('rider', type)
-    const key = captainLevel ? (opts.getCaptainKey?.() ?? opts.getLiveKey()) : (opts.getLiveKey() ?? opts.getCaptainKey?.())
+    const key = captainLevel ? (opts.getCaptainKey?.() ?? opts.getLiveKey()) : (opts.haveCaptainKey?.() ?? opts.getLiveKey() ?? opts.getCaptainKey?.())
     return key ? { 'x-live-key': key } : {}
   }
 

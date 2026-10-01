@@ -297,6 +297,13 @@ describe('handleTwilio', () => {
     expect(h.db.days.get('lucknow')!.stops[orderId].replies).toEqual(['home'])
   })
 
+  it('two deliveries of the same MessageSid at once: only one applies (the claim is atomic)', async () => {
+    const { h, orderId } = await boundHarness()
+    const params = { From: 'whatsapp:+919999900001', Body: '1', MessageSid: 'SMtwin' }
+    await Promise.all([handleTwilio(form(params), h.deps, cfg), handleTwilio(form(params), h.deps, cfg)])
+    expect(h.db.days.get('lucknow')!.stops[orderId].replies).toEqual(['home'])
+  })
+
   it('ignores a garbage location and still answers Twilio with 200', async () => {
     const { h } = await boundHarness()
     const res = await handleTwilio(form({ From: 'whatsapp:+919999900001', Body: 'hello', Latitude: 'abc', Longitude: '' }), h.deps, cfg)
@@ -319,6 +326,12 @@ describe('handleTwilio', () => {
 })
 
 describe('rate limiter', () => {
+  it('never remembers more than a bounded number of keys, even inside one window', () => {
+    const allow = createRateLimiter(5, 60_000, () => 1)
+    for (let i = 0; i < 6000; i++) allow(`ip-${i}`)
+    expect(allow.size()).toBeLessThanOrEqual(5000)
+  })
+
   it('prunes keys that have gone quiet, so the map cannot grow forever', () => {
     let t = 0
     const allow = createRateLimiter(5, 1000, () => t)

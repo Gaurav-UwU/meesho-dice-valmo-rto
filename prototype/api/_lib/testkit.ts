@@ -35,7 +35,7 @@ export function fakeDb(): FakeDb {
     findBinding: async (phone) => bindings.get(phone) ?? null,
     bindingsFor: async (hubId) => [...bindings.values()].filter((b) => b.hubId === hubId),
     saveBinding: async (b) => void bindings.set(b.phone, b),
-    wasSeen: async (sid) => seen.has(sid),
+    releaseSeen: async (sid) => void seen.delete(sid),
     markSeen: async (sid) => {
       if (seen.has(sid)) return false
       seen.add(sid)

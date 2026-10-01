@@ -114,13 +114,21 @@ describe('a strike needs corroboration, not the customer’s word alone', () => 
 
   it('a repeated pattern (two other disputed attempts in 7 days) corroborates a customer-only dispute', () => {
     let s = day
-    s = decide(attempt(s, ofBonus[0], FAR, AT + 10), ofBonus[0], 'confirm', {}, AT + 11)
-    s = decide(attempt(s, ofBonus[1], FAR, AT + 20), ofBonus[1], 'confirm', {}, AT + 21)
+    s = decide(attempt(s, ofBonus[0], FAR, AT + 10), ofBonus[0], 'free_reattempt', {}, AT + 11)
+    s = decide(attempt(s, ofBonus[1], FAR, AT + 20), ofBonus[1], 'free_reattempt', {}, AT + 21)
     const third = never(attempt(s, ofBonus[2], AT_DOOR, AT + 30), ofBonus[2], AT + 31)
     const support = strikeSupport(third, third.exceptions.find((e) => e.status === 'open')!)
     expect(support.ok).toBe(true)
     expect(support.signals.join(' ')).toMatch(/repeated pattern/)
     expect(decide(third, ofBonus[2], 'strike', { reason: 'repeated_pattern' }, AT + 32).strikeLog).toHaveLength(1)
+  })
+
+  it('disputes the captain already confirmed valid are NOT a pattern, and two exceptions on one order count once', () => {
+    let s = day
+    s = decide(attempt(s, ofBonus[0], FAR, AT + 10), ofBonus[0], 'confirm', {}, AT + 11)
+    s = decide(attempt(s, ofBonus[1], FAR, AT + 20), ofBonus[1], 'confirm', {}, AT + 21)
+    const third = never(attempt(s, ofBonus[2], AT_DOOR, AT + 30), ofBonus[2], AT + 31)
+    expect(strikeSupport(third, third.exceptions.find((e) => e.status === 'open')!).ok).toBe(false)
   })
 
   it('a free re-attempt and a confirm need no corroboration and no reason', () => {

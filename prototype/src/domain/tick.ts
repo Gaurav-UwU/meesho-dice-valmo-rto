@@ -73,8 +73,8 @@ export function tick(s: S, at: number): TickSummary {
       next = resolveExceptionFor(next, item.orderId, 'free_reattempt', at, true)
     } else if (openExceptionFor(next, item.orderId)) {
       // The order moved on by itself (a re-attempt was scheduled by hand): the dispute is overtaken, not decided.
-      next = { ...next, exceptions: next.exceptions.map((e) => (e.id === item.id ? { ...e, status: 'resolved', action: 'confirm', auto: true, resolvedSim: next.simNow } : e)) }
-      next = emit(next, at, 'EXCEPTION_RESOLVED', { action: 'confirm', auto: true }, { orderId: item.orderId, riderId: item.riderId })
+      next = { ...next, exceptions: next.exceptions.map((e) => (e.id === item.id ? { ...e, status: 'resolved', action: 'confirm', auto: true, overtaken: true, resolvedSim: next.simNow } : e)) }
+      next = emit(next, at, 'EXCEPTION_RESOLVED', { action: 'confirm', auto: true, overtaken: true }, { orderId: item.orderId, riderId: item.riderId })
     }
   }
 

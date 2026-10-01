@@ -3,6 +3,8 @@ import type { KeyValue } from './local.ts'
 export interface TabSecrets {
   get(name: string): string | undefined
   set(name: string, value: string): void
+  /** Forget a secret (so it is not asked for again as if it were still known) */
+  remove(name: string): void
 }
 
 /**
@@ -20,6 +22,14 @@ export function createTabSecrets(storage: KeyValue | undefined): TabSecrets {
         // fall through to memory
       }
       return memory.get(name)
+    },
+    remove(name) {
+      memory.delete(name)
+      try {
+        storage?.setItem(name, '')
+      } catch {
+        // memory has it
+      }
     },
     set(name, value) {
       memory.set(name, value)

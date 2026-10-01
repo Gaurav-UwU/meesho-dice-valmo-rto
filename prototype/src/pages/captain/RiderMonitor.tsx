@@ -62,7 +62,7 @@ export function RiderMonitor({ state }: { readonly state: DayState }) {
               <th scope="col">Disputed</th>
               <th scope="col">Strikes</th>
               <th scope="col">Disputed rate</th>
-              <th scope="col">Held ₹</th>
+              <th scope="col">Deferrals</th>
               <th scope="col">Status</th>
               <th scope="col">Last decision</th>
             </tr>
@@ -81,7 +81,7 @@ export function RiderMonitor({ state }: { readonly state: DayState }) {
                   <td>{r.disputed}</td>
                   <td>{r.strikes}</td>
                   <td>{r.attempts === 0 ? '—' : pct(r.disputedRate)}</td>
-                  <td title="Deliveries where the same rider's own earlier attempt was weak (the parking-gap check)">{r.deferrals}</td>
+                  <td title="Deliveries where the same rider's own earlier attempt was weak (the parking-gap check), a count">{r.deferrals}</td>
                   <td>
                     <span className={`ops-chip ${TONE[r.status]}`}>{r.status}</span>
                     {r.status !== 'Clear' ? <div className="ops-muted">{r.why}</div> : null}
