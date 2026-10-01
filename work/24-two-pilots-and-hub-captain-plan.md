@@ -56,10 +56,33 @@ Captain queue lists only that hub's cases; a strike needs a reason; 24 h auto-ex
 ### In plain words
 Two **separate** pilots run at the same time, each with its own Ops console, its own riders (paired on past delivery rate, coin flip in each pair), its own Control group and its own locked rule. A **Compare** view then says which bonus fits the business objective.
 
+### REVISION (2 Oct, later): a "Run a parallel pilot" button instead of a fixed A and B
+Gaurav's request: a **button on `/pilot`** so he can run a parallel pilot on **any one thing** (the top 10% cut, the bonus price, ...) while **everything else stays exactly as it is now**, with **a small description of each thing**.
+**This replaces the fixed "A = ₹15, B = ₹10" setup on the `/pilot` page.** The fixed hub-cluster split (Powai + Lucknow vs Whitefield + Gaya) is kept only for the optional two-Ops-consoles step.
+
+**How it works**
+1. A secondary button **"Run a parallel pilot"** sits in the step 1 card. **Pilot A is whatever the page shows now** (the user's current settings), unchanged.
+2. The button opens a small panel: **"Change one thing"**. Pick one lever; its description appears; set its new value; the panel shows the one-line difference: "Pilot B is the same as Pilot A, except: Bonus ₹15 → ₹10".
+3. **Pilot B = Pilot A's settings with that one lever patched, run on its own riders** (its own seed, its own pairs and Control, its own locked rule). Nothing else moves. Pilot A's numbers are identical with or without B (a test).
+4. The page then shows **two verdict cards side by side** (stacked on a phone), then **"Which one is better?"** (the winner rule, the "can't tell" warning, the −3 RTO points flag, the safety comparison). **"Remove parallel pilot"** returns to the single-pilot page.
+5. A **second lever** can be added under "Also change another thing (not recommended)"; the page then says **"two things changed, so we can't tell which one did it"**.
+
+**The levers and their short descriptions (these exact texts show in the panel and as a hint)**
+| Lever | Description shown | What it tests | Default for Pilot B |
+|---|---|---|---|
+| **Bonus per delivery (₹)** | "What a rider earns for each delivered flagged order. A smaller bonus costs less and breaks even sooner, but may motivate riders less." | Which price gives the best net ₹. | Half the way down, ₹10. The assumed effect scales with the bonus at **0.8 points per ₹** (₹15 gives +12, ₹10 gives +8). **A guess, editable.** |
+| **Who gets the bonus (top 10% / top 20%)** | "How many of the day's riskiest orders are flagged. A tighter cut picks orders that fail more often, so each ₹ goes further and break-even is lower (+7.3 vs +8.6), but it reaches fewer orders, so the yearly prize and RTO points are smaller." | Reach against efficiency. | The other cut. The assumed effect stays the same as Pilot A's. **A guess, editable.** |
+| **Pilot size (riders per hub, days)** | "How many riders and days the pilot gets. More means a surer answer for the same bonus." | How big a pilot must be to be decisive. | Doubles the riders per hub. The bonus and cut stay as they are. |
+| *Not offered yet: pay timing* (the 7-day hold, split pay) | "Needs a model of how a delay changes rider effort. We have no honest way to simulate that yet, so it is a real-pilot lever, not a simulated one." | Shown greyed out with this sentence. | — |
+"How much the bonus helps" is **not a lever** (it is the assumption each pilot measures); it appears as an editable **assumed effect for Pilot B** with the default rule above.
+
+**What is built for this** (thinner than the earlier plan): no new simulation engine. Pilot B is `derivePilotView` run on **Pilot A's `Controls` with one patch and a different seed**. New: `pilot/parallel.ts` (the lever list with the description texts and the default rules, `applyLever`, `compareViews`), `pilot/ParallelPanel.tsx` (the button and panel), `pilot/Compare.tsx` ("Which one is better?"), and the page wiring in `Pilot.tsx`. `compareViews` uses each pilot's pair gaps and spread, so the difference's range is √(SE_A² + SE_B²) and the winner rule is as below. In the simulator each pilot gets its own full set of riders (so each has about 24 pairs); say on the page that **a real parallel pilot needs the riders of about 8 hubs, assigned by hub**.
+**Tests first:** the panel opens and lists the levers with their texts; choosing a lever shows the one-line difference; Pilot B equals Pilot A with only that lever changed; Pilot A is unchanged with B on or off; the default effect rules (0.8 per ₹; same effect for the cut); two levers show the "can't tell which" warning; every winner-rule branch; the "reaches −3 points" flag; the greyed pay-timing row; "Remove" restores the page; no statistics words; 375 px layout.
+
 ### The design point that matters most
 **Compare each pilot only with its own Control.** Never compare Pilot A's riders directly with Pilot B's: that would mix bonus size with who the riders are. Compare in rupees: **net ₹ per 100 flagged orders, ₹ crore a year, RTO points saved, cost per successful delivery**.
 
-### Settled decisions
+### Settled decisions (Q2, Q3 and Q4 are now **superseded on the `/pilot` page by the revision above**; they still describe the optional two Ops consoles in step 3)
 | # | Decision |
 |---|---|
 | Q1 | **Objective:** net ₹ a year decides the winner (subject to GO); the panel also **flags "reaches the −3 RTO points target? yes/no"** (top 20% needs about +15 per 100; top 10% would need about +30, which is unrealistic). |
