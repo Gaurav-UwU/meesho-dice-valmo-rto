@@ -39,6 +39,17 @@
 - Strikes **expire after 30 days** (rolling). A strike can be **overturned by Ops within 48 h** (the rider sees "overturned"); a rider can tap **"Ask for a review"**, which flags the strike for Ops. Every strike keeps its reason, evidence and who decided.
 - A strike on a **Control** rider counts exactly the same (the ladder has nothing to do with the bonus).
 
+### 3.3b Closing the "parking" gap (agreed by Gaurav, 2 Oct)
+- **The gap:** under the any-attempt rule, a rider can log a weak "customer unavailable" from near the door today, get the same order back tomorrow (retries go to the same rider) and still collect ₹15. A fake attempt pays only through this path.
+- **The fix (the any-attempt rule is unchanged):** when a flagged order is **delivered by the same rider whose earlier attempt on it was weak** (not high confidence), the ₹15 accrues but **waits for the hub captain's review** inside the existing 7-day pending window.
+  - **Auto-release** if the customer confirmed on WhatsApp that the rider came. Only unconfirmed weak attempts go to the captain.
+  - The captain sees the earlier attempt's GPS distance, calls, minutes waited and the customer's answer, and **releases or withholds** (withholding needs a reason chip, like a strike).
+  - **If the captain has not decided by the end of the 7-day window, the ₹15 is released** (a captain's silence never costs an honest rider).
+  - The rider sees why: "₹15 waiting for review: your earlier attempt had no calls logged".
+  - **Deferrals per rider** (weak attempt, then the same rider delivers) are counted in the rider monitor.
+- **Tune before day 1:** measure in the 8-week baseline how many deliveries would be held; if too many, tighten what counts as "weak".
+- **Tests:** a weak attempt then a same-rider delivery holds the ₹15; a high-confidence attempt pays normally; a customer "rider came" auto-releases; a captain release or withhold works and withhold needs a reason; no decision by day 7 releases; another rider delivering is paid normally; a bonus-off day creates nothing.
+
 ### 3.4 Monitoring: the captain's rider monitor
 - A table of every rider at the hub: **attempts, disputed, confirmed (strikes), disputed rate, the hub median, status** (Clear / **Watch** / Warning / Escalated), last decision. Click a rider for a **timeline** of every disputed attempt and decision.
 - **Watch rule (explainable, rule-based):** at least **3 disputed attempts in 7 days and a disputed rate at least 2× the hub median** (median over riders with at least 5 attempts). The card says why in one line.
