@@ -112,3 +112,16 @@ COD 80% of Valmo orders · COD RTO 20% · prepaid RTO 5% · forward ₹50 (FM Hu
 | "Shiprocket 2026 AI address-quality alerts / checks at order creation" | ❌ not found (address correction at reattempt is an old feature) | **DO NOT USE** |
 | "Sep 2026 Shiprocket intelligence layer choosing courier, node, route" | ❌ not found as stated | **DO NOT USE** |
 | "NDR recovery 30–40%" | ⚠️ ClickPost blog, expected result, no source | Don't use |
+
+## Added 2 Oct for deck plan 28 (carried over from `01-valmo-research.md`, `06-…md` and `07-problem-breakdown.md`)
+| Item | Source | Cred. |
+|---|---|---|
+| Predicting *when* the customer is home: up to 10.2% delivery-cost savings | Kandula, Krishnamoorthy & Roy (2021), "A prescriptive analytics framework for efficient E-commerce order delivery", *Decision Support Systems* 149:113584, doi:10.1016/j.dss.2021.113584 | P (academic) |
+| Prior art: offering the return cost as a discount to a nearby buyer | Amazon US 8,615,473 B2 (filed 2012), patents.google.com/patent/US8615473B2 | P |
+| Dark stores at last-mile delivery centres | Ecom Express DRHP p.181 | P |
+| Doorstep QC on returns: AJIO resaleable returns 25% → 98% | Delhivery QC-RVP (vendor-reported; **URL to add**) | C/B, say "vendor-reported" |
+| Carrier may sell unclaimed goods only after notice | Carriage by Road Act 2007 s.15 | P |
+| E-way bill threshold ₹50,000 | CGST Rules, Rule 138 | P |
+| Node margins: a large 3PL nets ~15 paise an order (2.86% EBITDA) | Shadowfax financials, as cited in `06-solution-inventory-recovery.md` (**URL to add**; else say "reportedly") | S |
+| Vendor RTO claims are self-reported (Delhivery "up to 20%", GoKwik, Shadowfax "almost 60%") | Vendor sites, see `01-valmo-research.md` §C | C (self-reported; that is the point) |
+| Meesho allocates lanes by lowest cost, no fixed Valmo share | Q1 FY27 earnings call, 23 Jul 2026 (see fact-check log above) | P |
