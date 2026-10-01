@@ -34,11 +34,11 @@ describe('Landing: one job, the demo', () => {
     expect(screen.getByRole('link', { name: 'Skip to the decision tool' }).getAttribute('href')).toBe('/pilot')
   })
 
-  it('tells you to open three windows, each in a new tab, on the Lucknow hub', () => {
+  it('tells you to open the windows (Ops, Rider, Customer and the hub captain), each in a new tab, on the Lucknow hub', () => {
     show()
-    const setup = screen.getByRole('region', { name: /Open three windows/ })
+    const setup = screen.getByRole('region', { name: /Open the windows/ })
     const links = within(setup).getAllByRole('link')
-    expect(links).toHaveLength(3)
+    expect(links).toHaveLength(4)
     for (const a of links) {
       expect(a.getAttribute('target')).toBe('_blank')
       expect(a.getAttribute('rel')).toContain('noopener')

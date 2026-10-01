@@ -12,6 +12,7 @@ const WINDOWS = [
   { route: '/ops', title: 'Ops console', who: 'On a laptop', why: 'The map, the clock, the queues and the numbers.' },
   { route: '/rider', title: 'Rider app', who: 'On a phone or a narrow window', why: 'Deliver, attempt or refuse a stop.' },
   { route: '/customer', title: 'Customer phone', who: 'A second window', why: 'The WhatsApp chat, and where the OTP appears.' },
+  { route: '/captain', title: 'Hub captain', who: 'A fourth window (optional)', why: 'Decides disputed attempts: confirm, free re-attempt or strike with a reason.' },
 ] as const
 
 const switchMode = (mode: 'demo' | 'live'): void => window.location.assign(`/?mode=${mode}`)
@@ -50,7 +51,7 @@ export function Setup() {
       <div className="land-setup-main">
         <h2 id="land-setup-h">
           <span className="land-badge">Before you start</span>
-          Open three windows
+          Open the windows
         </h2>
         <SyncBadge hubId={DEFAULT_HUB} variant="panel" />
         <div className="land-modes" role="group" aria-label="How many devices">

@@ -43,11 +43,11 @@ export const DEMO_STEPS: readonly DemoStep[] = [
   {
     id: 'fake',
     title: 'Catch a fake attempt',
-    doThis: 'On the rider app tap Attempted, press “Demo: log it from far away”, pick a reason. Then on Ops find the Exception queue and press Free re-attempt.',
-    see: 'A GPS pin 900 m from the door is low confidence. Another rider of the same arm takes the order, and the first rider is not paid.',
+    doThis: 'On the rider app tap Attempted, press “Demo: log it from far away”, pick a reason. Then open the Hub captain screen: the attempt is in “To review”. Press Free re-attempt, or Strike… and pick a reason chip.',
+    see: 'A GPS pin 900 m from the door is low confidence, so it goes to the hub captain (Ops only reads it). Another rider of the same arm takes the order and the first rider is not paid. A strike needs a reason and supporting evidence, shows on the rider app as a strike meter (in Hindi too), and Ops can overturn it within 48 h. This works with the bonus off, for Control riders too.',
     links: [
       { route: '/rider', label: 'Open Rider' },
-      { route: '/ops', label: 'Open Ops' },
+      { route: '/captain', label: 'Open Hub captain' },
     ],
   },
   {
@@ -71,7 +71,7 @@ export const DEMO_STEPS: readonly DemoStep[] = [
     id: 'audit',
     title: 'Check the numbers',
     doThis: 'Open the Audit.',
-    see: 'Fourteen checks on the day’s own record, all green: one final state per order, nothing delivered without an OTP, nothing held without an inspection, no pickup without a verified code, the ledger equals every screen.',
+    see: 'Eighteen checks on the day’s own record, all green: one final state per order, nothing delivered without an OTP, nothing held without an inspection, no pickup without a verified code, every strike decided by the captain with a reason, the ledger equals every screen.',
     links: [{ route: '/audit', label: 'Open Audit' }],
   },
   {
@@ -128,8 +128,13 @@ export const REAL_VS_SIMULATED: readonly RealRow[] = [
   },
   {
     layer: 'Pilot A/B',
-    real: 'The decision rule is real code: riders paired on past delivery rate with a coin flip in each pair, a pair-by-pair 95% range, a fair-comparison check, two safety rules, and a rule locked at planning (INVALID if it changes).',
+    real: 'The decision rule is real code: riders paired on past delivery rate with a coin flip in each pair, a pair-by-pair 95% range, a fair-comparison check, two safety rules (normal orders, and Bonus riders’ fake attempts no more than 2 points above Control’s), returns and complaints watched but never a stop rule, and a rule locked at planning (INVALID if it changes).',
     simulated: 'The outcomes: the pilot has not run, so they are random draws around the uplift you set. The link from ₹15 to rider effort to a delivery is assumed, not measured.',
+  },
+  {
+    layer: 'Fake-attempt control',
+    real: 'The rules are real code: the strike log (30-day expiry), the three-step ladder, a strike that needs a reason and corroboration, the 24 h “captain did not decide” rule, Ops overturn within 48 h and the hold on a ₹15 after a weak same-rider attempt. It works with the bonus off.',
+    simulated: 'The captains are synthetic names with no login, the fake share of attempts is an assumption (4%), and the ladder is our proposal: Valmo’s real rules and labour practice decide what is allowed.',
   },
   {
     layer: 'Refused-Parcel Router',

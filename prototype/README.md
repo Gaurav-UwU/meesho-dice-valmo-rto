@@ -10,7 +10,7 @@ Specs: `../work/08-prototype-spec.md` (plan), `../work/12-prototype-theme.md` (l
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # 1,000+ tests
+npm test           # 1,200+ tests
 npm run test:coverage
 npx tsc -b && npx oxlint && npx vite build
 ```
@@ -25,7 +25,8 @@ npx tsc -b && npx oxlint && npx vite build
 | `/customer` | Customer | On-screen WhatsApp (Demo mode) with Valmo's wording and reply buttons |
 | `/desk` | Hub operator | Refused-Parcel Desk: inspect a parcel, second chance (deliver again, different time, pay now, pick up at hub), Hold & Re-home on a match forecast, consolidated return, pilot KPIs |
 | `/pilot` | Meesho decision-maker | 30-day A/B simulator (paired riders, pair-by-pair 95% range, fair-comparison check, two safety rules), GO / RE-PRICE / KILL, P&L, break-even |
-| `/audit` | Anyone | Fourteen checks on the day's own record, each green or red |
+| `/captain` | Hub captain | Fake-attempt control: review queue with evidence, Confirm valid / Free re-attempt / Strike with a reason, held bonuses, rider monitor, scorecard, outcome numbers. Works with the bonus off. Demo: no login |
+| `/audit` | Anyone | Eighteen checks on the day's own record, each green or red |
 
 Add `?hub=lucknow|powai|whitefield|gaya` to any link. Open Ops, Rider and Customer in separate tabs of one browser and they move together; to use several phones, see "How to run the multi-phone demo" under Modes.
 
