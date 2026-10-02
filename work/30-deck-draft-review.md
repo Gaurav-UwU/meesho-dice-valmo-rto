@@ -87,7 +87,7 @@ The brief allows 6–10 slides plus the cover. Two changes: **give the 10x its o
 | 10 | **The long game: price every hard stop on Meesho's own map** | 9, panel 3, expanded | 10x |
 
 **Headline test (read only these, in order):**
-1. 7 in 10 failed orders could still have been delivered. Fix each failure where it happens, and take RTO from 17% to 14%
+1. 7 in 10 failed orders could still be delivered. Fix each failure where it happens: RTO 17% → 14%
 2. RTOs are down, but COD still fails 8× more often, and every failure is one of three kinds
 3. Five new levers, scored: we pilot the two that act at the door, and give the customer a voice
 4. Pay the rider for the hard order, check the attempt was real, and hear the customer
@@ -104,21 +104,18 @@ The brief allows 6–10 slides plus the cover. Two changes: **give the 10x its o
 
 ## 3. Slide-by-slide edits (new numbering)
 
-### Slide 1: Executive summary (re-planned)
-**Headline (two lines, the draft's style):** **"7 in 10 failed orders could still have been delivered."** / *(pink)* **"Fix each failure where it happens, and take RTO from 17% to 14%."**
-Why: it opens with the insight (most failures aren't lost causes; the draft's own "71% could still have been served"), then the answer and the impact. The rider point moves down into panel 2 as the *cause*.
-Alternatives: *"Meesho knows which orders will fail; the rider at the door doesn't. Carry that knowledge to the door, and pay for the hard stop."* · *"One in six orders never arrives. Three fixes on Valmo's existing rails, tested for ₹65,000, can bring it to one in seven."*
+### Slide 1: Executive summary (lean: four beats, ~110 words)
+**Headline:** **"7 in 10 failed orders could still be delivered."** / *(pink)* **"Fix each failure where it happens: RTO 17% → 14%."**
 
-**Layout (problem → insight → one fix per kind → worth → test):**
-| Panel | Content |
-|---|---|
-| ① The problem | **17%** of Valmo orders never arrive · **₹170 vs ₹50** per failed vs delivered order · **96%** are COD · *"Meesho's prepaid push did its job; what's left is COD, at the door."* |
-| ② The insight | The three tiles: not ready 40 · not wanting 29 · not reached 31. Then: *"Only 29% truly don't want the parcel. Riders earn the same ₹18 for an easy and a hard stop, and parcels arrive before the cash is ready."* Evidence line: riders, buyers and hubs in metro and Tier 3/4 towns [n] + our own test order |
-| ③ One fix per kind (3-row mini table, colour-coded like the tiles) | **Not ready** → ₹15 Rescue Bonus + two-way WhatsApp ("pay by UPI or keep my date") · **Not reached** → attempt check by the hub captain · **Not wanting** → the Router: second chance, a nearby buyer, or a cheaper return |
-| ④ What it's worth | **1 in 8:** one avoided return pays for eight bonuses · at +15 extra deliveries per 100: **−3 RTO points, ₹103 cr a year** |
-| ⑤ How we'd know (90-day bar) | Pay → Verify → **Scale or pay smarter** · 4 hubs, 24 matched pairs · **₹65,000** test · *"If the bonus fails, the checks carry on."* |
-| Bottom strip | No new assets, off with one setting · Long game: a price per stop on Meesho's own map · QR: try the prototype, 6 minutes |
-- **Footer:** add "field visits in metro and Tier 3/4 towns [n]" and "our Meesho and Flipkart test orders".
+**① THE PROBLEM** · **17%** of Valmo orders never arrive · ₹170 lost vs ₹50 delivered · 96% are COD
+**② WHY THEY FAIL** · three tiles: **Not ready 40%** (came early, no cash) · **Not reached 31%** (no real attempt) · **Not wanting 29%** (changed mind) · one line: *"Same ₹18 for an easy or hard stop, so hard stops fail."*
+**③ ONE FIX FOR EACH** · Not ready → ₹15 for the hard delivery + a WhatsApp heads-up · Not reached → the hub captain checks every failed attempt · Not wanting → re-route the parcel, not ₹120 back
+**④ WORTH IT, AND TESTED FIRST** · **1 in 8:** one avoided return pays for eight bonuses · **−3 RTO points · ₹103 cr a year** · **₹65,000, 90-day test:** Pay → Verify → Scale or pay smarter · *"If the bonus fails, the checks still pay."*
+**Bottom strip:** No new assets · Long game: a price per stop on Meesho's own map · [QR] Try it in 6 minutes
+
+**Say it in one breath:** *"Most failed orders could still be delivered. They fail in three ways, so we built one fix for each. It pays if just one in eight bonuses saves a return, and a ₹65,000 test proves it before anything scales."*
+**Moved off slide 1** (it lives elsewhere): "2 in 3 at the door" → slide 2 · the ₹18 = ₹18 picture → slide 4 · pilot details (24 pairs, Bonus vs Control, GO/RE-PRICE/KILL) → slide 7 · the asset-light explanation → the bottom strip in three words · the long sources line → slide 2's methods strip.
+**Layout rule:** four columns left to right (①→④), one big number per column, at most 3 short lines under it; the colours of the three tiles repeat in ③ so each fix sits next to its "not".
 
 ### Slide 2: Where and why
 - **Headline:** *"RTOs are down, but COD still fails 8× more often, / and every failure is one of three kinds"*.
