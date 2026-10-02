@@ -180,7 +180,7 @@ One line: *"You can't make a customer want an order, but you can make the moment
 | Flags creep up | Fixed 20% cap; score accuracy re-checked monthly |
 One line under the table: **"Fake-attempt control (R2) stands on its own.** It targets the 9% 'no real attempt' slice of Round 1's pie (at most about 1.5 RTO points; not claimed until the baseline measures it), runs in both pilot groups from day 0, and needs no bonus: the hub earns only on delivery, so the captain is on our side."
 Small line: *"Every prototype day is checked by 14 automatic tests, for example nothing delivered without a verified OTP."*
-Screenshots: the rider chip (shot 4); the hub-captain queue and the rider's strike meter **once built** (until then the Ops exception queue, labelled "being replaced by the hub-captain screen").
+Screenshots: the rider chip (shot 4); the hub-captain queue and the rider's strike meter (shot 11). Wording: fake-attempt control with the hub captain is **built and tested in our prototype** (live since 2 Oct; never "proven").
 **Footer:** Valmo Delivery Services Agreement (Annex A, §3) · Round 2 field research · Meituan (arXiv 2202.10695) · Uber fare guide · Flipkart WhatsApp flow (real orders).
 **Bridge (italic, last line):** *"Our real order: a heads-up would have said 'arriving early, pay by UPI or keep 3 Oct'; the rider would have seen +₹15; 'called twice, didn't wait' would have gone to the captain. But does ₹15 change what riders do, and does it pay?"*
 **Speaker notes (off the slide face):** Ops can overturn a strike within 48 h; the rider can ask for a review; 24 h with no captain decision = a free re-attempt, no strike; the Watch rule (3 disputes in 7 days and 2× the hub median).
@@ -368,17 +368,17 @@ Returns and complaints: watched Bonus vs Control, as Round 1 promised; a rise st
 | TrustMesh | 166 mn listings; RTO down >10% | Q4 FY26 letter |
 
 ## Screenshot list (current build, before the freeze; Lucknow hub; never a real phone number or AWB)
-1. `/pilot` default: GO, range diagram, ✔ Fair comparison, odds bar (slide 6). Crop out the fake-attempt slider until the relative rule (prompt 27, Part 1a) is built: the live build still says 5%.
+1. `/pilot` default: GO, range diagram, ✔ Fair comparison, odds bar (slide 6). The live build now uses the relative rule ("points above Control"), so the slider can stay in the shot.
 2. `/pilot` at about +8: RE-PRICE with "Next: Run Pilot 2" (slide 6, optional)
 3. `/pilot` yearly-rupees table (slide 6)
 4. `/rider` Demo Bonus rider with the ₹ +15 chip (slide 5)
 5. `/ops` after Autopilot + Close pilot: Bonus vs Control card + money ledger (slide 5)
-6. `/audit` 14 green checks (slide 5, small)
+6. `/audit` 18 green checks (slide 5, small)
 7. `/desk` one parcel card: forecast, gates, expected value (slide 7)
 8. `/desk` money tiles + Backtest panel (slide 7)
 9. `/customer` second-chance message with four options and the pickup code (slide 7)
 10. `/` landing **Demo-mode** QR (slide 4). Never a shared-day QR: it contains the live key.
-11. *(After the hub-captain build)* the captain queue and the rider's strike meter (slide 5).
+11. `/captain?hub=lucknow` after Autopilot: the queue with an evidence card, the scorecard, the rider monitor; plus `/rider` with the strike meter (slide 5). Re-take shots 1, 5, 6 and 11 on the new build.
 
 ## Still to arrive
 - **Round 2 field research numbers:** how many riders, hubs and towns (the **[n]** on slide 4), and the towns' names if they can be shown.
