@@ -19,16 +19,22 @@ The draft numbers slides with the cover as 0 (exec summary = 1 … risks = 9). T
 
 ## 1. Must-fix: errors a judge would catch
 
-### 1.1 (UPDATED 3 Oct, after discussing the team's reasoning) Month 3: extend downstream, don't move the bonus
-**The team's intent (kept):** once month 1 confirms the rider-friction hypothesis, go downstream: a genuine failed first attempt is the strongest risk signal (break-even ~7 per 100 instead of 8.6), with risk filtering and fake-attempt detection guarding it.
-**Why "move" breaks it:** it re-creates the problem month 1 solves (first-attempt effort unpaid again, and failing now can pay tomorrow); the attempt check catches *fake* attempts, not *lazy but genuine* ones; every delivery pushed to attempt 2 adds ₹21 and a day of delay (RTO rises with delivery time); and Valmo's contract already rewards the *first-attempt* rate.
-**The resolved Month 3 ("DOWNSTREAM"):**
-- ₹15 on **any attempt** for flagged orders (unchanged).
-- **Flag as you go:** an unflagged order that fails a *genuine* first attempt becomes Bonus Eligible for its re-attempt (downstream risk filtering widens the pool).
-- **₹20 on the re-attempt only after a *high-effort* first attempt** (GPS ≤ 200 m, 2+ calls, 5+ min wait: the prototype's "high confidence" attempt). A lazy-but-genuine first attempt earns nothing extra later.
-- Suspect attempts → hub captain, no bonus.
-- **Stop rules:** the first-attempt delivery rate on flagged orders must not fall below month 2's; the average days to deliver must not rise. If either breaks, roll back to month 2's rule.
-- Deck text: *"Month 3 · DOWNSTREAM: once effort is proven to respond to pay, we also rescue the orders that fail anyway, paying more only after a high-effort first attempt."*
+### 1.1 (FINAL, 3 Oct) Month 3 depends on what month 1 shows: the second-attempt bonus is the "pay smarter" trial when paying on every attempt doesn't pay
+**The logic:** month 1 answers two different questions: *(a) do riders put in more effort when paid?* and *(b) does paying ₹15 on every attempt pay for itself?* The second-attempt bonus is the right move when (a) is yes and (b) is no: it pays only where an order has already shown it is hard (a genuine failed first attempt), so far fewer bonuses go to orders that would have arrived anyway (break-even ~7 extra per 100 re-attempts instead of 8.6 per 100 flagged). The alternative in that case is killing the bonus, so the trial can only add.
+
+**Month 1's gate has three outcomes, and month 3 follows from it:**
+| Month 1 shows | Month 3 |
+|---|---|
+| **Effort responds AND any-attempt pays** (low end ≥ break-even) | **SCALE PREP:** keep ₹15 on any attempt; prepare the region phase (~40 hubs, 10% Control); the Router starts by hand |
+| **Effort responds BUT any-attempt doesn't pay** (lift ≥ +3, below break-even) | **PAY SMARTER (trial):** stop paying on every attempt; pay ₹15 only on the **re-attempt** of a flagged order, and only after a **verified, high-effort first attempt** (≤ 200 m from the door, 2+ calls, 5+ min wait) **and** the customer said on WhatsApp they still want it. Suspect first attempt → captain, no bonus |
+| **Effort doesn't respond** (lift < +3) or a guardrail breaks | **KILL the bonus.** The attempt check and two-way WhatsApp continue on their own; the Router starts on the customers' replies (the compounding lane) |
+
+**Guards for the pay-smarter trial** (it pays more for attempt 2 than attempt 1, so a rider could be tempted to defer):
+- The **high-effort** first attempt is required, not just a genuine one: a rider who really waits and calls usually delivers, so deferring is hard to fake.
+- **Stop rules:** the first-attempt delivery rate on flagged orders must not fall below month 2's, and the average days to deliver must not rise. If either breaks, stop the trial.
+- Measured, as before, Bonus vs Control in the same pairs.
+
+**Deck text (one line):** *"Month 3 depends on month 1: if paying on every attempt works, we prepare to scale; if riders respond but it doesn't pay, we pay smarter, only for genuine second-attempt rescues; if riders don't respond, the checks carry on without the bonus."*
 
 *(The original analysis below is kept for the reasoning; where it conflicts, the resolved version above wins.)*
 
@@ -114,7 +120,7 @@ The brief allows 6–10 slides plus the cover. Two changes: **give the 10x its o
 
 ### Slide 1: Executive summary
 - **Panel 2 "Why it happens":** add one line under the three tiles: *"From riders, hubs and buyers in metro and Tier 3/4 towns: parcels arrive before the promised date and the cash isn't ready; addresses are landmarks; hubs earn only ₹5 a delivered parcel."* Add "est." to the 40 / 29 / 31 tiles.
-- **Panel 5 "The 90-day pilot":** Month 3 → *"PAY SMARTER · pay for genuine effort, priced by difficulty"*. Add one line under the bar: *"If the bonus fails, the attempt check and two-way WhatsApp still go live, and keep compounding."*
+- **Panel 5 "The 90-day pilot":** Month 3 → *"PAY SMARTER · if paying on every attempt doesn't pay, pay only for genuine second-attempt rescues"*. Add one line under the bar: *"If the bonus fails, the attempt check and two-way WhatsApp still go live, and keep compounding."*
 - **"The long game" box:** *"Today the risk score is a filter; tomorrow it's a price per delivery, on Meesho's own delivery map."*
 - **Footer:** add "field visits in metro and Tier 3/4 towns [n]" and "our Meesho and Flipkart test orders".
 
@@ -143,19 +149,17 @@ The brief allows 6–10 slides plus the cover. Two changes: **give the 10x its o
 - "When" line: *"From month 3, by hand in 3 hubs in Uttar Pradesh (most sellers, 15.9%), using month 2's customer replies; automated once the match rate clears 5.5%."*
 
 ### Slide 6: Costs and returns (was slide 8)
-- Replace the **"Second-attempt bonus (month 3)"** box with **"Pay smarter (month 3)"**: *"A clean-record tier and ₹10 / ₹20 by difficulty, budget kept equal; the test measures whether extra deliveries per rupee rise."*
+- Keep the **"Second-attempt bonus (month 3)"** box but retitle it **"Pay smarter (month 3, if any-attempt doesn't pay)"**: *"Paid only on the re-attempt of a flagged order, after a verified, high-effort first attempt and a 'still want it' reply. Break-even ≈ 7 extra per 100 re-attempts (if Control delivers 50 of 100). Far fewer bonuses go to orders that would have arrived anyway."*
 - Add a small **"If the bonus is killed"** box: *"The attempt check targets up to ~1.5 RTO points (no real attempt) and two-way WhatsApp ~1 point (not home or unreachable, if it fixes 1 in 5), for ₹10 reviews and a few messages. Planning assumptions; the pilot measures them."*
 - Fix the "1% re-homed" wording (1.6).
 
 ### Slide 7: The 90-day plan (was slide 5): the main rewrite
 **Headline:** *"Three months, one question each, / and if the bonus fails, the checks keep compounding"*
 
-**Top lane (the bonus path):** keep months 1 and 2 as they are. Month 3 becomes:
-> **Month 3 · DOWNSTREAM (days 61–90)** *(resolved version, see 1.1)*
-> *The question:* once effort is proven to respond to pay, can we also rescue the orders that fail anyway?
-> *What's live:* ₹15 on **any attempt** (unchanged) · a genuine failed first attempt flags the order for its re-attempt · ₹20 on the re-attempt only after a **high-effort** first attempt (≤ 200 m, 2+ calls, 5+ min) · suspect attempts → captain, no bonus · the Router starts by hand in 3 UP hubs
-> *Measure:* extra deliveries per ₹ paid · cost per rescued order · suspect-attempt rate · **first-attempt delivery rate and days-to-deliver (must not get worse)**
-> *Gate:* SCALE (one region, ~40 hubs, 10% of riders kept as Control) / STOP (net ₹ negative for 2 months)
+**Top lane (the bonus path):** keep months 1 and 2 as they are. **Month 1's gate becomes a three-way fork** (see 1.1), and month 3 shows the two bonus branches stacked:
+> **Month 3 · SCALE PREP** *(if month 1: effort responds and any-attempt pays)*: ₹15 on any attempt continues; region phase prepared (~40 hubs, 10% of riders kept as Control); the Router starts by hand in 3 UP hubs. *Gate:* SCALE / STOP (net ₹ negative for 2 months).
+> **Month 3 · PAY SMARTER** *(if month 1: effort responds but any-attempt doesn't pay)*: ₹15 only on the **re-attempt** of a flagged order, after a **verified, high-effort first attempt** (≤ 200 m, 2+ calls, 5+ min) and a "still want it" reply. *Measure:* extra deliveries per ₹ paid · cost per rescued order · **first-attempt delivery rate and days-to-deliver (must not get worse)**. *Gate:* SCALE the smarter rule / STOP. Break-even ≈ 7 extra per 100 re-attempts.
+> Month 2 (attempt check + two-way WhatsApp for both groups) is what makes the pay-smarter trial possible: it needs verified attempts and the customer's reply.
 
 **New bottom lane, starting from Month 1's KILL box (thin, a different colour):**
 > **If month 1 says KILL, months 2–3 still run, without the bonus**
@@ -224,7 +228,7 @@ The brief allows 6–10 slides plus the cover. Two changes: **give the 10x its o
 ---
 
 ## 6. Final checklist before export
-- [ ] Month 3 = DOWNSTREAM (extend, don't move): any-attempt ₹15 kept; ₹20 re-attempt only after a high-effort first attempt; first-attempt rate and days-to-deliver as stop rules (1.1)
+- [ ] Month 1's gate is a three-way fork; month 3 = SCALE PREP (any-attempt pays) or PAY SMARTER (second-attempt trial, if effort responds but any-attempt doesn't pay) or KILL lane; the trial needs a high-effort first attempt and has the first-attempt-rate and days-to-deliver stop rules (1.1)
 - [ ] The KILL lane and the compounding chain are on the 90-day slide; one line each on slides 1, 3, 6 and 9
 - [ ] Slides 2 and 4 agree on when the attempt check starts (1.3)
 - [ ] P1 is in Pursue (1.4)
