@@ -6,7 +6,7 @@
 1. We started with **one hypothesis**: riders give hard COD stops less effort because they're paid the same for every stop.
 2. We went to **riders, buyers and hubs**, placed our own orders and read Valmo's rider contract, and found that **most failed orders could still have been delivered**: they fail because the customer wasn't ready, the attempt wasn't real, or (less often) the customer didn't want it.
 3. So we propose **one pilot**: pay riders a bonus for delivering hard orders, to test whether pay changes effort.
-4. A bonus alone puts the whole burden on the rider, so **alongside it we build two things for every rider, in both groups**: an **attempt check** that shows whether a failed attempt was real, and **two-way WhatsApp** that gives the customer a voice. Together they're a second way to bring RTO down, whatever happens to the bonus.
+4. A bonus alone puts the whole burden on the rider, so **alongside it we build two things for every rider, in both groups**: **attempt verification**, which shows whether a failed attempt was real, and **two-way WhatsApp**, which gives the customer a voice. So we work on all three sides of the door: **the rider** (the bonus), **the attempt** (verification) and **the customer** (WhatsApp). Verification and WhatsApp are a second way to bring RTO down, whatever happens to the bonus.
 5. The pilot runs for **three months, and each month's result decides the next**: if riders respond but the bonus doesn't pay for itself, we **pay smarter**: only on the next attempt, only after a genuine attempt and a customer who still wants the parcel; a fake attempt means a strike and no bonus.
 6. **Everything is built and running in our prototype.** Recovering refused parcels and pricing every stop are the ideas that come after.
 
@@ -16,14 +16,14 @@
 - **No "Round 1 / Round 2"** on any slide. Our earlier work is "our first hypothesis".
 - **We propose a pilot, not a rollout.** Say so plainly on slides 1, 4 and 6.
 - **Results we haven't measured are never shown as results.** Slide 6 is a worked example of how the pilot unfolds, simulated in our prototype; the real pilot replaces it.
-- One name per idea: **Rescue Bonus** · **Attempt check** · **Two-way WhatsApp** · **Refused-parcel router** · **Delivery map**.
+- One name per idea: **Rescue Bonus** · **Attempt verification** · **Two-way WhatsApp** · **Refused-parcel router** · **Delivery map**. Never call verification and WhatsApp "checks": one proves the attempt, the other is the customer's voice.
 
 ## Headline test (read only these, in order)
-1. We spoke to riders, buyers and hubs: most failed orders could still be delivered. So we're piloting one fix, with two checks built alongside it
+1. We spoke to riders, buyers and hubs: most failed orders could still be delivered. So we pay the rider, verify the attempt, and hear the customer, starting with a pilot
 2. Where orders fail: COD at the door, for three reasons, and only one of them is a customer who changed their mind
-3. From one hypothesis to a complete answer: pay for the hard stop, check the attempt was real, and hear the customer
+3. From one hypothesis to a complete answer: pay for the hard stop, verify the attempt, and hear the customer
 4. How we'll run the pilot: four hubs, matched riders, a coin toss, and the rule fixed before day one
-5. The attempt check and two-way WhatsApp work for every rider, bonus or not
+5. Attempt verification and two-way WhatsApp work for every rider, bonus or not
 6. Three months, one question each, and each answer decides the next
 7. Does it pay? The bar is low, the upside is large, and paying smarter lowers it further
 8. A separate idea for orders customers refuse: find each parcel its cheapest way back
@@ -38,7 +38,7 @@
 ---
 
 ## Slide 1: Executive summary (the whole story on one page; research loud)
-**Headline:** *We spoke to riders, buyers and hubs: most failed orders could still be delivered.* / *(pink)* *So we're piloting one fix, with two checks built alongside it.*
+**Headline:** *We spoke to riders, buyers and hubs: most failed orders could still be delivered.* / *(pink)* *So we pay the rider, verify the attempt, and hear the customer, starting with a pilot.*
 **Message line:** **17%** of Valmo orders never arrive. *(the only problem number on this slide)*
 
 **① What we did and heard** (the research, loud: a band of five icons with counts, then three findings)
@@ -50,12 +50,12 @@
 
 **② What we're doing** (three numbered cards, one line each)
 1. **Pilot the Rescue Bonus:** pay the rider extra for delivering a hard order. *Does pay change effort?*
-2. **Build the attempt check:** GPS, calls, waiting time and the customer's reply show whether a failed attempt was real, for every rider.
-3. **Build two-way WhatsApp:** the customer can say "I'm home", "pay by UPI", "come later", or "the rider never came".
-- One line under the cards: *"A bonus alone puts the whole burden on the rider. The two checks show what really happened at the door, and bring RTO down on their own."*
+2. **Verify every attempt:** GPS, calls, waiting time and the customer's reply show whether a failed attempt was real, for every rider.
+3. **Hear the customer on two-way WhatsApp:** they can say "I'm home", "pay by UPI", "come later", or "the rider never came".
+- One line under the cards: *"A bonus alone puts the whole burden on the rider. Verifying the attempt and hearing the customer show what really happened at the door, and bring RTO down on their own."*
 
 **③ How the pilot decides** (a three-step strip)
-**Month 1 · Pay** → **Month 2 · Check and listen** → **Month 3 · Scale, pay smarter, or stop**. *"Each month's result decides the next. If the bonus doesn't pay, the checks still do."*
+**Month 1 · Pay** → **Month 2 · Verify and listen** → **Month 3 · Scale, pay smarter, or stop**. *"Each month's result decides the next. If the bonus doesn't pay, verification and WhatsApp still do."*
 
 **④ What it could mean**
 - If the pilot confirms it: **RTO from 17% to about 14%**.
@@ -93,7 +93,7 @@
 ---
 
 ## Slide 3: From one hypothesis to a complete answer (ask ③: prioritised solutions)
-**Headline:** *From one hypothesis to a complete answer:* / *(pink) pay for the hard stop, check the attempt was real, and hear the customer*
+**Headline:** *From one hypothesis to a complete answer:* / *(pink) pay for the hard stop, verify the attempt, and hear the customer*
 **Message:** Our first idea was the bonus. Our research showed why the bonus alone isn't enough, so two more parts were added.
 
 **① Where we started** (the rider's bag visual): today every stop pays the same **₹18**, easy or hard, only on success. The hypothesis: *if the hard stop paid more, riders would try harder.* The Rescue Bonus tests it.
@@ -101,14 +101,14 @@
 **② Why the bonus alone isn't enough** (three short points)
 - It puts the whole burden on the rider: we'd see more deliveries, but not whether attempts were real.
 - It can't tell a customer who isn't ready from one who doesn't want the parcel.
-- A bonus without checks invites gaming: a fake "attempted" today, a paid delivery tomorrow.
-→ **So we add the attempt check and two-way WhatsApp, for every rider, in both groups.**
+- A bonus without verification invites gaming: a fake "attempted" today, a paid delivery tomorrow.
+→ **So we add attempt verification and two-way WhatsApp, for every rider, in both groups.**
 
 **③ All five ideas, prioritised** (the impact × effort map from the draft, colour-coded by kind of failure)
 | Idea | Fixes | Status |
 |---|---|---|
 | **Rescue Bonus** | not ready | **The pilot** |
-| **Attempt check** | not reached | **Built alongside the pilot** |
+| **Attempt verification** | not reached | **Built alongside the pilot** |
 | **Two-way WhatsApp** | not ready | **Built alongside the pilot** |
 | Learned doorsteps | not reached (addresses) | Later, part of the delivery map (slide 10) |
 | Refused-parcel router | not wanting | A separate idea (slide 8) |
@@ -131,7 +131,7 @@
 - The riskiest **20%** of orders, by Meesho's risk score plus last-mile signals, are flagged; both riders carry the same mix of flagged orders.
 - **Bonus rider:** a flagged order shows "Bonus Eligible · +₹15"; ₹15 when it's delivered, on any attempt, held 7 days. **Never the risk score.**
 - **Control rider:** the same order looks normal.
-- **Both riders:** the attempt check and two-way WhatsApp (slide 5).
+- **Both riders:** attempt verification and two-way WhatsApp (slide 5).
 
 **③ What we measure, and the rule** (fixed before day one; changing it later voids the result)
 - Flagged orders delivered, Bonus vs Control, pair by pair · normal orders (must not suffer) · suspected fake attempts per group · returns and complaints.
@@ -139,15 +139,15 @@
 - Three outcomes: **GO** (it works and pays) · **PAY SMARTER** (riders respond, but it doesn't pay) · **STOP** (riders don't respond).
 
 **Live in our prototype:** the pilot page (the verdict, the range against break-even, the ✔ Fair comparison line) and the Ops Bonus-vs-Control card. *It runs the exact rule above on simulated orders.*
-**Bridge:** *And while the bonus is tested, the two checks run for everyone.*
+**Bridge:** *And while the bonus is tested, every attempt is verified and every customer can speak.*
 
 ---
 
-## Slide 5: The attempt check and two-way WhatsApp (built for every rider)
-**Headline:** *The attempt check and two-way WhatsApp* / *(pink) work for every rider, bonus or not*
+## Slide 5: Attempt verification and two-way WhatsApp (built for every rider)
+**Headline:** *Attempt verification and two-way WhatsApp* / *(pink) work for every rider, bonus or not*
 **Message:** They show what really happened at the door, so the pilot measures real effort, and they cut RTO on their own.
 
-**① The attempt check: was it a real attempt?** (four evidence icons → two outcomes)
+**① Attempt verification: was it a real attempt?** (four evidence icons → two outcomes)
 - Every "attempted" records **GPS distance from the door, calls made, minutes waited**, and the **customer's reply**.
 - **Genuine:** near the door and called or waited, or the customer confirms. **Suspect:** more than **500 m** away, no calls, or "the rider never came".
 - Suspect attempts go to the **hub captain**, who earns only on delivered parcels and so wants real attempts: confirm, free re-attempt by another rider, or a **strike** (with a reason and evidence; Ops can overturn it within 48 h).
@@ -171,16 +171,16 @@
 **Headline:** *Three months, one question each,* / *(pink) and each answer decides the next*
 **Message:** A worked example, simulated in our prototype: how the pilot unfolds if riders respond but the bonus doesn't yet pay for itself, the case we plan for.
 
-| | **Month 1 · PAY** | **Month 2 · CHECK AND LISTEN** | **Month 3 · PAY SMARTER** |
+| | **Month 1 · PAY** | **Month 2 · VERIFY AND LISTEN** | **Month 3 · PAY SMARTER** |
 |---|---|---|---|
 | **The question** | Does paying for the hard stop change rider effort? | Does the effect survive when every failed attempt is checked? What do customers say? | Can we pay only where the bonus truly rescues an order? |
-| **What runs** | Bonus on flagged orders, any attempt · the attempt check and WhatsApp switched on for both groups, recording | Strikes enforced for both groups · a Bonus rider with a suspect attempt loses that ₹15 · customer replies collected | Bonus only on the **next attempt** by the **same rider**, and only if: the last attempt was **genuine** (near the door, called, waited) **and** the customer said they **still want it** · a fake attempt = a **strike and the bonus blocked** |
+| **What runs** | Bonus on flagged orders, any attempt · attempt verification and WhatsApp switched on for both groups, recording | Strikes enforced for both groups · a Bonus rider with a suspect attempt loses that ₹15 · customer replies collected | Bonus only on the **next attempt** by the **same rider**, and only if: the last attempt was **genuine** (near the door, called, waited) **and** the customer said they **still want it** · a fake attempt = a **strike and the bonus blocked** |
 | **What we'd look for** | Bonus riders deliver more flagged orders than their pairs | The difference holds; suspect attempts don't rise in the Bonus group; replies show who's "not ready" | More rescues per rupee; first-attempt deliveries don't fall; deliveries don't get slower |
-| **In the worked example** | ✔ Riders respond, but not enough to pay for every bonus | ✔ The effect holds under the checks | → Pay smarter becomes the rule to scale |
+| **In the worked example** | ✔ Riders respond, but not enough to pay for every bonus | ✔ The effect holds once attempts are verified | → Pay smarter becomes the rule to scale |
 
 **The other two branches** (a thin fork after month 1):
 - **If month 1 shows it already pays** → month 3 prepares to **scale**: one region, a share of riders kept as Control.
-- **If riders don't respond** → **stop the bonus**; the attempt check and two-way WhatsApp carry on, because they never depended on it.
+- **If riders don't respond** → **stop the bonus**; attempt verification and two-way WhatsApp carry on, because they never depended on it.
 
 **Why "pay smarter" is safe:** it pays only after a genuine, high-effort attempt and a customer who still wants the parcel, and it stops if first-attempt deliveries fall or deliveries slow down. A rider can't earn it by faking an attempt.
 **Live in our prototype:** the Ops close-of-pilot card (verdict + the money ledger) and the 18 green audit checks.
@@ -198,7 +198,7 @@
 - What it's worth a year (₹ cr): the draft's heat-map. At **+15 extra per 100**: **₹103 cr a year net** and **−3 RTO points**; at +5 it loses money. *"That's why we pilot first."*
 **③ Paying smarter**
 - Paying only on genuine next attempts goes to far fewer orders that would have arrived anyway: **break-even about 7 extra per 100** re-attempts.
-- **The checks on their own:** a recovered delivery saves **₹99** (₹120 return − ₹21 re-attempt); a hub captain's review costs about **₹10**, so a review pays if more than **1 in 10** ends in a delivery.
+- **Verification on its own:** a recovered delivery saves **₹99** (₹120 return − ₹21 re-attempt); a hub captain's review costs about **₹10**, so a review pays if more than **1 in 10** ends in a delivery.
 - Cost per successful delivery: **₹84.8 → ₹80.3**, bonus included. *Sources: data pack; our model.*
 **Bridge:** *And the orders customers still refuse?*
 
@@ -221,9 +221,9 @@
 
 ## Slide 9: Risks and guards (ask ⑥)
 **Headline:** *Every way to game it has a guard,* / *(pink) and every risk at scale has a stop rule*
-**① Who might game it, and the guard** (the draft's table, kept): bonus riders neglect normal orders → their bonuses are held · fake attempts → the attempt check, strikes, no bonus · a rider defers the first attempt to earn the next-attempt bonus → only after a genuine, high-effort attempt; stops if first-attempt deliveries fall · pressuring a buyer → OTP, a 7-day hold, complaints watched · the captain protects friends or over-strikes → Ops overturns within 48 h, audits · flagged areas guessed → the score is never shown, a **₹300** daily cap · held parcels mishandled → inspection, scans, OTP (a real case: **33,035** Meesho parcels falsely marked delivered in Surat, 2026).
+**① Who might game it, and the guard** (the draft's table, kept): bonus riders neglect normal orders → their bonuses are held · fake attempts → attempt verification, strikes, no bonus · a rider defers the first attempt to earn the next-attempt bonus → only after a genuine, high-effort attempt; stops if first-attempt deliveries fall · pressuring a buyer → OTP, a 7-day hold, complaints watched · the captain protects friends or over-strikes → Ops overturns within 48 h, audits · flagged areas guessed → the score is never shown, a **₹300** daily cap · held parcels mishandled → inspection, scans, OTP (a real case: **33,035** Meesho parcels falsely marked delivered in Surat, 2026).
 **② Risks at scale** (matrix + table): works in 4 hubs but not a region → a stop rule, kept Control riders · riders predict failure rather than cause it → exactly what month 1 measures · the season distorts results → same-weeks comparison · the score drifts → monthly check · location data misused → consent and delivery-only use (DPDP Act).
-**③ The safety net:** *If the bonus fails, the attempt check and two-way WhatsApp carry on. Nothing we propose needs a new asset, so anything can be switched off.*
+**③ The safety net:** *If the bonus fails, attempt verification and two-way WhatsApp carry on. Nothing we propose needs a new asset, so anything can be switched off.*
 **Bridge:** *Guarded and tested, the pilot is only the first step.*
 
 ---
@@ -255,6 +255,6 @@
 ## Presenting it (one minute per slide)
 - **Slide 1** is the pitch: research → three parts → the month-by-month pilot → what it could mean. If a judge reads only this slide, they have it.
 - **Slides 2–3** earn the right to the answer: what we heard, and why the bonus needed two partners.
-- **Slides 4–6** are the pilot: design → the two checks → month by month. Say "pilot" and "simulated in our prototype" out loud.
+- **Slides 4–6** are the pilot: design → verification and WhatsApp → month by month. Say "pilot" and "simulated in our prototype" out loud.
 - **Slides 7–10** answer "does it pay, what about refusals, what could go wrong, where does it lead".
 - If asked "what are the results?": *"The pilot hasn't run. Slide 6 is the plan for each possible result, and our prototype runs it on simulated orders so you can see every decision."*
