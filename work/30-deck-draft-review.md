@@ -19,7 +19,20 @@ The draft numbers slides with the cover as 0 (exec summary = 1 … risks = 9). T
 
 ## 1. Must-fix: errors a judge would catch
 
-### 1.1 Month 3 "the bonus moves to the second attempt" breaks our own rule and pays riders to fail first (biggest issue)
+### 1.1 (UPDATED 3 Oct, after discussing the team's reasoning) Month 3: extend downstream, don't move the bonus
+**The team's intent (kept):** once month 1 confirms the rider-friction hypothesis, go downstream: a genuine failed first attempt is the strongest risk signal (break-even ~7 per 100 instead of 8.6), with risk filtering and fake-attempt detection guarding it.
+**Why "move" breaks it:** it re-creates the problem month 1 solves (first-attempt effort unpaid again, and failing now can pay tomorrow); the attempt check catches *fake* attempts, not *lazy but genuine* ones; every delivery pushed to attempt 2 adds ₹21 and a day of delay (RTO rises with delivery time); and Valmo's contract already rewards the *first-attempt* rate.
+**The resolved Month 3 ("DOWNSTREAM"):**
+- ₹15 on **any attempt** for flagged orders (unchanged).
+- **Flag as you go:** an unflagged order that fails a *genuine* first attempt becomes Bonus Eligible for its re-attempt (downstream risk filtering widens the pool).
+- **₹20 on the re-attempt only after a *high-effort* first attempt** (GPS ≤ 200 m, 2+ calls, 5+ min wait: the prototype's "high confidence" attempt). A lazy-but-genuine first attempt earns nothing extra later.
+- Suspect attempts → hub captain, no bonus.
+- **Stop rules:** the first-attempt delivery rate on flagged orders must not fall below month 2's; the average days to deliver must not rise. If either breaks, roll back to month 2's rule.
+- Deck text: *"Month 3 · DOWNSTREAM: once effort is proven to respond to pay, we also rescue the orders that fail anyway, paying more only after a high-effort first attempt."*
+
+*(The original analysis below is kept for the reasoning; where it conflicts, the resolved version above wins.)*
+
+### 1.1 (original) Month 3 "the bonus moves to the second attempt" breaks our own rule and pays riders to fail first
 - **It contradicts the agreed rule:** ₹15 is paid when a flagged order is delivered **on any attempt** (first or second).
 - **It creates the wrong incentive:** under "second attempt only", a rider earns **₹0 extra** for delivering a flagged order on the first try but **₹15** on the second. A rider can pass the "genuine" check cheaply (stand near the door, call once, wait a few minutes) and come back the next day for ₹15. That **delays the customer**, costs a **₹21 re-attempt** and adds a trip, the opposite of what the brief asks (no hit to delivery cost or customer experience).
 - **It weakens the main lever:** most of the rescue happens on the first attempt (that's where "call again, wait, offer UPI" matters).
@@ -138,10 +151,10 @@ The brief allows 6–10 slides plus the cover. Two changes: **give the 10x its o
 **Headline:** *"Three months, one question each, / and if the bonus fails, the checks keep compounding"*
 
 **Top lane (the bonus path):** keep months 1 and 2 as they are. Month 3 becomes:
-> **Month 3 · PAY SMARTER (days 61–90)**
-> *The question:* can we pay for genuine effort and price by difficulty?
-> *What's live:* ₹15 on **any attempt** (unchanged) · clean-record tier (a confirmed strike → ₹0 bonus for 14 days) · ₹10 / ₹20 by difficulty band, same budget · the Router starts by hand in 3 UP hubs
-> *Measure:* extra deliveries per ₹ paid · cost per rescued order · suspect-attempt rate · first-attempt delivery rate (must not fall)
+> **Month 3 · DOWNSTREAM (days 61–90)** *(resolved version, see 1.1)*
+> *The question:* once effort is proven to respond to pay, can we also rescue the orders that fail anyway?
+> *What's live:* ₹15 on **any attempt** (unchanged) · a genuine failed first attempt flags the order for its re-attempt · ₹20 on the re-attempt only after a **high-effort** first attempt (≤ 200 m, 2+ calls, 5+ min) · suspect attempts → captain, no bonus · the Router starts by hand in 3 UP hubs
+> *Measure:* extra deliveries per ₹ paid · cost per rescued order · suspect-attempt rate · **first-attempt delivery rate and days-to-deliver (must not get worse)**
 > *Gate:* SCALE (one region, ~40 hubs, 10% of riders kept as Control) / STOP (net ₹ negative for 2 months)
 
 **New bottom lane, starting from Month 1's KILL box (thin, a different colour):**
@@ -211,7 +224,7 @@ The brief allows 6–10 slides plus the cover. Two changes: **give the 10x its o
 ---
 
 ## 6. Final checklist before export
-- [ ] Month 3 no longer moves the bonus to the second attempt (1.1)
+- [ ] Month 3 = DOWNSTREAM (extend, don't move): any-attempt ₹15 kept; ₹20 re-attempt only after a high-effort first attempt; first-attempt rate and days-to-deliver as stop rules (1.1)
 - [ ] The KILL lane and the compounding chain are on the 90-day slide; one line each on slides 1, 3, 6 and 9
 - [ ] Slides 2 and 4 agree on when the attempt check starts (1.3)
 - [ ] P1 is in Pursue (1.4)
