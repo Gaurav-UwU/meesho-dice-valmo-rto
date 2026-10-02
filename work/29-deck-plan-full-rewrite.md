@@ -1,6 +1,6 @@
 # 29: The full Round 2 deck plan, Version B (all slides rewritten, 2 Oct 2026)
 
-**Two versions exist. Pick one:**
+**✅ CHOSEN by Gaurav on 2 Oct: build the deck from this file (Version B).** Two versions existed:
 - **Version A, `28-deck-plan-final.md`:** the three Round 1 slides pasted unchanged, then seven Round 2 slides. Safest against "you changed your idea", but the executive summary only arrives on slide 4.
 - **Version B, this file:** every slide written for Round 2, in the **exact order of Meesho's six asks**, with the executive summary first. The Round 1 idea, numbers and framework are all kept (enhance, don't pivot); each Round 1 slide is *upgraded*, not replaced, and slide 1 says what is new since Round 1.
 - **Recommendation: Version B.** Judges read the executive summary first, the asks are answered in their own order, and there is room for a prototype slide. To stay safe on "pivot", keep the Round 1 hero (₹15 on a delivered risky order), the Round 1 pie, the Prevent · Rescue · Recover framework and the lever codes (P1, P2, R1, R2, C1), and say "Since Round 1" where something is new.
