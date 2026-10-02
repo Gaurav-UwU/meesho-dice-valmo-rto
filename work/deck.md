@@ -2,10 +2,11 @@
 
 **This is the only file needed to build the deck.** It replaces `28` and `29` (both kept as history). Look and feel: our existing template (DICE header, meesho logo, ➢ bullets, numbered panels). Sources for every footer: `10-sources.md`.
 
-**Three rules for the whole deck**
+**Four rules for the whole deck**
 1. **It is one story.** Each headline leads into the next; each slide ends with a one-line bridge.
 2. **No mention of "rounds"** anywhere on the slides. Our earlier work is simply "our research", "our survey", "our field visits". (The idea, numbers and framework stay exactly as we first submitted them; see "For us only" at the end.)
 3. **The prototype is the proof on every slide.** From slide 4 on, each slide has a small **"Live in our prototype"** box: one screenshot, the screen's name, and what it proves. The judge can open any of it from the QR on slide 1.
+4. **Asset-light by design, with a kill switch on everything.** Like Valmo itself, nothing we propose needs a warehouse, a vehicle, a new building or new staff: every fix is software, an incentive, or a rule on hubs, apps, WhatsApp and payout lines Valmo already runs. So any fix that doesn't pay, or doesn't scale after its test, is **killed by switching off a setting, with nothing to write off.** The whole 30-day bonus test costs about **₹65,000 in bonuses** (~4,300 bonus-arm deliveries × ₹15).
 
 **Format:** cover + 10 slides (the brief allows 6–10; the cover is not counted). About 350–400 words a slide. Each slide: a full-sentence headline, a one-line message, three numbered panels, one chart or diagram, a pink "so what" callout, a grey sources footer.
 
@@ -63,7 +64,7 @@ Our own Meesho COD test order: **promised 3 Oct → arrived 28 Sep, five days ea
 - **Long-term: pay by difficulty, on Meesho's own geo network.** A hexagon map of India, like the one Uber built for pricing and dispatch: every delivery teaches it the real doorstep, and every cell gets its own difficulty price.
 - Under the cards: *"If the bonus fails, the Attempt Check and the Router still stand: neither needs it."*
 
-**Callout band:** the brief's three tests as a scorecard: delivery cost ↓ · rider earnings ↑ · ordering speed and ease unchanged. **QR to the prototype** (Demo landing page) + https://valmo-rescue-console.vercel.app + *"Every fix in this deck is built and tested in our prototype: try it in six minutes, no sign-in."*
+**Callout band:** the brief's three tests as a scorecard: delivery cost ↓ · rider earnings ↑ · ordering speed and ease unchanged · **plus our own fourth: no new assets** (everything runs on Valmo's existing hubs, apps and payout lines, and switches off cleanly). **QR to the prototype** (Demo landing page) + https://valmo-rescue-console.vercel.app + *"Every fix in this deck is built and tested in our prototype: try it in six minutes, no sign-in."*
 **Footer:** case data pack · Meesho RHP, Q1 FY27 letter · Valmo Delivery Services Agreement · our field research.
 **Bridge:** *"Here is where the failures happen."*
 
@@ -250,6 +251,7 @@ Our own Meesho COD test order: **promised 3 Oct → arrived 28 Sep, five days ea
 - One number to watch: **cost per successful delivery** → RTO % → extra deliveries per 100 / match rate / recovered deliveries.
 - Owners: last-mile ops (bonus, hub captains) · reverse ops (Router) · data science (score, doorsteps) · customer messaging (heads-up).
 - *"Nothing here needs new infrastructure: day 0 runs on tools we have already built and tested."*
+- **Kill means kill:** if the bonus doesn't pay in the test, or stops paying when it scales (net ₹ negative for 2 months in the region phase), we switch it off. Nothing was built, so nothing is written off; the test itself costs about ₹65,000 in bonuses.
 
 **Live in our prototype:** the **Ops "Close pilot"** card (Bonus vs Control verdict + the money ledger: owed, released, taken back, blocked) and the **18 green audit checks**. *Proves:* day 30's decision and every rupee are already computed and checked.
 **Callout:** *"Pilot 1 answers 'does ₹15 work?'; the region test answers 'at what price, for which orders?'"*
@@ -277,6 +279,7 @@ Our own Meesho COD test order: **promised 3 Oct → arrived 28 Sep, five days ea
 | Risk | Guard |
 |---|---|
 | The bonus doesn't pay | RE-PRICE → Pilot 2; the Attempt Check and the Router continue |
+| The bonus works in 4 hubs but not at scale | Region phase with a stop rule (net ₹ negative for 2 months → KILL). Asset-light: switching it off is a setting, with nothing to write off |
 | Riders correctly *predict* COD failure rather than cause it | Exactly what the test measures; a KILL is a cheap 30-day answer to the biggest open question |
 | The season or a trend distorts the result | Same-weeks comparison, never before/after |
 | Riders' interest is stated, not shown | We measure deliveries, not what riders say; 2 of 4 hubs are small-town |
@@ -311,7 +314,7 @@ Our own Meesho COD test order: **promised 3 Oct → arrived 28 Sep, five days ea
 
 **③ It learns, and stays asset-light**
 - Test data → learn which orders effort saves → set prices from evidence.
-- Software and incentives on existing floor space; no warehouses ("warehousing tends to have lower return on investment": Meesho's CEO). Works for Valmo and any carrier.
+- **Asset-light, like Valmo:** software and incentives on existing floor space, apps and payout lines; no warehouses ("warehousing tends to have lower return on investment": Meesho's CEO). The geo network is software on an open grid; the hub shelf for held parcels is space the hub already has. Every fix can be switched off. Works for Valmo and any carrier.
 
 **Live in our prototype:** the Ops tile **"Cost per successful delivery"** moving as the day plays out. *Proves:* the north-star number is already wired.
 **Callout (the last words of the deck):** *"Money that carries no information can't coordinate a network. Price the hard stop."*
@@ -379,6 +382,7 @@ Our own Meesho COD test order: **promised 3 Oct → arrived 28 Sep, five days ea
 | TrustMesh | 166 mn listings; RTO down >10% | Q4 FY26 letter |
 | Theft case | Surat, Apr 2026: 33,035 Meesho parcels (₹1.35 cr) falsely marked delivered | deshgujarat.com |
 | Prototype | 1,253 automated tests · 18 audit checks | Our prototype |
+| Cost of the 30-day test | ~₹65,000 in bonuses (≈ 6,000 bonus-arm flagged orders × ~72% delivered × ₹15) | Our calculation |
 
 ---
 
@@ -390,6 +394,7 @@ Our own Meesho COD test order: **promised 3 Oct → arrived 28 Sep, five days ea
 5. **"Is re-homing legal?"** Same state only (GST place of supply), seller opt-in, the seller stays the seller (FDI), the carrier never sells goods. Small non-GST sellers first.
 6. **"Doesn't Meesho already do geocoding?"** Yes (GeoIndia): it turns an address into a point. Our geo network adds what only deliveries can teach: the real doorstep, the customer's own landmark words, and each area's failure rate and price, on a hexagon grid like Uber's H3. It builds on GeoIndia; it doesn't replace it.
 11. **"Why hexagons?"** Every neighbour of a hexagon is the same distance away, so areas compare fairly and prices change smoothly from one cell to the next; Uber uses this for surge pricing and dispatch. Uber's H3 is open source, so Meesho needn't build the grid itself, only the delivery knowledge on top of it.
+12. **"What if the bonus doesn't scale?"** Then we kill it. Nothing we propose needs an asset: it is a setting, an incentive and a rule on Valmo's existing rails, so stopping costs nothing beyond the test (about ₹65,000 in bonuses). The Attempt Check and the Router carry on.
 7. **"What if the bonus doesn't work?"** RE-PRICE → Pilot 2; and the Attempt Check and the Router never depended on it.
 8. **"Is the prototype real?"** The rules are real code with 1,253 tests and 18 audit checks; the data is synthetic; WhatsApp sending is built but blocked by the Twilio trial.
 9. **"How sure is the 9% fake-attempt figure?"** It is our research blend, labelled so; the 8-week baseline measures the real rate. We never use the unsourced "15%".
