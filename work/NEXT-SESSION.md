@@ -1,6 +1,6 @@
 # NEXT SESSION: pick up from here
 
-> **DECK: Version B chosen (2 Oct).** Build from `work/29-deck-plan-full-rewrite.md` (slides 1, 2, 3, 9 there; slides 4–8 and 10 from `28`). Still open for slide 1–2: the real refusal split (count the Round 1 survey sheet) and the Round 2 [n].
+> **DECK: build from `work/deck.md` only (final, 2 Oct).** (28 and 29 are history.) Still open for slide 1–2: the real refusal split (count the Round 1 survey sheet) and the Round 2 [n].
 
 > **⭐⭐⭐⭐ LATEST (2 Oct, Session 17): the prompt-27 build is LIVE** at https://valmo-rescue-console.vercel.app (deployment `j66zrpnqb`, from `19ea2ca`; rollback = `27qa2ompb` / tag `freeze-candidate-2026-10-02`). Demo mode checked live: `/audit` 18 green, `/captain`, `/ops`, `/rider`, `/pilot`, `/desk`, no console errors, CSP header on. **Gaurav, still to do:** (1) add `CAPTAIN_KEY` (and a 20+ char `LIVE_KEY`) to Vercel Production and the Firewall rate rule on `/api/*`, then redeploy (`npx vercel deploy --prod --yes`); until then `/api/health` says {"ok":false} and Live mode is off (Demo is unaffected); (2) then open `/ops` in shared-day mode: if it says NEEDS RESET, press Reset once (the server normally replaces the old-shape day itself); (3) re-take deck shots 1, 5, 6, 11 (list in 28) + Demo QR + 90 s video on this build; (4) the real refusal split from the Round 1 survey sheet + the Round 2 n for slide 4.
 
