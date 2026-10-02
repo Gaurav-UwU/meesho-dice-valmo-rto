@@ -1,13 +1,6 @@
 import { Link } from 'react-router-dom'
 import { DEFAULT_HUB } from '../../ui/hub.ts'
-import { MOVES } from './content.ts'
-
-const FLOW = [
-  { label: 'A risky order is flagged', note: 'top 20% by Rescue Score' },
-  { label: 'The rider delivers it', note: 'confirmed with an OTP' },
-  { label: '₹15 is held, then released', note: 'unless the order comes back' },
-  { label: 'The pilot decides', note: 'GO, RE-PRICE or KILL' },
-] as const
+import { HERO, MOVES } from './content.ts'
 
 export function Hero() {
   return (
@@ -26,11 +19,9 @@ export function Hero() {
         <div className="land-hero-copy">
           <p className="land-eyebrow">Team GPS · IIT Bombay · Meesho DICE 3.0</p>
           <h1>
-            Try the Rescue Console <span>in about six minutes</span>
+            {HERO.title} <span>{HERO.titleSpan}</span>
           </h1>
-          <p className="land-pitch">
-            Pay a rider ₹15 only when a risky order actually gets delivered, and find out whether that is worth it. This page walks you through it, one tap at a time.
-          </p>
+          <p className="land-pitch">{HERO.pitch}</p>
           <div className="land-cta">
             <a className="land-btn land-btn--primary" href="#setup">
               Begin the walkthrough
@@ -46,7 +37,7 @@ export function Hero() {
           </ul>
         </div>
         <ol className="land-flow" aria-label="What you will see">
-          {FLOW.map((f, i) => (
+          {HERO.flow.map((f, i) => (
             <li key={f.label}>
               <span className="land-flow-dot" aria-hidden="true">
                 {i + 1}

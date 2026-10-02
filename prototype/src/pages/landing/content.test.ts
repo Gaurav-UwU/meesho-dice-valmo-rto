@@ -1,5 +1,37 @@
 import { describe, expect, it } from 'vitest'
-import { DEMO_STEPS, REAL_VS_SIMULATED } from './content.ts'
+import { DEMO_STEPS, HERO, MOVES, REAL_VS_SIMULATED } from './content.ts'
+
+describe('the landing hero presents the whole toolkit, not only the bonus', () => {
+  const heroText = `${HERO.title} ${HERO.titleSpan} ${HERO.pitch}`
+
+  it('the headline is not about the bonus alone', () => {
+    expect(`${HERO.title} ${HERO.titleSpan}`).not.toMatch(/₹15|bonus/i)
+  })
+
+  it('the pitch names all three tools and the fair test', () => {
+    expect(heroText).toMatch(/₹15/)
+    expect(heroText).toMatch(/fake attempt/i)
+    expect(heroText).toMatch(/hub captain/i)
+    expect(heroText).toMatch(/refused parcel/i)
+    expect(heroText).toMatch(/fair test/i)
+  })
+
+  it('the "what you will see" flow has a step for each tool', () => {
+    const flow = HERO.flow.map((f) => `${f.label} ${f.note}`).join(' ')
+    expect(HERO.flow.length).toBeGreaterThanOrEqual(5)
+    expect(flow).toMatch(/₹15/)
+    expect(flow).toMatch(/hub captain/i)
+    expect(flow).toMatch(/refused parcel/i)
+    expect(flow).toMatch(/GO, RE-PRICE or KILL/)
+  })
+
+  it('the moves put fake-attempt control next to the bonus, and say it works without it', () => {
+    const now = MOVES.find((m) => m.tag === 'Now')!
+    expect(`${now.title} ${now.text}`).toMatch(/fake-attempt/i)
+    expect(now.text).toMatch(/with or without the bonus/i)
+    expect(MOVES.map((m) => m.title).join(' ')).toMatch(/Refused-Parcel Router/)
+  })
+})
 
 const pilotRow = REAL_VS_SIMULATED.find((r) => r.layer === 'Pilot A/B')!
 const pilotStep = DEMO_STEPS.find((s) => s.id === 'pilot')!

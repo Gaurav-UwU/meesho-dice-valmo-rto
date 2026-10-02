@@ -83,8 +83,26 @@ export const DEMO_STEPS: readonly DemoStep[] = [
   },
 ]
 
+export const HERO = {
+  title: 'Fix every way a COD order fails',
+  titleSpan: 'in about six minutes',
+  pitch:
+    'A failed order isn’t always a changed mind: the parcel came early, the rider gave up, or nobody knocked. Try the fixes together: ₹15 for the hard delivery, a hub captain who checks fake attempts, and a router that finds each refused parcel its cheapest way back. A fair test decides which ones scale.',
+  flow: [
+    { label: 'A risky order is flagged', note: 'top 20% by Rescue Score' },
+    { label: 'The rider earns ₹15 for delivering it', note: 'confirmed with an OTP, on any attempt' },
+    { label: 'Fake attempts reach the hub captain', note: 'evidence first; a strike needs a reason' },
+    { label: 'A refused parcel finds a cheaper way back', note: 'second chance, a nearby buyer, or a batched return' },
+    { label: 'A fair test decides', note: 'GO, RE-PRICE or KILL' },
+  ],
+} as const
+
 export const MOVES = [
-  { tag: 'Now', title: 'Rescue Bonus', text: '₹15 to the rider, only when a top-20% risky order is delivered.' },
+  {
+    tag: 'Now',
+    title: 'Rescue Bonus + fake-attempt control',
+    text: '₹15 when a top-20% risky order is delivered; suspicious attempts go to the hub captain, with or without the bonus.',
+  },
   { tag: 'Next', title: 'Refused-Parcel Router', text: 'Each refused parcel takes its cheapest legal recovery.' },
   { tag: 'Later', title: 'Pay by difficulty', text: 'Price each stop by how hard it really is.' },
 ] as const

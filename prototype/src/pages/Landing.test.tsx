@@ -29,7 +29,8 @@ afterEach(cleanup)
 describe('Landing: one job, the demo', () => {
   it('leads with what to do: begin, or skip to the decision tool', () => {
     show()
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/Try the Rescue Console/)
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/Fix every way a COD order fails/)
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/about six minutes/)
     expect(screen.getByRole('link', { name: 'Begin the walkthrough' }).getAttribute('href')).toBe('#setup')
     expect(screen.getByRole('link', { name: 'Skip to the decision tool' }).getAttribute('href')).toBe('/pilot')
   })
