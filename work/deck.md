@@ -18,7 +18,7 @@
 2. **We went to riders, hubs and buyers, in metros and Tier 3/4 towns, and found failures come in three kinds**: *not ready* (the parcel came early and the cash wasn't there), *not wanting* (a better deal elsewhere), *not reached* (a faked attempt, a landmark address, the wrong hub).
 3. **Each kind gets its own fix**: pay the rider for the hard delivery and warn the customer before an early arrival; check that every failed attempt was real; find each refused parcel its cheapest way back.
 4. **Nothing scales on hope**: a fair 30-day test with pairs of equally good riders, and a rule fixed before it starts, decides GO, RE-PRICE or KILL; if the bonus fails, the other fixes still stand.
-5. **Long term, the risk score becomes a price**, and every delivery teaches Meesho where the real doorstep is.
+5. **Long term, the risk score becomes a price, set on Meesho's own map of India**: a hexagon grid like Uber's, where every delivery teaches Meesho the real doorstep and how hard each cell is to deliver.
 
 ## Headline test (read only these, in order: they must make one argument)
 1. Pay for the hard stop, check it was real, recover what still fails: 3 more of every 100 orders delivered
@@ -60,7 +60,7 @@ Our own Meesho COD test order: **promised 3 Oct → arrived 28 Sep, five days ea
 - **Now: Rescue Bonus.** ₹15 to the rider when a top-20% risky order is delivered: **−3 RTO points, ₹62–184 cr a year**, if a 30-day fair test confirms it.
 - **Now, alongside: Attempt Check + early-arrival heads-up.** A hub captain reviews suspicious "attempted" marks; customers are warned before a parcel arrives early ("pay by UPI, or keep my promised date").
 - **Next: Refused-Parcel Router** (₹50–140 cr a year, up to ₹270 cr) and **learned doorsteps** in one small-town hub.
-- **Long-term: pay by difficulty.**
+- **Long-term: pay by difficulty, on Meesho's own geo network.** A hexagon map of India, like the one Uber built for pricing and dispatch: every delivery teaches it the real doorstep, and every cell gets its own difficulty price.
 - Under the cards: *"If the bonus fails, the Attempt Check and the Router still stand: neither needs it."*
 
 **Callout band:** the brief's three tests as a scorecard: delivery cost ↓ · rider earnings ↑ · ordering speed and ease unchanged. **QR to the prototype** (Demo landing page) + https://valmo-rescue-console.vercel.app + *"Every fix in this deck is built and tested in our prototype: try it in six minutes, no sign-in."*
@@ -295,13 +295,14 @@ Our own Meesho COD test order: **promised 3 Oct → arrived 28 Sep, five days ea
 
 ## Slide 10: The 10x (criterion: 10x and long-term thinking)
 **Headline:** Today the risk score is a filter. Tomorrow it's a price
-**Message:** The ₹15 is the first price on a hard stop; the network learns to price every stop, and to know every door.
+**Message:** The ₹15 is the first price on a hard stop. Long term, Meesho runs its own geo network, a hexagon map of India like Uber's, that knows every door and prices every stop.
 
 **① Three horizons** (staircase)
 - **Now:** one ₹15 bonus on the riskiest 20%, tested against riders without it.
 - **6–12 months:** a price per parcel by difficulty: risk × distance × address × **time slot** (timing matters: the early-arrival finding; predicting *when* a customer is home cut delivery cost by up to 10.2% in a published study).
-- **6–12 months, alongside: every delivery teaches the map.** Customers in smaller towns give landmarks, not house numbers. Meesho learns the real doorstep from each OTP-verified delivery and keeps it as India Post's DIGIPIN plus the customer's own landmark words, on top of GeoIndia. A repeat customer's next order already knows the door; the right hub is picked from the doorstep; any carrier gets the same doorstep. It targets the 22% of RTOs that are "not reached" (≈ 3.7 RTO points, ~₹340 cr a year) and gets better with every order.
-- **Long term:** every node paid per successful outcome; refused parcels become a local inventory network.
+- **6–12 months, alongside: every delivery teaches the map.** Customers in smaller towns give landmarks, not house numbers. Meesho learns the real doorstep from each OTP-verified delivery and keeps it with the customer's own landmark words (and India Post's DIGIPIN, so any carrier can read it), on top of GeoIndia. A repeat customer's next order already knows the door; the right hub is picked from the doorstep. It targets the 22% of RTOs that are "not reached" (≈ 3.7 RTO points, ~₹340 cr a year).
+- **Long term: Meesho's own geo network.** Uber built its own hexagon grid (H3) to price and dispatch area by area; Meesho builds the same for Indian doorsteps. Each hexagon carries its learned doorsteps, its failure rate, its best delivery time and its **difficulty price**: pay by difficulty is set per cell, not per country. Every node is paid per successful outcome; refused parcels become a local inventory network matched within the cell. It gets better with every order, so no competitor can copy it quickly.
+- **Visual:** a small hexagon map of one town, cells shaded by difficulty, one cell opened to show "learned doorsteps 412 · failure 21% · best time 6–9 pm · price +₹12" (labelled *illustrative*).
 
 **② Judge carriers by cost per success** (bar chart)
 - Cost per success = (forward + RTO% × ₹120) ÷ (1 − RTO%). Valmo **₹84.8** today → **₹77.7** at 14% RTO.
@@ -314,7 +315,7 @@ Our own Meesho COD test order: **promised 3 Oct → arrived 28 Sep, five days ea
 
 **Live in our prototype:** the Ops tile **"Cost per successful delivery"** moving as the day plays out. *Proves:* the north-star number is already wired.
 **Callout (the last words of the deck):** *"Money that carries no information can't coordinate a network. Price the hard stop."*
-**Footer:** Meesho Q1 FY27 earnings call · Kandula, Krishnamoorthy & Roy, *Decision Support Systems* 149 (2021) · MediaNama, 2 Feb 2026 · India Post DIGIPIN (check the spec) · our calculation.
+**Footer:** Meesho Q1 FY27 earnings call · Kandula, Krishnamoorthy & Roy, *Decision Support Systems* 149 (2021) · MediaNama, 2 Feb 2026 · Uber H3 (open-source hexagonal grid) · India Post DIGIPIN (check the spec) · our calculation.
 
 ---
 
@@ -387,7 +388,8 @@ Our own Meesho COD test order: **promised 3 Oct → arrived 28 Sep, five days ea
 3. **"Why not compare with last year?"** RTO moves with the season and with prepaid more than our whole effect; only a same-weeks comparison isolates the bonus.
 4. **"Won't riders fake attempts to farm it?"** The bonus pays only on a delivery; a weak attempt goes to the captain; strikes block the bonus; the safety rule caps fake attempts at 2 points above riders without the bonus.
 5. **"Is re-homing legal?"** Same state only (GST place of supply), seller opt-in, the seller stays the seller (FDI), the carrier never sells goods. Small non-GST sellers first.
-6. **"Doesn't Meesho already do geocoding?"** Yes (GeoIndia). We add the doorstep learned from real deliveries and the customer's own landmark words, which smaller-town addresses need.
+6. **"Doesn't Meesho already do geocoding?"** Yes (GeoIndia): it turns an address into a point. Our geo network adds what only deliveries can teach: the real doorstep, the customer's own landmark words, and each area's failure rate and price, on a hexagon grid like Uber's H3. It builds on GeoIndia; it doesn't replace it.
+11. **"Why hexagons?"** Every neighbour of a hexagon is the same distance away, so areas compare fairly and prices change smoothly from one cell to the next; Uber uses this for surge pricing and dispatch. Uber's H3 is open source, so Meesho needn't build the grid itself, only the delivery knowledge on top of it.
 7. **"What if the bonus doesn't work?"** RE-PRICE → Pilot 2; and the Attempt Check and the Router never depended on it.
 8. **"Is the prototype real?"** The rules are real code with 1,253 tests and 18 audit checks; the data is synthetic; WhatsApp sending is built but blocked by the Twilio trial.
 9. **"How sure is the 9% fake-attempt figure?"** It is our research blend, labelled so; the 8-week baseline measures the real rate. We never use the unsourced "15%".
