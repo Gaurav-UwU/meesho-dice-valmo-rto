@@ -68,6 +68,7 @@ Judges score research quality first. The Round 1 slides show the Round 1 researc
 | 14 | Prior art: Amazon's 2012 patent (US 8,615,473) offers the cost of a return as a discount to a nearby buyer | Name it first: the same principle, pushed to the last-mile hub, where India's COD economics make it pay | 7 |
 | 15 | Meesho allocates lanes by lowest cost, no fixed Valmo share (Q1 FY27 call) | Allocate by cost per *successful* delivery | 10 |
 | 16 | Predicting *when* the customer is home cut delivery cost up to 10.2% (Kandula et al., *Decision Support Systems* 2021) | Time slot is one input to the difficulty price | 10 |
+| 17 | **Tier 3/4 customers describe addresses by landmarks, not house numbers** (Round 2 field research). Unclear address (13%) + far/wrong hub (9%) = 22% of RTOs, about 3.7 RTO points or ~₹340 cr a year of return cost. Meesho already runs address geocoding (GeoIndia, Round 1 slide 2 "already in play"); India Post's DIGIPIN gives every ~4 m square a free 10-character code | Don't invent a new code: **learn each customer's real doorstep from OTP-verified deliveries**, store it as a DIGIPIN + their landmark words, ask for a one-tap WhatsApp location only when confidence is low (after the order, never at checkout), and share it with any carrier | 8, 10 |
 
 **State the research limits ourselves:** riders willing to talk are the least busy; stated interest in a bonus is not behaviour; no published Indian RTO cause split exists, so ours (the Round 1 pie) is a labelled blend of rider + buyer research, the industry NDR mix and the data pack; every vendor number is self-reported. Round 2 research covered Tier 3/4 as well as metro. The pilot's Control group answers the biggest unknown: do riders *cause* COD failure or correctly *predict* it?
 
@@ -276,7 +277,7 @@ Returns and complaints: watched Bonus vs Control, as Round 1 promised; a rise st
 | **R1 Rescue Bonus** | Pilot 1: 4 hubs, 24 rider pairs, top 20%, rule locked | **If GO:** one region (~40 hubs) with a **price test** (Round 1's "A/B the bonus level", at a scale that can see it): hubs randomly at ₹0 / ₹10 / ₹15 (and top 10% vs 20%), each compared with its own baseline and the ₹0 hubs over the same weeks. **If RE-PRICE:** Pilot 2 with one lever changed, rule locked first | Scale decision; start difficulty-priced tiers |
 | **R2 Fake-attempt control** | Day 0 in every pilot hub, both groups: hub-captain review, strikes, rider monitor | Tune the evidence thresholds and the ladder from baseline data | Roll out with the bonus, or alone if the bonus is killed |
 | **C1 Router** | UP cluster (3 hubs): measure dwell time + "not ready" vs "not wanting" refusals; second chance live | Manual Hold & Re-home with 30–50 opted-in same-state sellers (non-GST first); batched returns | Automate matching if match rate ≥ 5.5% |
-| **P1 / P2** | **Early-arrival heads-up** in pilot hubs (no build: one WhatsApp when a COD parcel will arrive before its promised date: "pay by UPI, or keep my promised date"; uses the customer messaging Valmo is rolling out) | Two-way WhatsApp on bonus orders; address fix in 1 small-town hub | Decide on each |
+| **P1 / P2** | **Early-arrival heads-up** in pilot hubs (no build: one WhatsApp when a COD parcel will arrive before its promised date: "pay by UPI, or keep my promised date"; uses the customer messaging Valmo is rolling out) | Two-way WhatsApp on bonus orders. **P2, learned doorsteps, in 1 small-town hub:** store the doorstep from every OTP-verified delivery (as a DIGIPIN + the landmark text) and send a one-tap WhatsApp location request to low-confidence addresses before dispatch; measure address-caused RTO vs a similar hub without it | Decide on each; if address RTO falls, roll out learned doorsteps region by region |
 | **Success metric** | Low end of the range ≥ +8.6; normal orders ≥ Control − 1 pt; suspected fakes ≤ Control + 2 pts; heads-up: refusals on early arrivals vs a no-message hub | Cost per rescued order ≤ ₹120; match rate vs 5.5%; WhatsApp reply rate; recovered deliveries from reviews | Valmo RTO and cost per successful delivery vs baseline |
 | **Kill / re-tune** | Uplift < +3, or a safety rule breaks; heads-up raises cancellations | Match rate < 3%; any custody incident; more than 1 in 3 strikes overturned, or reviews cost more than they recover | Net ₹ negative for 2 months |
 - Loop picture: **Pilot 1 → learn → Pilot 2 → scale**, "one lever changed, rule locked first". *"Pilot 1 answers 'does ₹15 work?'; the region phase answers 'which price and which cut?'"*
@@ -309,6 +310,7 @@ Returns and complaints: watched Bonus vs Control, as Round 1 promised; a rise st
 | Demand forecast wrong for thin listings | C1 | Med | Hold only on the low end; confidence label; kill rule |
 | Marketplace seen as controlling stock (FDI) | C1 | Low–Med | Seller opt-in and rules; neutral allocation; the seller keeps title |
 | Heads-up nudges some buyers to cancel | P1 | Low–Med | "Keep my promised date" is the default choice; cancels measured vs a no-message hub |
+| A stored doorstep is personal data, or wrong (shared homes, GPS drift, a faked attempt) | P2 | Med | Consent and delivery-only use (DPDP Act 2023), a delete option; learn only from OTP-verified deliveries, averaged over several; keep the landmark text next to the pin |
 | Volume shifts to 3PLs (~50% in Q1 FY27) | All | Med | Carrier-agnostic design (slide 10) |
 "Also guarded" line: unfair groups (pairs + coin) · pickup no-shows (48 h) · buyer 1's data (label covered) · WhatsApp fatigue (cap 4 per order).
 **Callout:** *"Every guard is either already in Valmo's process (OTP, cash reconciliation, verification call) or built and tested in our prototype."*
@@ -324,6 +326,7 @@ Returns and complaints: watched Bonus vs Control, as Round 1 promised; a rise st
 **① Three horizons** (staircase visual)
 - **Now:** one ₹15 bonus on the riskiest 20%, tested against a Control group.
 - **6–12 months:** a price per parcel by difficulty: risk × distance × address × **time slot**. Our early-arrival finding says *timing* matters as much as risk, and predicting when the customer is home cut delivery cost up to 10.2% in a published study (Kandula et al., 2021).
+- **6–12 months, alongside: every delivery teaches the map.** Tier 3/4 customers give landmarks, not house numbers, so Meesho learns the real doorstep from each OTP-verified delivery and keeps it as a DIGIPIN (India Post's free ~4 m grid code) plus the customer's own landmark words, on top of GeoIndia. A repeat customer's second order already knows the door; the right hub is picked from the pin, not the PIN code; any carrier gets the same doorstep. It targets the 22% of RTOs that are "not reached" (address 13% + wrong hub 9%) and gets better with every order, which is hard to copy.
 - **Long-term:** every node paid per successful outcome; refused parcels become a local inventory network (C1 at scale).
 **② Judge carriers by cost per success** (bar chart)
 - Cost per success = (forward + RTO% × ₹120) ÷ (1 − RTO%). Valmo **₹84.8** today → **₹77.7** at 14% RTO.
@@ -334,7 +337,7 @@ Returns and complaints: watched Bonus vs Control, as Round 1 promised; a rise st
 - Software + incentives on existing floor space; no warehouses (Vidit Aatrey: warehousing "tends to have lower ROI"). Works for Valmo and 3PLs alike.
 - Hubs earn ₹5 per delivered parcel today; paying by outcome lines up rider, hub and Meesho on the same number.
 **Callout (the last words of the deck):** *"Money that carries no information can't coordinate a network. Price the hard stop."*
-**Footer:** Meesho Q1 FY27 earnings call (23 Jul 2026) · Kandula, Krishnamoorthy & Roy, *Decision Support Systems* 149 (2021) · MediaNama, 2 Feb 2026 · our cost-per-success calculation · Round 2 field research (hub pay).
+**Footer:** Meesho Q1 FY27 earnings call (23 Jul 2026) · Kandula, Krishnamoorthy & Roy, *Decision Support Systems* 149 (2021) · MediaNama, 2 Feb 2026 · India Post DIGIPIN · our cost-per-success calculation · Round 2 field research (hub pay, Tier 3/4 addresses).
 
 ---
 
@@ -364,6 +367,8 @@ Returns and complaints: watched Bonus vs Control, as Round 1 promised; a rise st
 | Cost per successful delivery | ₹84.8 → ₹77.7 | Our calculation |
 | City spread | Vadodara 18% vs Patna 35% | Shipway 2025 |
 | Delivery time | RTO 22% (1–2 days) → 35% (5+ days) | Shipway 2025 |
+| Address-caused RTOs | unclear address 13% + far/wrong hub 9% = 22% of RTOs ≈ 3.7 RTO points ≈ ₹340 cr a year | Round 1 pie / our calculation |
+| DIGIPIN | India Post's free 10-character code for a ~4 m × 4 m square | India Post (**check the exact spec before the slide**) |
 | Seasonality | D2C RTO ~39% (Nov 2025) → ~21% (Feb 2026) | Unicommerce 2026 |
 | TrustMesh | 166 mn listings; RTO down >10% | Q4 FY26 letter |
 
