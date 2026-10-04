@@ -1,6 +1,6 @@
 # NEXT SESSION: pick up from here
 
-> **⭐⭐⭐⭐⭐ LATEST (4 Oct, Session 19): prototype and deck aligned.** Commits `d04535d` (early-arrival WhatsApp + "Keep my promised date") and `0b990aa` (ladder step 3 = bonus suspended for the rest of the pilot; no hub manager) are pushed; preview `ot5h5bm8a` is up. **Production deploy waits for Gaurav's "go prod"** (`cd prototype && node scripts/build-api.mjs && npx vercel deploy --prod --yes`). The deck `GPS_IIT Bombay_ROUND_2_v2.pptx` is updated to match (slides 2, 5, 6, 7, 8). Details: Session 19 at the bottom of `work/R2-HANDOVER.md`.
+> **⭐⭐⭐⭐⭐ LATEST (4 Oct, Session 19): prototype and deck aligned.** Commits `d04535d` (early-arrival WhatsApp + "Keep my promised date") and `0b990aa` (ladder step 3 = bonus suspended for the rest of the pilot; no hub manager) are pushed; both are **LIVE in production** (`agn0k8co1`, checked: early arrival, `/audit` 18 green). The deck `GPS_IIT Bombay_ROUND_2_v2.pptx` is updated to match (slides 2, 5, 6, 7, 8). Details: Session 19 at the bottom of `work/R2-HANDOVER.md`.
 
 > **DECK: build from `work/deck.md` only (final, 2 Oct).** (28 and 29 are history.) Still open for slide 1–2: the real refusal split (count the Round 1 survey sheet) and the Round 2 [n].
 
