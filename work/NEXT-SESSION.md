@@ -1,6 +1,8 @@
 # NEXT SESSION: pick up from here
 
-> **⭐⭐⭐⭐⭐⭐ LATEST (4 Oct, late): the working deck is `GPS_IIT Bombay_ROUND_2_v5.pptx`** (v2 + the teammate's v4 merged; details at the bottom of `work/R2-HANDOVER.md`). Open items: prototype "go prod" for the captain-₹10 removal; free re-attempt by the same rider not yet in the prototype.
+> **NEXT BUILD: `work/32-prototype-plan-calling-landing.md`** (same-rider re-attempt, in-app calling, landing clean-up; prompt at the bottom). Must ship before submission.
+
+> **⭐⭐⭐⭐⭐⭐ (4 Oct, late): the working deck is `GPS_IIT Bombay_ROUND_2_v5.pptx`** (v2 + the teammate's v4 merged; details at the bottom of `work/R2-HANDOVER.md`). Open items: prototype "go prod" for the captain-₹10 removal; free re-attempt by the same rider not yet in the prototype.
 
 > **⭐⭐⭐⭐⭐ (4 Oct, Session 19): prototype and deck aligned.** Commits `d04535d` (early-arrival WhatsApp + "Keep my promised date") and `0b990aa` (ladder step 3 = bonus suspended for the rest of the pilot; no hub manager) are pushed; both are **LIVE in production** (`agn0k8co1`, checked: early arrival, `/audit` 18 green). The deck `GPS_IIT Bombay_ROUND_2_v2.pptx` is updated to match (slides 2, 5, 6, 7, 8). Details: Session 19 at the bottom of `work/R2-HANDOVER.md`.
 
