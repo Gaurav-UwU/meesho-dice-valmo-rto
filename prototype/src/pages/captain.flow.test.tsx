@@ -126,7 +126,8 @@ describe('the captain screen', () => {
     const panel = await screen.findByRole('region', { name: 'Outcome of fake-attempt control' })
     expect(within(panel).getByText(/too early: 0 of 30 attempts/)).toBeTruthy()
     expect(panel.textContent).toMatch(/4% fake share in the simulation is an assumption/)
-    expect(panel.textContent).toMatch(/1 in 10/)
+    expect(panel.textContent).toMatch(/part of the hub captain’s job/)
+    expect(panel.textContent).not.toMatch(/1 in 10|Minus reviews|₹10/)
   })
 })
 

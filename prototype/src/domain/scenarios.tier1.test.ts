@@ -200,9 +200,9 @@ describe('scenario 3: a fake attempt becomes an exception and a free re-attempt 
     expect(reduce(day, { type: 'resolveException', at: AT, orderId: bonusId, action: 'confirm' })).toBe(day)
   })
 
-  it('resolving by a person books ₹10 of review labour on the bonus stream', () => {
+  it('resolving by a person books no review labour: the hub captain reviews as part of the job, with no extra pay', () => {
     const s = run(faked, { type: 'resolveException', at: AT + 2, orderId: bonusId, action: 'confirm' })
-    expect(costLedger(s).find((c) => c.line === 'Exception review labour')).toMatchObject({ amount: 10, stream: 'bonus' })
+    expect(costLedger(s).find((c) => /review labour/i.test(c.line))).toBeUndefined()
   })
 })
 

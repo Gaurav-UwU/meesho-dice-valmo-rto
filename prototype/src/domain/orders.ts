@@ -6,8 +6,6 @@ import { failRehome } from './routing.ts'
 import { captainName, enhancedReview, hasNote, recordStrike, STRIKE_REASONS, strikeSupport } from './captain.ts'
 import type { ExceptionAction, ExceptionItem, StopRecord, StrikeReason } from './types.ts'
 
-/** Cost of a person reviewing a disputed attempt (assumption, Valmo, bonus stream) */
-export const EXCEPTION_REVIEW_COST = 10
 /** An exception nobody resolves in this long becomes a free re-attempt on its own */
 export const EXCEPTION_DEFAULT_MS = 24 * 60 * 60 * 1000
 
@@ -107,8 +105,8 @@ function markResolved(s: S, orderId: string, action: ExceptionAction, at: number
         : e,
     ),
   }
-  const logged = emit(next, at, 'EXCEPTION_RESOLVED', { action, auto, ...(auto ? { captainMissed: true } : {}) }, { orderId, riderId: item.riderId })
-  return auto ? logged : bookCost(logged, at, 'Exception review labour', EXCEPTION_REVIEW_COST, 'Valmo', 'bonus', orderId)
+  // No review cost is booked: the hub captain reviews as part of the job, with no extra pay (the hub already earns per delivered order).
+  return emit(next, at, 'EXCEPTION_RESOLVED', { action, auto, ...(auto ? { captainMissed: true } : {}) }, { orderId, riderId: item.riderId })
 }
 
 /**

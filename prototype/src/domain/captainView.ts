@@ -1,8 +1,7 @@
 import { median } from '../engine/math.ts'
 import { DAY_MS, HOUR_MS } from './clock.ts'
-import { activeStrikes, enhancedReview, OVERTURN_WINDOW_MS, riderStep, REVIEW_COST, STRIKE_ACTIVE_MS, STRIKE_REASON_LABEL, type LadderStep } from './captain.ts'
+import { activeStrikes, enhancedReview, OVERTURN_WINDOW_MS, riderStep, STRIKE_ACTIVE_MS, STRIKE_REASON_LABEL, type LadderStep } from './captain.ts'
 import { isDelivered } from './lifecycle.ts'
-import { costLedger } from './ledger.ts'
 import { riderName } from './helpers.ts'
 import type { DayState, ExceptionItem, StrikeRecord } from './types.ts'
 
@@ -207,17 +206,14 @@ export interface OutcomeKpis {
   readonly medianHoursToDecide: number | undefined
   /** Free re-attempt or strike orders that ended delivered */
   readonly recovered: number
-  /** Human reviews: a captain decision on a dispute or on a held bonus (₹10 each) */
+  /** Human reviews: a captain decision on a dispute or on a held bonus. Part of the captain's job: no extra pay, no cost to Valmo. */
   readonly reviews: number
   readonly savedGross: number
-  readonly reviewCost: number
   /** ₹15 paid (not blocked, not clawed back) on the recovered deliveries in the Bonus arm: the rider who delivers is paid, so it is not a saving */
   readonly bonusPaidOnRecovered: number
   readonly netSaved: number
   /** Share of person-reviewed disputes that ended in a recovered delivery; undefined until something was reviewed */
   readonly recoveryShare: number | undefined
-  /** A review pays when more than this share ends in a delivery: ₹10 ÷ ₹99 */
-  readonly breakEvenShare: number
   /** At least 30 attempts have been logged */
   readonly enough: boolean
 }
@@ -227,12 +223,10 @@ export function outcomeKpis(s: DayState): OutcomeKpis {
   const resolved = s.exceptions.filter((e) => e.status === 'resolved' && e.overtaken !== true)
   const byPerson = resolved.filter((e) => e.captainMissed !== true)
   const recoveredItems = resolved.filter((e) => (e.action === 'free_reattempt' || e.action === 'strike') && isDelivered(s.stops[e.orderId]?.status ?? 'scored'))
-  const costs = costLedger(s)
-  const reviews = (costs.find((c) => c.line === 'Exception review labour')?.count ?? 0) + (costs.find((c) => c.line === 'Bonus hold review labour')?.count ?? 0)
+  const reviews = byPerson.length + s.events.filter((e) => e.type === 'BONUS_REVIEWED').length
   const recoveredIds = new Set(recoveredItems.map((e) => e.orderId))
   const bonusPaid = s.ledger.filter((l) => recoveredIds.has(l.orderId) && l.status !== 'blocked' && l.status !== 'clawed_back').reduce((t, l) => t + l.amount, 0)
   const savedGross = recoveredItems.length * RECOVERED_VALUE
-  const reviewCost = reviews * REVIEW_COST
   const hours = byPerson.map((e) => ((e.resolvedSim ?? e.openedSim) - e.openedSim) / HOUR_MS)
   const reviewedRecovered = recoveredItems.filter((e) => e.captainMissed !== true).length
   return {
@@ -246,11 +240,9 @@ export function outcomeKpis(s: DayState): OutcomeKpis {
     recovered: recoveredItems.length,
     reviews,
     savedGross,
-    reviewCost,
     bonusPaidOnRecovered: bonusPaid,
-    netSaved: savedGross - reviewCost - bonusPaid,
+    netSaved: savedGross - bonusPaid,
     recoveryShare: byPerson.length === 0 ? undefined : reviewedRecovered / byPerson.length,
-    breakEvenShare: REVIEW_COST / RECOVERED_VALUE,
     enough: attempts >= KPI_MIN_ATTEMPTS,
   }
 }

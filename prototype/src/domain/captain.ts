@@ -2,7 +2,7 @@ import { EVIDENCE_RULE } from '../engine/attempts.ts'
 import type { Hub } from '../engine/types.ts'
 import { DAY_MS, HOUR_MS } from './clock.ts'
 import { emit } from './events.ts'
-import { bookCost, feedAdd, riderName, type S } from './helpers.ts'
+import { feedAdd, riderName, type S } from './helpers.ts'
 import type { BonusReview, ExceptionItem, StopRecord, StrikeReason, StrikeRecord } from './types.ts'
 
 /**
@@ -16,8 +16,6 @@ export const STRIKE_ACTIVE_MS = 30 * DAY_MS
 export const OVERTURN_WINDOW_MS = 48 * HOUR_MS
 /** At 2 active strikes every failed attempt of the rider goes to the captain for 14 days */
 export const ENHANCED_REVIEW_MS = 14 * DAY_MS
-/** Cost of a person reviewing one thing (assumption, Valmo) */
-export const REVIEW_COST = 10
 /** The captain reads a held bonus inside the 7-day return window */
 export const BONUS_HOLD_WINDOW_MS = 7 * DAY_MS
 /** A strike needs more than the customer's word: this many OTHER disputed attempts by the rider in the last 7 days count as "a repeated pattern" */
@@ -201,5 +199,6 @@ export function reviewBonus(s: S, a: { readonly at: number; readonly orderId: st
     next = emit(next, a.at, 'BONUS_BLOCKED', { amount: entry.amount, reason: text, afterAccrual: true }, { orderId: a.orderId, riderId: entry.riderId })
     next = feedAdd(next, a.at, 'bonus', `₹${entry.amount} for ${riderName(s, entry.riderId)} ${text}`, a.orderId)
   }
-  return bookCost(next, a.at, 'Bonus hold review labour', REVIEW_COST, 'Valmo', 'bonus', a.orderId)
+  // No review cost is booked: the captain reviews as part of the job, with no extra pay.
+  return next
 }

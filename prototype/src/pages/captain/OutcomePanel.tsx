@@ -1,5 +1,4 @@
 import { outcomeKpis, RECOVERED_VALUE, KPI_MIN_ATTEMPTS } from '../../domain/captainView.ts'
-import { REVIEW_COST } from '../../domain/captain.ts'
 import type { DayState } from '../../domain/types.ts'
 
 const rs = (x: number): string => `${x < 0 ? '−' : ''}₹${Math.abs(Math.round(x)).toLocaleString('en-IN')}`
@@ -50,7 +49,8 @@ export function OutcomePanel({ state }: { readonly state: DayState }) {
           <strong>{rs(k.savedGross)}</strong>
         </p>
         <p>
-          <strong>Minus reviews:</strong> {k.reviews} human review{k.reviews === 1 ? '' : 's'} × {rs(REVIEW_COST)} = {rs(k.reviewCost)}
+          <strong>Reviews:</strong> {k.reviews} decision{k.reviews === 1 ? '' : 's'} by the captain, part of the hub captain’s job: no extra pay and no cost to Valmo (the hub already earns on every delivered
+          order).
         </p>
         {state.config.bonus > 0 ? (
           <p>
@@ -60,14 +60,11 @@ export function OutcomePanel({ state }: { readonly state: DayState }) {
         <p className="cap-net">
           Net so far: <strong className={k.netSaved < 0 ? 'ops-bad' : 'ops-good'}>{k.attempts === 0 ? '—' : rs(k.netSaved)}</strong>
         </p>
-        <p className="ops-muted">
-          Break-even: a review pays if more than about 1 in 10 reviewed disputes ends in a delivery ({rs(REVIEW_COST)} ÷ {rs(RECOVERED_VALUE)} ≈ {pct(k.breakEvenShare)}). So far: {pct(k.recoveryShare)} of
-          reviewed disputes ended in a recovered delivery.
-        </p>
+        <p className="ops-muted">So far: {pct(k.recoveryShare)} of reviewed disputes ended in a recovered delivery.</p>
       </div>
       <p className="ops-note">
-        The 4% fake share in the simulation is an assumption; the 8-week baseline measures the real one. {early ? 'Under 30 attempts these numbers are too early to read.' : ''} The ₹99, ₹10 and ₹120 figures are the
-        case pack and our assumptions, not measurements.
+        The 4% fake share in the simulation is an assumption; the 8-week baseline measures the real one. {early ? 'Under 30 attempts these numbers are too early to read.' : ''} The ₹99 and ₹120 figures come from the
+        case pack, not measurements.
       </p>
     </section>
   )

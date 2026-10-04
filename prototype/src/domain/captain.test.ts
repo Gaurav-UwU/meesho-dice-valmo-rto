@@ -5,6 +5,7 @@ import { OVERTURN_WINDOW_MS, activeCount, bonusSuspended, captainName, enhancedR
 import { DAY_MS, HOUR_MS } from './clock.ts'
 import { createDay, DEFAULT_CONFIG } from './day.ts'
 import { eventsOf } from './events.ts'
+import { outcomeKpis } from './captainView.ts'
 import { costLedger } from './ledger.ts'
 import { reduce } from './reducer.ts'
 import { demoRiders, stopsOf } from './selectors.ts'
@@ -270,11 +271,12 @@ describe('24 h of silence: a free re-attempt marked "the captain did not decide"
     expect(eventsOf(s, 'EXCEPTION_RESOLVED')[0].data).toMatchObject({ captainMissed: true })
   })
 
-  it('a captain decision is not marked as missed and costs one review (₹10)', () => {
+  it('a captain decision is not marked as missed and books no review cost', () => {
     const s = decide(faked, ofBonus[0], 'free_reattempt')
     expect(s.exceptions[0].captainMissed).toBeUndefined()
     expect(s.exceptions[0].captainName).toBe(captainName(day.hub))
-    expect(costLedger(s).find((c) => c.line === 'Exception review labour')).toMatchObject({ amount: 10, count: 1 })
+    // the captain is not paid per review: no review labour is booked to Valmo
+    expect(costLedger(s).find((c) => /review labour/i.test(c.line))).toBeUndefined()
   })
 
   it('the 24 h default is never a strike, whatever the reason chip', () => {
@@ -354,7 +356,8 @@ describe('the parking-gap hold: a weak earlier attempt by the SAME rider holds t
     const s = reduce(held, { type: 'reviewBonus', at: AT + 20, orderId: bonusId, decision: 'release' })
     expect(s.ledger[0]).toMatchObject({ status: 'pending' })
     expect(s.ledger[0].review).toMatchObject({ state: 'cleared', captainName: captainName(day.hub) })
-    expect(costLedger(s).find((c) => c.line === 'Bonus hold review labour')).toMatchObject({ amount: 10 })
+    expect(costLedger(s).find((c) => /review labour/i.test(c.line))).toBeUndefined()
+    expect(outcomeKpis(s).reviews).toBe(1)
   })
 
   it('the captain can withhold it, but a withhold needs a reason chip', () => {

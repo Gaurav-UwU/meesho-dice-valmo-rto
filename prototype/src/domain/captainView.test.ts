@@ -141,16 +141,16 @@ describe('outcome KPIs (the numbers that show it solves the same problem)', () =
     expect(k.medianHoursToDecide).toBeUndefined()
   })
 
-  it('a recovered delivery is a free re-attempt (or strike) order that ends delivered: ₹99 each, less ₹10 per human review', () => {
+  it('a recovered delivery is a free re-attempt (or strike) order that ends delivered: ₹99 each; the captain’s review is counted but costs Valmo nothing', () => {
     let s = setPayment(day, ids[0], 'PREPAID')
     s = decide(attempt(s, ids[0], FAR, AT + 10), ids[0], 'free_reattempt', AT + 11)
     s = deliverOrder(s, ids[0], '1357', AT + 20)
     const k = outcomeKpis(s)
     expect(k).toMatchObject({ disputed: 1, recovered: 1, reviews: 1 })
     expect(k.savedGross).toBe(99)
-    expect(k.reviewCost).toBe(10)
+    expect(k).not.toHaveProperty('reviewCost')
     expect(k.bonusPaidOnRecovered).toBe(day.stops[ids[0]].flagged && day.stops[ids[0]].arm === 'bonus' ? 15 : 0)
-    expect(k.netSaved).toBe(99 - 10 - k.bonusPaidOnRecovered)
+    expect(k.netSaved).toBe(99 - k.bonusPaidOnRecovered)
   })
 
   it('subtracts the ₹15 paid on a recovered delivery in the Bonus arm (the rider who delivers it is paid)', () => {
@@ -160,11 +160,11 @@ describe('outcome KPIs (the numbers that show it solves the same problem)', () =
     s = deliverOrder(s, flaggedBonus, '1357', AT + 20)
     const k = outcomeKpis(s)
     expect(k.bonusPaidOnRecovered).toBe(15)
-    expect(k.netSaved).toBe(99 - 10 - 15)
+    expect(k.netSaved).toBe(99 - 15)
   })
 
-  it('the break-even is about 1 in 10 reviewed disputes ending in a delivery (₹10 ÷ ₹99)', () => {
-    expect(outcomeKpis(day).breakEvenShare).toBeCloseTo(10 / 99, 6)
+  it('reviews by the hub captain are part of the job: no break-even share, no review cost', () => {
+    expect(outcomeKpis(day)).not.toHaveProperty('breakEvenShare')
   })
 
   it('a bonus clawed back after a customer return is not "paid on a recovered delivery"', () => {
