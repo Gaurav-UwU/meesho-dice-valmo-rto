@@ -59,6 +59,7 @@ URL: https://www.valmo.in/static-assets/valmo-partner-app/documents/valmo-app-de
 | Item | Source | Cred. |
 |---|---|---|
 | Gig-worker incentive RCT: effects vary by worker | Butschek, González Amor, Kampkötter & Sliwka, "Motivating gig workers", *Labour Economics* 2022 (IZA DP 12667) | P (academic) |
+| **Courier incentive RCT (on deck slide 8):** Zurich bicycle messengers (two services, commission-only), randomly given a **25% higher commission for 4 weeks** (Sept 2000). Overall labour-supply elasticity **1.12–1.25** (≈ +28–31% total output), hours elasticity 1.34–1.50 (more shifts); **effort per shift fell "roughly 6 percent"** (elasticity −0.24), driven by loss-averse riders (a third showed no drop). Deck wording: "~30% more in total, yet effort per shift fell ~6%" | Fehr & Goette, "Do Workers Work More if Wages Are High? Evidence from a Randomized Field Experiment", *American Economic Review* 97(1): 298–317, 2007 (pp. 298–299 checked; IZA DP 1002) | P (academic) |
 | Rain pay ₹15–50 per order in geofenced zones (paying per order for difficulty) | BusinessToday, May 2025 + blogs | S |
 | Amazon DSP scorecard bonuses (fleet-level, success-based) | aboutamazon.com ($660M in rate increases and bonuses) + consultancy blogs | P/S |
 | Flipkart Open Box delivery (check at the door, then OTP) | stories.flipkart.com, 2 Sep 2025 | P |
