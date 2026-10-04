@@ -2,7 +2,7 @@ import { assessAttempt, attemptConfidence } from '../engine/attempts.ts'
 import { roadKmEstimate } from '../engine/geo.ts'
 import { logit, sigmoid } from '../engine/math.ts'
 import { flagBonusEligible, rescueScore } from '../engine/rescue.ts'
-import { MINUTE_MS, nextDayStart } from './clock.ts'
+import { DAY_MS, MINUTE_MS, nextDayStart } from './clock.ts'
 import { closePilot } from './close.ts'
 import { emit } from './events.ts'
 import { bookSecondChanceLeg, feedAdd, moveOrder, msgAdd, patchStop, riderName, sendProactive, tap, type S } from './helpers.ts'
@@ -11,17 +11,19 @@ import { deliveredStatus, isDelivered } from './lifecycle.ts'
 import {
   PAY_BUTTONS,
   REACH_BUTTONS,
-  REPLY_BUTTONS,
   YES_NO,
   addressFixedAck,
   attemptCheckText,
+  daysEarly,
   deliveryOtpText,
+  keepDateAck,
   orderDayButtons,
   orderDayText,
   paymentFailAck,
   paymentOkAck,
   refusalOtpText,
   replyAck,
+  replyLabel,
   rescheduleCheckText,
 } from './messages.ts'
 import { askReview, overturnStrike, reviewBonus } from './captain.ts'
@@ -95,8 +97,8 @@ function startDay(s: S, at: number): S {
       at,
       direction: 'out',
       kind: 'order_day',
-      text: orderDayText(st.order.awb, st.order.payment === 'COD', st.order.value),
-      buttons: orderDayButtons(st.order.payment === 'COD'),
+      text: orderDayText(st.order.awb, st.order.payment === 'COD', st.order.value, daysEarly(st.order.id, st.order.payment === 'COD')),
+      buttons: orderDayButtons(st.order.payment === 'COD', daysEarly(st.order.id, st.order.payment === 'COD')),
     })
   }
   return next
@@ -105,10 +107,11 @@ function startDay(s: S, at: number): S {
 function customerReply(s: S, a: Extract<Action, { type: 'customerReply' }>): S {
   const st = s.stops[a.orderId]
   if (!st) return s
-  let next = tap(s, a.at, a.orderId, REPLY_BUTTONS[a.reply].label)
+  const early = daysEarly(st.order.id, st.order.payment === 'COD')
+  const label = replyLabel(a.reply, early)
+  let next = tap(s, a.at, a.orderId, label)
   next = patchStop(next, a.orderId, { replies: [...st.replies, a.reply] })
   next = emit(next, a.at, 'CUSTOMER_REPLIED', { reply: a.reply }, { orderId: a.orderId })
-  const label = REPLY_BUTTONS[a.reply].label
   switch (a.reply) {
     case 'home':
       // "I'm home" lowers the odds a little, once. It changes the outcome chance, never the flag.
@@ -116,14 +119,20 @@ function customerReply(s: S, a: Extract<Action, { type: 'customerReply' }>): S {
       next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: replyAck.home })
       return feedAdd(next, a.at, 'reply', `${label}: customer confirmed they will be home`, a.orderId)
     case 'change_time': {
-      // Parked until the next day's slot, but still counted in its arm as an open order.
+      // Parked until the next day's slot (or, for an early parcel, the promised date), but still counted in its arm as an open order.
       if (st.status === 'out_for_delivery' || st.status === 'ndr') {
-        const to = nextDayStart(s.simNow)
-        next = moveOrder(next, a.orderId, 'rescheduled', { at: a.at, reason: 'customer asked for another time', patch: { reschedules: st.reschedules + 1, rescheduledTo: to } })
+        const to = nextDayStart(s.simNow) + Math.max(0, early - 1) * DAY_MS
+        next = moveOrder(next, a.orderId, 'rescheduled', { at: a.at, reason: early > 0 ? 'customer kept the promised date' : 'customer asked for another time', patch: { reschedules: st.reschedules + 1, rescheduledTo: to } })
         next = emit(next, a.at, 'RESCHEDULED', { toSimAt: to }, { orderId: a.orderId })
       }
-      next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: replyAck.change_time })
-      return feedAdd(next, a.at, 'reply', `${label}: customer asked for another time (parked for the next day, still counted)`, a.orderId)
+      next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: early > 0 ? keepDateAck(early) : replyAck.change_time })
+      return feedAdd(
+        next,
+        a.at,
+        'reply',
+        early > 0 ? `${label}: the parcel came ${early} days early; parked until the promised date, still counted` : `${label}: customer asked for another time (parked for the next day, still counted)`,
+        a.orderId,
+      )
     }
     case 'pay_now': {
       // Nothing changes until a payment is attempted: the customer pays, or the payment fails and the order stays COD.

@@ -11,17 +11,40 @@ export const REPLY_BUTTONS: Readonly<Record<ReplyKind, MessageButton>> = {
   pay_now: { id: 'pay_now', label: '💳 Pay now (UPI)' },
 }
 
-/** Pay now is offered on flagged COD orders only. */
-export function orderDayButtons(isCod: boolean): readonly MessageButton[] {
+/**
+ * Days a parcel arrives before the date the customer was promised (0 = on time). Our field research (Tier 3/4) and our own test order found
+ * COD parcels arriving days early, before the cash is ready. Synthetic: about a third of COD orders, 2 to 5 days early, fixed by the order id.
+ */
+export function daysEarly(orderId: string, isCod: boolean): number {
+  if (!isCod) return 0
+  let h = 7
+  for (const ch of orderId) h = (h * 31 + ch.charCodeAt(0)) >>> 0
+  return h % 3 === 0 ? 2 + ((h >>> 2) % 4) : 0
+}
+
+/** On an early order "Change time" becomes "Keep my promised date": same reply, a later date. */
+export const KEEP_DATE_LABEL = '📅 Keep my promised date'
+
+/** The label the customer saw for a reply (an early order shows "Keep my promised date" for change_time). */
+export const replyLabel = (reply: ReplyKind, early: number): string => (reply === 'change_time' && early > 0 ? KEEP_DATE_LABEL : REPLY_BUTTONS[reply].label)
+
+/** Pay now is offered on flagged COD orders only. An early COD order leads with UPI and the promised date. */
+export function orderDayButtons(isCod: boolean, early = 0): readonly MessageButton[] {
+  if (isCod && early > 0) return [REPLY_BUTTONS.home, REPLY_BUTTONS.pay_now, { id: 'change_time', label: KEEP_DATE_LABEL }, REPLY_BUTTONS.fix_address]
   return isCod
     ? [REPLY_BUTTONS.home, REPLY_BUTTONS.change_time, REPLY_BUTTONS.fix_address, REPLY_BUTTONS.pay_now]
     : [REPLY_BUTTONS.home, REPLY_BUTTONS.change_time, REPLY_BUTTONS.fix_address]
 }
 
-export const orderDayText = (awb: string, isCod: boolean, amount: number): string =>
-  `Arriving Today : Your Meesho order with AWB ${awb} is out for delivery.` +
-  (isCod ? ` Pay Rs. ${amount} via UPI by scanning the QR code on the rider app, or pay now.` : '') +
-  ' Tell us how to reach you:'
+export const orderDayText = (awb: string, isCod: boolean, amount: number, early = 0): string =>
+  isCod && early > 0
+    ? `Arriving early, today : Your Meesho order with AWB ${awb} was promised in ${early} days, and it is out for delivery today.` +
+      ` If the cash is not ready, pay Rs. ${amount} now by UPI, or keep your promised date:`
+    : `Arriving Today : Your Meesho order with AWB ${awb} is out for delivery.` +
+      (isCod ? ` Pay Rs. ${amount} via UPI by scanning the QR code on the rider app, or pay now.` : '') +
+      ' Tell us how to reach you:'
+
+export const keepDateAck = (early: number): string => `Done. We will bring it on your promised date, in ${early} days, and tell you the time.`
 
 export const replyAck: Readonly<Record<ReplyKind, string>> = {
   home: 'Thanks! We have told your delivery agent you will be home.',
