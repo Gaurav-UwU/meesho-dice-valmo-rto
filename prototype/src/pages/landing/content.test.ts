@@ -87,3 +87,11 @@ describe('the fake-attempt step says the free re-attempt goes back to the same r
     expect(fake.see).toMatch(/₹15/)
   })
 })
+
+describe('the customer step says the WhatsApp asks Hindi or English (plan 33)', () => {
+  it('names the first message in both languages and the हिंदी choice', () => {
+    const customer = DEMO_STEPS.find((d) => d.id === 'customer')!
+    expect(`${customer.doThis} ${customer.see}`).toMatch(/English and Hindi/)
+    expect(`${customer.doThis} ${customer.see}`).toMatch(/हिंदी/)
+  })
+})

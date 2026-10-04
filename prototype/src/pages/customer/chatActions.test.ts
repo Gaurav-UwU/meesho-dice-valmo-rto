@@ -64,3 +64,27 @@ describe('which WhatsApp buttons are live', () => {
     expect(isMessageLive(paid, pay, pay.id)).toBe(false)
   })
 })
+
+describe('the language question (plan 33)', () => {
+  const lang = (s: DayState): WaMessage => last(s, 'language_check')
+  const orderDay = (s: DayState): WaMessage => last(s, 'order_day')
+
+  it('the order-day buttons stay live: the language question is not "the newest button message"', () => {
+    const msgs = day.messages.filter((m) => m.orderId === bonusId)
+    expect(latestButtonMessageId(msgs)).toBe(orderDay(day).id)
+    expect(isMessageLive(day, orderDay(day), latestButtonMessageId(msgs))).toBe(true)
+  })
+
+  it('the language buttons are live until the customer chooses, then greyed out', () => {
+    const msgs = day.messages.filter((m) => m.orderId === bonusId)
+    expect(isMessageLive(day, lang(day), latestButtonMessageId(msgs))).toBe(true)
+    const chosen = reduce(day, { type: 'customerLanguage', at: AT + 1, orderId: bonusId, lang: 'hi' })
+    const after = chosen.messages.filter((m) => m.orderId === bonusId)
+    expect(isMessageLive(chosen, lang(chosen), latestButtonMessageId(after))).toBe(false)
+  })
+
+  it('English and हिंदी turn into customerLanguage', () => {
+    expect(press(day, 'language_check', 'en')).toEqual({ type: 'customerLanguage', orderId: bonusId, lang: 'en' })
+    expect(press(day, 'language_check', 'hi')).toEqual({ type: 'customerLanguage', orderId: bonusId, lang: 'hi' })
+  })
+})

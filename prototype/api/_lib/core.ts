@@ -113,7 +113,7 @@ async function deliver(deps: Deps, prev: DayState, next: DayState, phoneByOrder:
     const phone = phoneByOrder.get(m.orderId)
     if (!phone) continue
     try {
-      await deps.send(phone, formatOutbound(m))
+      await deps.send(phone, formatOutbound(m, next.stops[m.orderId]?.lang))
       sent++
     } catch {
       warnings.push(`WhatsApp to order ${m.orderId} could not be sent`)
@@ -271,7 +271,7 @@ async function applyInbound(
   if (!binding) return { ok: true, ignored: 'unknown sender' }
   const day = await deps.db.loadDay(binding.hubId)
   if (!day || dayShape(day) !== 'ok') return { ok: true, ignored: 'no day' }
-  const offers = day.messages.filter((m) => m.orderId === binding.orderId && m.direction === 'out' && m.buttons)
+  const offers = day.messages.filter((m) => m.orderId === binding.orderId && m.direction === 'out' && m.buttons && m.kind !== 'language_check')
   const action = actionFromReply(
     { orderId: binding.orderId, lastOffer: offers.at(-1), parcelId: parcelForOrder(day, binding.orderId)?.id },
     body,

@@ -19,6 +19,7 @@ export const EVENT_FIELDS = {
   MSG_SENT: ['template'],
   MSG_REJECTED: ['template'],
   CUSTOMER_REPLIED: ['reply'],
+  LANGUAGE_CHOSEN: ['lang'],
   NO_REPLY_TIMEOUT: [],
   PAYMENT_ATTEMPTED: ['ok'],
   // Delivery

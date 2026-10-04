@@ -6,9 +6,13 @@ const REPLY_KINDS: readonly string[] = ['home', 'change_time', 'fix_address', 'p
 
 const isReplyKind = (id: string): id is ReplyKind => REPLY_KINDS.includes(id)
 
-/** The newest message of the thread that offers buttons. Older ones are shown greyed out. */
+/**
+ * The newest message of the thread that offers buttons. Older ones are shown greyed out. The language question is left out: it follows the
+ * first message, and the first message's buttons must stay live under it (plan 33).
+ */
 export function latestButtonMessageId(messages: readonly WaMessage[]): string | undefined {
   for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].kind === 'language_check') continue
     const buttons = messages[i].buttons
     if (buttons && buttons.length > 0) return messages[i].id
   }
@@ -17,9 +21,11 @@ export function latestButtonMessageId(messages: readonly WaMessage[]): string | 
 
 /** A button is live only on the newest button message, and only while the question is still open. */
 export function isMessageLive(state: DayState, msg: WaMessage, latestId: string | undefined): boolean {
-  if (msg.id !== latestId) return false
   const stop = state.stops[msg.orderId]
   if (!stop) return false
+  // The language question stays live, wherever it is in the thread, until the customer has chosen.
+  if (msg.kind === 'language_check') return stop.lang === undefined
+  if (msg.id !== latestId) return false
   switch (msg.kind) {
     case 'order_day':
       return stop.status === 'out_for_delivery' || stop.status === 'otp_sent' || stop.status === 'rescheduled'
@@ -48,6 +54,8 @@ export function actionForButton(state: DayState, msg: WaMessage, button: Message
   switch (msg.kind) {
     case 'order_day':
       return isReplyKind(button.id) ? { type: 'customerReply', orderId, reply: button.id } : null
+    case 'language_check':
+      return button.id === 'en' || button.id === 'hi' ? { type: 'customerLanguage', orderId, lang: button.id } : null
     case 'attempt_check':
       return { type: 'customerReach', orderId, reached: button.id === 'yes' }
     case 'reschedule_check':

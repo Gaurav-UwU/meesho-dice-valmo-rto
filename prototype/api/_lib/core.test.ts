@@ -144,6 +144,18 @@ describe('handleInbound', () => {
     expect(h.db.days.get(HUB)!.stops[orderId].replies).toEqual(['home'])
   })
 
+  it('"Hindi" on a real phone switches the customer to Hindi; "1" still answers the order-day message; later messages arrive in Hindi', async () => {
+    const { h, orderId } = await started()
+    await bindPhone(h.deps, { phone: PHONE, hubId: HUB, orderId })
+    await handleInbound(h.deps, PHONE, 'Hindi')
+    expect(h.db.days.get(HUB)!.stops[orderId].lang).toBe('hi')
+    await handleInbound(h.deps, PHONE, '1')
+    expect(h.db.days.get(HUB)!.stops[orderId].replies).toEqual(['home'])
+    await runAction(h.deps, HUB, { type: 'riderAttempt', orderId, claim: 'customer_unavailable' })
+    expect(h.sent.at(-1)?.body).toMatch(/क्या डिलीवरी एजेंट/)
+    expect(h.sent.at(-1)?.body).toMatch(/नंबर लिखकर जवाब दें/)
+  })
+
   it('turns a shared location into an address fix', async () => {
     const { h, day, orderId } = await started()
     await bindPhone(h.deps, { phone: PHONE, hubId: HUB, orderId })

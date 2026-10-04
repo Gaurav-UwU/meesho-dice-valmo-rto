@@ -13,7 +13,7 @@ export type ActionType = Action['type']
 export const RIDER_ACTIONS: ReadonlySet<ActionType> = new Set<ActionType>(['riderDeliver', 'submitOtp', 'riderAttempt', 'riderCall', 'riderRefuse', 'riderAskReview'])
 
 /** What a customer's phone does (on a real number only that customer's own WhatsApp reply may answer: the server guards it separately) */
-export const CUSTOMER_ACTIONS: ReadonlySet<ActionType> = new Set<ActionType>(['customerReply', 'customerPayment', 'customerReach', 'customerAskedReschedule', 'customerSecondChance'])
+export const CUSTOMER_ACTIONS: ReadonlySet<ActionType> = new Set<ActionType>(['customerReply', 'customerLanguage', 'customerPayment', 'customerReach', 'customerAskedReschedule', 'customerSecondChance'])
 
 /** True when the role may send this action */
 export function roleCan(role: Role, type: ActionType): boolean {

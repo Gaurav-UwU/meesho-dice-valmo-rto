@@ -85,8 +85,30 @@ describe('inbound parsing', () => {
     buttons: ids.map((id) => ({ id, label: id })),
   })
 
+  it('the language question asks for a WORD, not a number (so "1" keeps meaning the order-day option)', () => {
+    const body = formatOutbound({ ...offer('language_check', ['en', 'hi']), text: 'Which language?' })
+    expect(body).toMatch(/ENGLISH/)
+    expect(body).toMatch(/HINDI/)
+    expect(body).not.toMatch(/Reply with a number/)
+  })
+
+  it('a Hindi customer gets the numbered prompt in Hindi', () => {
+    expect(formatOutbound(offer('attempt_check', ['yes', 'no']), 'hi')).toBe('Hello\n\nनंबर लिखकर जवाब दें:\n1  yes\n2  no')
+  })
+
+  it('a language word picks the language at any time; "hi" (a greeting) and "en" do not', () => {
+    const ctx = { orderId: 'o', lastOffer: offer('order_day', ['home', 'change_time']), parcelId: undefined }
+    for (const w of ['Hindi', 'HINDI', 'हिंदी', 'हिन्दी']) expect(actionFromReply(ctx, w)).toEqual({ type: 'customerLanguage', orderId: 'o', lang: 'hi' })
+    for (const w of ['English', 'english.', 'अंग्रेज़ी', 'अंग्रेजी']) expect(actionFromReply(ctx, w)).toEqual({ type: 'customerLanguage', orderId: 'o', lang: 'en' })
+    expect(actionFromReply(ctx, 'hi')).toBeNull()
+    expect(actionFromReply(ctx, 'en')).toBeNull()
+    expect(actionFromReply({ ...ctx, lastOffer: undefined }, 'Hindi')).toEqual({ type: 'customerLanguage', orderId: 'o', lang: 'hi' })
+  })
+
   it('formats numbered options under the message, or just the text when there are none', () => {
-    expect(formatOutbound(offer('order_day', ['home', 'change_time']))).toBe('Hello\n\nReply with a number:\n1  home\n2  change_time')
+    // The first message is in both languages, its prompt too (plan 33).
+    expect(formatOutbound(offer('order_day', ['home', 'change_time']))).toBe('Hello\n\nReply with a number: / नंबर लिखकर जवाब दें:\n1  home\n2  change_time')
+    expect(formatOutbound(offer('attempt_check', ['yes', 'no']))).toBe('Hello\n\nReply with a number:\n1  yes\n2  no')
     expect(formatOutbound({ ...offer('ack', []), buttons: undefined })).toBe('Hello')
   })
 
@@ -231,6 +253,14 @@ describe('request validation', () => {
     expect(ok({ type: 'reviewBonus', orderId: oid, decision: 'release' })).toBe(true)
     expect(ok({ type: 'reviewBonus', orderId: oid, decision: 'withhold', reason: 'phone_far' })).toBe(true)
     expect(ok({ type: 'reviewBonus', orderId: oid, decision: 'steal' })).toBe(false)
+  })
+
+  it("accepts the customer's language (en or hi) and nothing else (plan 33)", () => {
+    const ok = (action: unknown) => parseActionRequest({ hubId: 'lucknow', dayId: 'd1-x', action }).ok
+    expect(ok({ type: 'customerLanguage', orderId: 'lucknow-0001', lang: 'hi' })).toBe(true)
+    expect(ok({ type: 'customerLanguage', orderId: 'lucknow-0001', lang: 'en' })).toBe(true)
+    expect(ok({ type: 'customerLanguage', orderId: 'lucknow-0001', lang: 'fr' })).toBe(false)
+    expect(ok({ type: 'customerLanguage', orderId: 'lucknow-0001' })).toBe(false)
   })
 
   it('accepts a rider call (answered or not) and an attempt with no typed call count, and rejects malformed calls (plan 32 B)', () => {

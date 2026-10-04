@@ -8,24 +8,7 @@ import { emit } from './events.ts'
 import { bookSecondChanceLeg, feedAdd, moveOrder, msgAdd, patchStop, riderName, sendProactive, tap, type S } from './helpers.ts'
 import { accrueBonus, clawBack, reconcileCod } from './ledger.ts'
 import { deliveredStatus, isDelivered } from './lifecycle.ts'
-import {
-  PAY_BUTTONS,
-  REACH_BUTTONS,
-  YES_NO,
-  addressFixedAck,
-  attemptCheckText,
-  daysEarly,
-  deliveryOtpText,
-  keepDateAck,
-  orderDayButtons,
-  orderDayText,
-  paymentFailAck,
-  paymentOkAck,
-  refusalOtpText,
-  replyAck,
-  replyLabel,
-  rescheduleCheckText,
-} from './messages.ts'
+import { LANGUAGE_BUTTONS, LANGUAGE_TEXT, daysEarly, orderDayButtons, orderDayTextBoth, replyLabel, waCopy } from './messages.ts'
 import { askReview, overturnStrike, reviewBonus } from './captain.ts'
 import { callsSinceDispatch, riderCall } from './calls.ts'
 import { closeAsRto, confidenceOf, openException, overtakeException, resolveExceptionFor, retryOne } from './orders.ts'
@@ -93,14 +76,17 @@ function startDay(s: S, at: number): S {
   for (const id of next.stopOrder) {
     const st = next.stops[id]
     if (!st.flagged) continue
+    // The first message is in English and Hindi; the next one asks which language the customer wants from now on (plan 33).
     next = sendProactive(next, {
       orderId: id,
       at,
       direction: 'out',
       kind: 'order_day',
-      text: orderDayText(st.order.awb, st.order.payment === 'COD', st.order.value, daysEarly(st.order.id, st.order.payment === 'COD')),
+      text: orderDayTextBoth(st.order.awb, st.order.payment === 'COD', st.order.value, daysEarly(st.order.id, st.order.payment === 'COD')),
       buttons: orderDayButtons(st.order.payment === 'COD', daysEarly(st.order.id, st.order.payment === 'COD')),
     })
+    // Part of the first contact, so it sits outside the 4-message cap (it would otherwise crowd out a later second chance). Still costed.
+    next = msgAdd(next, { orderId: id, at, direction: 'out', kind: 'language_check', text: LANGUAGE_TEXT, buttons: LANGUAGE_BUTTONS })
   }
   return next
 }
@@ -110,6 +96,7 @@ function customerReply(s: S, a: Extract<Action, { type: 'customerReply' }>): S {
   if (!st) return s
   const early = daysEarly(st.order.id, st.order.payment === 'COD')
   const label = replyLabel(a.reply, early)
+  const wa = waCopy(st.lang)
   let next = tap(s, a.at, a.orderId, label)
   next = patchStop(next, a.orderId, { replies: [...st.replies, a.reply] })
   next = emit(next, a.at, 'CUSTOMER_REPLIED', { reply: a.reply }, { orderId: a.orderId })
@@ -117,7 +104,7 @@ function customerReply(s: S, a: Extract<Action, { type: 'customerReply' }>): S {
     case 'home':
       // "I'm home" lowers the odds a little, once. It changes the outcome chance, never the flag.
       if (!st.replies.includes('home')) next = patchStop(next, a.orderId, { pRto: sigmoid(logit(st.pRto) - HOME_LOGIT_DROP) })
-      next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: replyAck.home })
+      next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: wa.replyAck.home })
       return feedAdd(next, a.at, 'reply', `${label}: customer confirmed they will be home`, a.orderId)
     case 'change_time': {
       // Parked until the next day's slot (or, for an early parcel, the promised date), but still counted in its arm as an open order.
@@ -126,7 +113,7 @@ function customerReply(s: S, a: Extract<Action, { type: 'customerReply' }>): S {
         next = moveOrder(next, a.orderId, 'rescheduled', { at: a.at, reason: early > 0 ? 'customer kept the promised date' : 'customer asked for another time', patch: { reschedules: st.reschedules + 1, rescheduledTo: to } })
         next = emit(next, a.at, 'RESCHEDULED', { toSimAt: to }, { orderId: a.orderId })
       }
-      next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: early > 0 ? keepDateAck(early) : replyAck.change_time })
+      next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: early > 0 ? wa.keepDateAck(early) : wa.replyAck.change_time })
       return feedAdd(
         next,
         a.at,
@@ -139,38 +126,50 @@ function customerReply(s: S, a: Extract<Action, { type: 'customerReply' }>): S {
       // Nothing changes until a payment is attempted: the customer pays, or the payment fails and the order stays COD.
       if (st.order.payment === 'PREPAID') return feedAdd(next, a.at, 'reply', `${label}: the order is already prepaid`, a.orderId)
       next = patchStop(next, a.orderId, { paymentPending: true })
-      next = sendProactive(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'pay_prompt', text: replyAck.pay_now, buttons: PAY_BUTTONS })
+      next = sendProactive(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'pay_prompt', text: wa.replyAck.pay_now, buttons: wa.payButtons })
       return feedAdd(next, a.at, 'reply', `${label}: waiting for the payment (the order stays COD until it goes through)`, a.orderId)
     }
     case 'fix_address': {
       if (!a.location) {
-        next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: replyAck.fix_address })
+        next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: wa.replyAck.fix_address })
         return feedAdd(next, a.at, 'reply', `${label}: waiting for the customer to share a location`, a.orderId)
       }
       const km = Math.round(roadKmEstimate(s.hub, a.location) * 10) / 10
       const order: Order = { ...st.order, lat: a.location.lat, lng: a.location.lng, distanceKm: km, addressQuality: 'clear' }
       const drop = st.order.addressQuality === 'clear' ? 0 : ADDRESS_FIX_LOGIT_DROP
       next = patchStop(next, a.orderId, { order, location: { lat: coarse(a.location.lat), lng: coarse(a.location.lng) }, score: rescueScore(order), pRto: sigmoid(logit(st.pRto) - drop) })
-      next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: addressFixedAck })
+      next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: wa.addressFixedAck })
       return feedAdd(next, a.at, 'reply', `Address pin moved: ${st.order.distanceKm.toFixed(1)} km to ${km.toFixed(1)} km from the hub, score recomputed`, a.orderId)
     }
   }
 }
 
+/** The customer picks English or Hindi for their WhatsApp messages from now on (plan 33). Any time; the same choice again changes nothing. */
+function customerLanguage(s: S, a: Extract<Action, { type: 'customerLanguage' }>): S {
+  const st = s.stops[a.orderId]
+  if (!s.started || !st || st.lang === a.lang) return s
+  let next = tap(s, a.at, a.orderId, a.lang === 'hi' ? 'हिंदी' : 'English')
+  next = patchStop(next, a.orderId, { lang: a.lang })
+  next = emit(next, a.at, 'LANGUAGE_CHOSEN', { lang: a.lang }, { orderId: a.orderId })
+  next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: waCopy(a.lang).languageAck })
+  return feedAdd(next, a.at, 'reply', `Customer chose ${a.lang === 'hi' ? 'Hindi' : 'English'} for WhatsApp`, a.orderId)
+}
+
 function customerPayment(s: S, a: Extract<Action, { type: 'customerPayment' }>): S {
   const st = s.stops[a.orderId]
   if (!st || !st.paymentPending || st.order.payment === 'PREPAID') return s
-  let next = tap(s, a.at, a.orderId, a.ok ? '✅ I have paid (demo)' : '❌ Payment failed (demo)')
+  const wa = waCopy(st.lang)
+  let next = tap(s, a.at, a.orderId, a.ok ? wa.payButtons[0].label : wa.payButtons[1].label)
   next = emit(next, a.at, 'PAYMENT_ATTEMPTED', { ok: a.ok }, { orderId: a.orderId })
   if (!a.ok) {
     next = patchStop(next, a.orderId, { paymentPending: false })
-    next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: paymentFailAck })
+    next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: wa.paymentFailAck })
     next = feedAdd(next, a.at, 'reply', 'Payment failed: the order stays COD', a.orderId)
     return afterSecondChancePayment(next, a.orderId, a.at)
   }
   const order: Order = { ...st.order, payment: 'PREPAID' }
   next = patchStop(next, a.orderId, { order, pRto: st.pRto * PAY_NOW_RTO_FACTOR, paymentPending: false })
-  next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: paymentOkAck })
+  next = msgAdd(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'ack', text: wa.paymentOkAck })
   next = feedAdd(next, a.at, 'reply', 'Payment received: COD order switched to prepaid', a.orderId)
   return afterSecondChancePayment(next, a.orderId, a.at)
 }
@@ -203,7 +202,7 @@ function requestOtp(s: S, orderId: string, code: string, at: number, purpose: 'd
     at,
     direction: 'out',
     kind: purpose === 'delivery' ? 'delivery_otp' : 'refusal_otp',
-    text: purpose === 'delivery' ? deliveryOtpText(code) : refusalOtpText(code),
+    text: purpose === 'delivery' ? waCopy(st.lang).deliveryOtpText(code) : waCopy(st.lang).refusalOtpText(code),
   })
   return feedAdd(next, at, purpose === 'delivery' ? 'deliver' : 'refuse', purpose === 'delivery' ? 'Rider tapped Deliver: OTP sent to the customer' : 'Rider tapped Refused: refusal OTP sent to the customer', orderId)
 }
@@ -297,7 +296,7 @@ function riderAttempt(s: S, a: Extract<Action, { type: 'riderAttempt' }>): S {
     { reason: a.claim, gpsDistM: evidence?.gpsDistM ?? null, calls: evidence?.calls ?? null, waitMin: evidence?.waitMin ?? null, confidence },
     { orderId: a.orderId, riderId: st.riderId },
   )
-  next = sendProactive(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'attempt_check', text: attemptCheckText(st.order.awb), buttons: REACH_BUTTONS })
+  next = sendProactive(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'attempt_check', text: waCopy(st.lang).attemptCheckText(st.order.awb), buttons: waCopy(st.lang).reachButtons })
   next = feedAdd(next, a.at, 'attempt', `${riderName(s, st.riderId)} marked an attempt (${a.claim.replace('_', ' ')}): asking the customer to confirm`, a.orderId)
   return openException(next, a.orderId, a.at, confidence)
 }
@@ -323,12 +322,13 @@ function assess(s: S, orderId: string, at: number): S {
 function customerReach(s: S, a: Extract<Action, { type: 'customerReach' }>): S {
   const st = s.stops[a.orderId]
   if (!st || st.status !== 'ndr' || st.answers.riderReached !== null) return s
-  let next = tap(s, a.at, a.orderId, a.reached ? 'Yes, the agent reached me' : 'No, the agent never came')
+  const wa = waCopy(st.lang)
+  let next = tap(s, a.at, a.orderId, a.reached ? wa.reachButtons[0].label : wa.reachButtons[1].label)
   const log = (st.attemptLog ?? []).map((e, i, all) => (i === all.length - 1 ? { ...e, reached: a.reached } : e))
   next = patchStop(next, a.orderId, { answers: { ...st.answers, riderReached: a.reached }, attemptLog: log })
   next = emit(next, a.at, 'ATTEMPT_CHECK_ANSWERED', { reached: a.reached }, { orderId: a.orderId })
   if (a.reached && st.claim === 'reschedule_requested') {
-    return sendProactive(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'reschedule_check', text: rescheduleCheckText, buttons: YES_NO })
+    return sendProactive(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'reschedule_check', text: wa.rescheduleCheckText, buttons: wa.yesNo })
   }
   return assess(next, a.orderId, a.at)
 }
@@ -336,7 +336,8 @@ function customerReach(s: S, a: Extract<Action, { type: 'customerReach' }>): S {
 function customerAskedReschedule(s: S, a: Extract<Action, { type: 'customerAskedReschedule' }>): S {
   const st = s.stops[a.orderId]
   if (!st || st.status !== 'ndr' || st.answers.askedReschedule !== null) return s
-  let next = tap(s, a.at, a.orderId, a.asked ? 'Yes' : 'No')
+  const wa = waCopy(st.lang)
+  let next = tap(s, a.at, a.orderId, a.asked ? wa.yesNo[0].label : wa.yesNo[1].label)
   next = patchStop(next, a.orderId, { answers: { ...st.answers, askedReschedule: a.asked } })
   return assess(next, a.orderId, a.at)
 }
@@ -395,6 +396,8 @@ function apply(s: S, a: Action): S {
       return customerReply(s, a)
     case 'customerPayment':
       return customerPayment(s, a)
+    case 'customerLanguage':
+      return customerLanguage(s, a)
     case 'riderDeliver':
       return requestOtp(s, a.orderId, a.code, a.at, 'delivery')
     case 'riderRefuse':

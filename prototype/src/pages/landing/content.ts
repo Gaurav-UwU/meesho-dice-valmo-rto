@@ -26,8 +26,8 @@ export const DEMO_STEPS: readonly DemoStep[] = [
   {
     id: 'customer',
     title: 'Answer as the customer',
-    doThis: 'On the customer phone pick a flagged order and tap “I’m home”. On another one, tap “Change time”.',
-    see: 'Valmo’s own “Arriving Today” WhatsApp wording, with buttons. A rescheduled order is parked for tomorrow but stays counted in its arm.',
+    doThis: 'On the customer phone pick a flagged order, tap हिंदी (or English) under the first message, then tap “I’m home”. On another one, tap “Change time”.',
+    see: 'Valmo’s own “Arriving Today” WhatsApp wording, with buttons, in English and Hindi; the next message asks which language to use from now on. A rescheduled order is parked for tomorrow but stays counted in its arm.',
     links: [{ route: '/customer', label: 'Open Customer' }],
   },
   {

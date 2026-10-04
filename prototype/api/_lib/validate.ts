@@ -18,6 +18,7 @@ const ActionInputSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('riderDeliver'), orderId }),
   z.object({ type: z.literal('submitOtp'), orderId, code }),
   z.object({ type: z.literal('customerPayment'), orderId, ok: z.boolean() }),
+  z.object({ type: z.literal('customerLanguage'), orderId, lang: z.enum(['en', 'hi']) }),
   z.object({
     type: z.literal('riderAttempt'),
     orderId,

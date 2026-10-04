@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { CUSTOMER_ACTIONS, RIDER_ACTIONS, roleCan, type ActionType } from './roles.ts'
 
 const ALL: readonly ActionType[] = [
-  'startDay', 'customerReply', 'customerPayment', 'riderDeliver', 'submitOtp', 'riderAttempt', 'riderCall', 'customerReach', 'customerAskedReschedule', 'riderRefuse',
+  'startDay', 'customerReply', 'customerPayment', 'riderDeliver', 'submitOtp', 'riderAttempt', 'riderCall', 'customerReach', 'customerLanguage', 'customerAskedReschedule', 'riderRefuse',
   'deskSecondChance', 'deskInspect', 'deskSkipSecondChance', 'customerSecondChance', 'deskHandover', 'deskSetParam', 'deskHold', 'deskMatch', 'deskConsolidate',
   'reattempt', 'dispatchNextDay', 'resolveException', 'overturnStrike', 'riderAskReview', 'reviewBonus', 'openReturn', 'reconcileCod', 'advanceClock', 'advanceDay', 'nextDay', 'closePilot',
 ]
@@ -18,6 +18,11 @@ describe('roles', () => {
     for (const t of ['resolveException', 'overturnStrike', 'reviewBonus', 'startDay', 'closePilot', 'advanceClock', 'advanceDay', 'nextDay', 'deskHold', 'deskInspect', 'deskSetParam', 'openReturn', 'reconcileCod', 'reattempt', 'dispatchNextDay', 'deskHandover'] as const) {
       expect(roleCan('rider', t)).toBe(false)
     }
+  })
+
+  it("the customer's language choice is a customer action (plan 33)", () => {
+    expect(CUSTOMER_ACTIONS.has('customerLanguage')).toBe(true)
+    expect(roleCan('rider', 'customerLanguage')).toBe(true)
   })
 
   it('the captain key can send everything', () => {

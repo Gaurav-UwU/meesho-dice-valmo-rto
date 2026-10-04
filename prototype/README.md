@@ -22,7 +22,7 @@ npx tsc -b && npx oxlint && npx vite build
 | `/` | Anyone | Landing: the 90-second demo, real vs simulated, QR codes |
 | `/ops` | Valmo ops team | Live map, KPIs, Bonus vs Control, suspect attempts, feed. Start day / Autopilot / Reset |
 | `/rider` | Rider | Clone of Valmo Pilot with the green ₹+15 chip (Bonus riders only). Call (masked number, demo: no real call; the app logs every call as attempt evidence), Deliver, Attempted, Refused with OTP |
-| `/customer` | Customer | On-screen WhatsApp (Demo mode) with Valmo's wording and reply buttons |
+| `/customer` | Customer | On-screen WhatsApp (Demo mode) with Valmo's wording and reply buttons. The first message is in English and Hindi, the next asks which language to use from then on (Live: reply HINDI or ENGLISH) |
 | `/desk` | Hub operator | Refused-Parcel Desk: inspect a parcel, second chance (deliver again, different time, pay now, pick up at hub), Hold & Re-home on a match forecast, consolidated return, pilot KPIs |
 | `/pilot` | Meesho decision-maker | 30-day A/B simulator (paired riders, pair-by-pair 95% range, fair-comparison check, two safety rules), GO / RE-PRICE / KILL, P&L, break-even |
 | `/captain` | Hub captain | Fake-attempt control: review queue with evidence, Confirm valid / Free re-attempt (back to the same rider) / Strike with a reason (that order's ₹15 is lost), held bonuses, rider monitor, scorecard, outcome numbers. Works with the bonus off. Demo: no login |

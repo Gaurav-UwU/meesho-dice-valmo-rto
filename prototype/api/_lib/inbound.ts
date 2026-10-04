@@ -1,4 +1,5 @@
-import type { WaMessage } from '../../src/domain/types.ts'
+import { waCopy } from '../../src/domain/messages.ts'
+import type { WaLang, WaMessage } from '../../src/domain/types.ts'
 import type { LatLng } from '../../src/engine/geo.ts'
 import type { ActionInput } from '../../src/store/types.ts'
 
@@ -6,10 +7,22 @@ import type { ActionInput } from '../../src/store/types.ts'
  * The Twilio sandbox cannot send tappable buttons without approved templates, so Live mode sends numbered options
  * ("Reply 1, 2, 3...") and reads the reply number back. The customer panel in Demo mode renders the same options as real buttons.
  */
-export function formatOutbound(m: WaMessage): string {
+export function formatOutbound(m: WaMessage, lang?: WaLang): string {
+  // The language question asks for a WORD, so a number keeps answering the first message's options (plan 33).
+  if (m.kind === 'language_check') return `${m.text}\n\nReply ENGLISH or HINDI (हिंदी). You can switch any time. / भाषा बदलने के लिए कभी भी HINDI या ENGLISH लिखें।`
   if (!m.buttons || m.buttons.length === 0) return m.text
   const options = m.buttons.map((b, i) => `${i + 1}  ${b.label}`).join('\n')
-  return `${m.text}\n\nReply with a number:\n${options}`
+  // The first message goes in both languages, so its prompt does too.
+  const prompt = m.kind === 'order_day' ? `${waCopy('en').replyWithNumber} / ${waCopy('hi').replyWithNumber}` : waCopy(lang).replyWithNumber
+  return `${m.text}\n\n${prompt}\n${options}`
+}
+
+/** A language word, any time ("hi" and "en" are not words here: a "hi" greeting must not switch a customer to Hindi). */
+const LANGUAGE_WORDS: Readonly<Record<string, WaLang>> = { english: 'en', 'अंग्रेज़ी': 'en', 'अंग्रेजी': 'en', hindi: 'hi', 'हिंदी': 'hi', 'हिन्दी': 'hi' }
+
+export function languageFromReply(text: string): WaLang | null {
+  const t = text.trim().toLowerCase().replace(/[.!।]+$/, '')
+  return LANGUAGE_WORDS[t] ?? null
 }
 
 /** The second-chance offer's button ids and the option each one stands for. The id decides, never the position: a pickup is left out when the shelf is full. */
@@ -31,7 +44,7 @@ export function pickedIndex(text: string, count: number): number | null {
 
 export interface InboundContext {
   readonly orderId: string
-  /** The latest outbound message that offered options to this customer */
+  /** The latest outbound message that offered NUMBERED options to this customer (the language question is answered with a word, so it is not one) */
   readonly lastOffer: WaMessage | undefined
   readonly parcelId: string | undefined
 }
@@ -40,6 +53,8 @@ export interface InboundContext {
 export function actionFromReply(ctx: InboundContext, body: string, location?: LatLng): ActionInput | null {
   const { orderId, lastOffer, parcelId } = ctx
   if (location) return { type: 'customerReply', orderId, reply: 'fix_address', location }
+  const lang = languageFromReply(body)
+  if (lang) return { type: 'customerLanguage', orderId, lang }
   if (!lastOffer?.buttons) return null
   const i = pickedIndex(body, lastOffer.buttons.length)
   if (i === null) return null

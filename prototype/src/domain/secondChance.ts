@@ -3,7 +3,7 @@ import { DAY_MS, HOUR_MS, nextDayStart } from './clock.ts'
 import { emit } from './events.ts'
 import { bookCost, bookSecondChanceLeg, feedAdd, moveOrder, msgAdd, patchParcel, patchStop, proactiveCount, REVERSE_COST, sendProactive, tap, bookSaving, type S } from './helpers.ts'
 import { HOLD_COST, attemptLeft, decisionFor, findParcel, laneLogged, shelfUsed } from './routing.ts'
-import { WHEN_BUTTONS, laterAck, pickupFullAck, pickupText, secondChanceButtons, secondChanceText, whenText, PAY_BUTTONS, replyAck } from './messages.ts'
+import { waCopy } from './messages.ts'
 import type { Action, ParcelRecord, SecondChanceChoice } from './types.ts'
 
 /** The customer has five tries at the pickup code. */
@@ -26,8 +26,8 @@ export function deskSecondChance(s: S, a: Extract<Action, { type: 'deskSecondCha
     at: a.at,
     direction: 'out',
     kind: 'second_chance',
-    text: secondChanceText(st.order.awb),
-    buttons: secondChanceButtons({ pay: st.order.payment !== 'PREPAID', pickup: pickupOffered }),
+    text: waCopy(st.lang).secondChanceText(st.order.awb),
+    buttons: waCopy(st.lang).secondChanceButtons({ pay: st.order.payment !== 'PREPAID', pickup: pickupOffered }),
   })
   if (proactiveCount(sent, p.orderId) === proactiveCount(s, p.orderId)) {
     return feedAdd(sent, a.at, 'desk', `Second chance not sent for ${st.order.awb}: the order already had ${proactiveCount(s, p.orderId)} WhatsApp messages (the cap). Skip it with a reason to move to the next lane`, p.orderId)
@@ -64,7 +64,7 @@ function deliverLater(s: S, p: ParcelRecord, at: number, day: 'tomorrow' | 'day_
   next = moveOrder(next, p.orderId, 'rescheduled', { at, reason: 'second chance: a different time', patch: { viaSecondChance: true, rescheduledTo: to } })
   next = emit(next, at, 'SECOND_CHANCE_ACCEPTED', {}, { orderId: p.orderId })
   next = emit(next, at, 'RESCHEDULED', { toSimAt: to }, { orderId: p.orderId })
-  next = msgAdd(next, { orderId: p.orderId, at, direction: 'out', kind: 'second_chance_ack', text: laterAck(day) })
+  next = msgAdd(next, { orderId: p.orderId, at, direction: 'out', kind: 'second_chance_ack', text: waCopy(s.stops[p.orderId]?.lang).laterAck(day) })
   return feedAdd(next, at, 'desk', `Customer chose a different time (${day === 'day_after' ? 'the day after tomorrow' : 'tomorrow'}): parked until then, then attempt 2`, p.orderId)
 }
 
@@ -79,31 +79,30 @@ function reservePickup(s: S, p: ParcelRecord, at: number): S {
   next = emit(next, at, 'PICKUP_RESERVED', { deadline, slot: shelfUsed(next), capacity: s.router.shelfCapacity }, { orderId: p.orderId })
   next = bookCost(next, at, 'Hub pickup shelf slot (48h)', HOLD_COST, 'Valmo', 'router', p.orderId)
   // The instructions and the code are the reply to the customer's own tap, so this is not one of the four proactive messages.
-  next = msgAdd(next, { orderId: p.orderId, at, direction: 'out', kind: 'pickup_code', text: pickupText(code, hubName(s), s.router.pickupHours) })
+  next = msgAdd(next, { orderId: p.orderId, at, direction: 'out', kind: 'pickup_code', text: waCopy(s.stops[p.orderId]?.lang).pickupText(code, hubName(s), s.router.pickupHours) })
   return feedAdd(next, at, 'desk', `${p.parcel.awb} kept at the hub for ${s.router.pickupHours} h for the customer to collect (shelf slot reserved)`, p.orderId)
 }
-
-const TAP_LABEL = { deliver: '🔁 Deliver again', later: '🕐 Different time', tomorrow: 'Tomorrow', day_after: 'Day after tomorrow', pay: '💳 Pay now by UPI', pickup: '🏬 Pick up at hub' } as const
 
 /** The customer answers the second-chance WhatsApp. Declining (accept false) sends the parcel on to the next lane. */
 export function customerSecondChance(s: S, a: Extract<Action, { type: 'customerSecondChance' }>): S {
   const p = findParcel(s, a.parcelId)
   if (!p || p.state !== 'second_chance_sent') return s
   const st = s.stops[p.orderId]
+  const wa = waCopy(st.lang)
   if (!a.accept) {
-    let declined = tap(s, a.at, p.orderId, '❌ Cancel order')
+    let declined = tap(s, a.at, p.orderId, wa.secondChanceTap.decline)
     declined = patchParcel(declined, p.id, { state: 'queued', secondChanceDeclined: true, awaiting: undefined })
     if (st.paymentPending) declined = patchStop(declined, p.orderId, { paymentPending: false })
     return feedAdd(declined, a.at, 'desk', 'Customer declined the second chance: parcel re-routed', p.orderId)
   }
   const option = a.option ?? 'deliver'
-  let next = tap(s, a.at, p.orderId, TAP_LABEL[option])
+  let next = tap(s, a.at, p.orderId, wa.secondChanceTap[option])
   switch (option) {
     case 'deliver':
       return deliverAgain(next, p, a.at, 'deliver', 'second chance accepted')
     case 'later':
       next = patchParcel(next, p.id, { awaiting: 'when' })
-      return msgAdd(next, { orderId: p.orderId, at: a.at, direction: 'out', kind: 'second_chance_when', text: whenText, buttons: WHEN_BUTTONS })
+      return msgAdd(next, { orderId: p.orderId, at: a.at, direction: 'out', kind: 'second_chance_when', text: wa.whenText, buttons: wa.whenButtons })
     case 'tomorrow':
     case 'day_after':
       return deliverLater(next, p, a.at, option)
@@ -112,13 +111,13 @@ export function customerSecondChance(s: S, a: Extract<Action, { type: 'customerS
       if (st.order.payment === 'PREPAID') return s
       next = patchStop(next, p.orderId, { paymentPending: true })
       next = patchParcel(next, p.id, { awaiting: 'pay' })
-      return msgAdd(next, { orderId: p.orderId, at: a.at, direction: 'out', kind: 'second_chance_pay', text: replyAck.pay_now, buttons: PAY_BUTTONS })
+      return msgAdd(next, { orderId: p.orderId, at: a.at, direction: 'out', kind: 'second_chance_pay', text: wa.replyAck.pay_now, buttons: wa.payButtons })
     }
     case 'pickup': {
       if (!p.pickupOffered) return s
       // The shelf is checked again now: it may have filled since the offer went out. Then the customer gets a different time instead.
       if (shelfUsed(s) >= s.router.shelfCapacity) {
-        next = msgAdd(next, { orderId: p.orderId, at: a.at, direction: 'out', kind: 'second_chance_ack', text: pickupFullAck })
+        next = msgAdd(next, { orderId: p.orderId, at: a.at, direction: 'out', kind: 'second_chance_ack', text: wa.pickupFullAck })
         return deliverLater(next, p, a.at, 'tomorrow')
       }
       return reservePickup(next, p, a.at)

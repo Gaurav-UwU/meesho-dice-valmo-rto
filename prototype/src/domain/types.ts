@@ -5,6 +5,9 @@ import type { Arm, Hub, Order, Rider } from '../engine/types.ts'
 import type { DomainEvent } from './events.ts'
 import type { OrderStatus } from './lifecycle.ts'
 
+/** The language a customer's WhatsApp messages are sent in after the first one (plan 33) */
+export type WaLang = 'en' | 'hi'
+
 /** What the customer can tap on the order-day WhatsApp message. */
 export type ReplyKind = 'home' | 'change_time' | 'fix_address' | 'pay_now'
 
@@ -27,6 +30,8 @@ export interface StopRecord {
   readonly arm?: Arm
   readonly originalRiderId?: string
   readonly replies: readonly ReplyKind[]
+  /** The language the customer chose on WhatsApp. Not chosen: later messages are in English (only the first message is in both). */
+  readonly lang?: WaLang
   readonly location?: LatLng
   readonly claim?: AttemptClaim
   readonly answers: CustomerAnswers
@@ -108,6 +113,8 @@ export interface OtpRecord {
 
 export type MessageKind =
   | 'order_day'
+  /** Right after the first message: "Which language should we use?" (English / हिंदी). Part of the first contact, outside the 4-message cap. */
+  | 'language_check'
   | 'ack'
   | 'delivery_otp'
   | 'refusal_otp'
@@ -346,6 +353,8 @@ export type Action =
   | { readonly type: 'startDay'; readonly at: number }
   | { readonly type: 'customerReply'; readonly at: number; readonly orderId: string; readonly reply: ReplyKind; readonly location?: LatLng }
   | { readonly type: 'customerPayment'; readonly at: number; readonly orderId: string; readonly ok: boolean }
+  /** The customer picks the language for their WhatsApp messages (any time; the same choice again changes nothing) */
+  | { readonly type: 'customerLanguage'; readonly at: number; readonly orderId: string; readonly lang: WaLang }
   | { readonly type: 'riderDeliver'; readonly at: number; readonly orderId: string; readonly code: string }
   | { readonly type: 'submitOtp'; readonly at: number; readonly orderId: string; readonly code: string }
   | { readonly type: 'riderAttempt'; readonly at: number; readonly orderId: string; readonly claim: AttemptClaim; readonly evidence?: EvidenceInput }
