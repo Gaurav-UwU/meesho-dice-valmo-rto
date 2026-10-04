@@ -1,6 +1,6 @@
 import { median } from '../engine/math.ts'
 import { DAY_MS, HOUR_MS } from './clock.ts'
-import { activeStrikes, enhancedReview, ladderStep, OVERTURN_WINDOW_MS, REVIEW_COST, STRIKE_ACTIVE_MS, STRIKE_REASON_LABEL, type LadderStep } from './captain.ts'
+import { activeStrikes, enhancedReview, OVERTURN_WINDOW_MS, riderStep, REVIEW_COST, STRIKE_ACTIVE_MS, STRIKE_REASON_LABEL, type LadderStep } from './captain.ts'
 import { isDelivered } from './lifecycle.ts'
 import { costLedger } from './ledger.ts'
 import { riderName } from './helpers.ts'
@@ -18,7 +18,7 @@ export const WATCH_WINDOW_MS = 7 * DAY_MS
 /** The hub median is taken over riders with at least this many attempts */
 export const MEDIAN_MIN_ATTEMPTS = 5
 
-export type MonitorStatus = 'Clear' | 'Watch' | 'Warning' | 'Escalated'
+export type MonitorStatus = 'Clear' | 'Watch' | 'Warning' | 'Suspended'
 
 export interface RiderMonitorRow {
   readonly riderId: string
@@ -69,13 +69,13 @@ export function riderMonitor(s: DayState): readonly RiderMonitorRow[] {
     const recent = mine.filter((e) => s.simNow - e.simAt < WATCH_WINDOW_MS).length
     const strikes = activeStrikes(s, r.id).length
     const rate = attempts === 0 ? 0 : mine.length / attempts
-    const step = ladderStep(strikes)
+    const step = riderStep(s, r.id)
     const watch = strikes === 0 && recent >= WATCH_DISPUTES && rate >= WATCH_MULTIPLE * median
-    const status: MonitorStatus = step === 'escalated' ? 'Escalated' : step !== 'clear' ? 'Warning' : watch ? 'Watch' : 'Clear'
+    const status: MonitorStatus = step === 'suspended' ? 'Suspended' : step !== 'clear' ? 'Warning' : watch ? 'Watch' : 'Clear'
     const last = [...s.exceptions].filter((e) => e.riderId === r.id && e.status === 'resolved').sort((a, b) => (b.resolvedSim ?? 0) - (a.resolvedSim ?? 0))[0]
     const why =
-      status === 'Escalated'
-        ? `${strikes} active strikes: the hub manager decides, outside the app`
+      status === 'Suspended'
+        ? 'bonus suspended for the rest of the pilot (3 strikes); still delivering and still counted in the comparison'
         : status === 'Warning'
           ? strikes >= 2
             ? `${strikes} active strikes: every failed attempt is reviewed for 14 days and any bonus is blocked`

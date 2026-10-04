@@ -4,7 +4,7 @@ import { captainScorecard, hubMedianDisputedRate, MEDIAN_MIN_ATTEMPTS, riderMoni
 import type { DayState } from '../../domain/types.ts'
 
 const pct = (x: number): string => `${(x * 100).toFixed(0)}%`
-const TONE: Readonly<Record<MonitorStatus, string>> = { Clear: '', Watch: 'is-amber', Warning: 'is-red', Escalated: 'is-red' }
+const TONE: Readonly<Record<MonitorStatus, string>> = { Clear: '', Watch: 'is-amber', Warning: 'is-red', Suspended: 'is-red' }
 
 /** The captain's scorecard: how this captain is doing, so a captain's silence or over-striking is itself visible to Ops. */
 export function Scorecard({ state }: { readonly state: DayState }) {

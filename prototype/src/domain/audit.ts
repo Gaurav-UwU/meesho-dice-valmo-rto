@@ -1,6 +1,6 @@
 import { holdGates, PARCEL_GATES } from '../engine/router.ts'
-import { activeCount, BONUS_HOLD_WINDOW_MS, captainName, STRIKE_REASONS } from './captain.ts'
-import { STRIKE_LIMIT } from './ledger.ts'
+import { activeCount, bonusSuspended, BONUS_HOLD_WINDOW_MS, captainName, STRIKE_REASONS } from './captain.ts'
+import { STRIKE_LIMIT, SUSPENDED_REASON } from './ledger.ts'
 import { ruleHash } from '../engine/verdict.ts'
 import { eventsOf } from './events.ts'
 import { ledgerTotals } from './ledger.ts'
@@ -102,7 +102,11 @@ export function runAudit(s: DayState): readonly AuditCheck[] {
     return !STRIKE_REASONS.includes(k.reason) || k.captainName !== captainName(s.hub) || decided === undefined || decided.captainName !== k.captainName
   })
   const strikeLogOk = badStrikes.length === 0 && strikeEvents.length === s.strikeLog.length && s.exceptions.every((e) => e.action !== 'strike' || e.auto !== true)
-  const strikeBlocked = s.ledger.filter((l) => l.status === 'blocked' && l.reason?.includes('active strikes') && activeCount(s, l.riderId, l.deliveredSim) < STRIKE_LIMIT)
+  const strikeBlocked = s.ledger.filter(
+    (l) =>
+      l.status === 'blocked' &&
+      ((l.reason?.includes('active strikes') && activeCount(s, l.riderId, l.deliveredSim) < STRIKE_LIMIT) || (l.reason === SUSPENDED_REASON && !bonusSuspended(s, l.riderId, l.deliveredSim))),
+  )
   const bonusOff = !(s.config.bonus > 0)
   const bonusRows = s.ledger.length + s.events.filter((e) => e.type.startsWith('BONUS_')).length
   const heldBad = s.ledger.filter((l) => {
@@ -176,7 +180,7 @@ export function runAudit(s: DayState): readonly AuditCheck[] {
       id: 'strike-expiry',
       label: 'No strike counted after it expired',
       ok: strikeBlocked.length === 0,
-      detail: strikeBlocked.length === 0 ? 'every bonus blocked for strikes had 2 active strikes (inside 30 days, not overturned) at the time' : `blocked on strikes that were not active: ${list(strikeBlocked.map((l) => l.orderId))}`,
+      detail: strikeBlocked.length === 0 ? 'every bonus blocked for strikes had 2 active strikes (inside 30 days, not overturned), or 3 strikes not overturned for a suspension, at the time' : `blocked on strikes that were not active: ${list(strikeBlocked.map((l) => l.orderId))}`,
     },
     {
       id: 'bonus-off-clean',

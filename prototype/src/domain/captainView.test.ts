@@ -32,13 +32,13 @@ describe('rider monitor', () => {
     expect(rows.find((r) => r.riderId === otherRider)).toMatchObject({ attempts: 0, disputed: 0, status: 'Clear' })
   })
 
-  it('status follows the ladder: Warning at 1 or 2 strikes, Escalated at 3', () => {
+  it('status follows the ladder: Warning at 1 or 2 strikes, Suspended at 3', () => {
     const base = (n: number): DayState => ({ ...day, strikeLog: forgedStrikes(day, bonusRider, n) })
     expect(riderMonitor(base(0)).find((r) => r.riderId === bonusRider)?.status).toBe('Clear')
     expect(riderMonitor(base(1)).find((r) => r.riderId === bonusRider)?.status).toBe('Warning')
     expect(riderMonitor(base(2)).find((r) => r.riderId === bonusRider)?.status).toBe('Warning')
     expect(riderMonitor(base(2)).find((r) => r.riderId === bonusRider)).toMatchObject({ step: 'enhanced', enhanced: true })
-    expect(riderMonitor(base(3)).find((r) => r.riderId === bonusRider)?.status).toBe('Escalated')
+    expect(riderMonitor(base(3)).find((r) => r.riderId === bonusRider)?.status).toBe('Suspended')
   })
 
   it('an overturned or expired strike no longer counts', () => {

@@ -1,4 +1,4 @@
-import { activeCount, parkingGapReview } from './captain.ts'
+import { activeCount, bonusSuspended, parkingGapReview, SUSPEND_AT } from './captain.ts'
 import { emit } from './events.ts'
 import { DAY_MS, codReconciliationTime, dayIndex } from './clock.ts'
 import { bookCost, feedAdd, riderName, WHATSAPP_COST, type S } from './helpers.ts'
@@ -14,6 +14,7 @@ import type { LedgerEntry, LedgerStatus, StopRecord } from './types.ts'
 export const RETURN_WINDOW_MS = 7 * DAY_MS
 export const DAILY_CAP = 300
 export const STRIKE_LIMIT = 2
+export const SUSPENDED_REASON = `bonus suspended for the rest of the pilot (${SUSPEND_AT} confirmed fake attempts)`
 /** A rider whose normal-order success falls this far below the Control arm's (points), with enough orders to tell, earns no bonus */
 export const NORMAL_FLOOR_PTS = 3
 export const NORMAL_FLOOR_MIN_ORDERS = 10
@@ -37,6 +38,7 @@ export function normalFloorBreached(s: S, riderId: string): boolean {
 export function blockReason(s: S, orderId: string, riderId: string, at: number): string | undefined {
   const st = s.stops[orderId]
   if (st.suspectRiderIds?.includes(riderId) || (st.assessment?.bonusBlocked && st.attemptRiderId === riderId)) return 'an earlier attempt by this rider on this order looked fake'
+  if (bonusSuspended(s, riderId)) return SUSPENDED_REASON
   if (activeCount(s, riderId) >= STRIKE_LIMIT) return `rider has ${STRIKE_LIMIT} active strikes (confirmed fake attempts in the last 30 days)`
   const today = dayIndex(s.simNow)
   const earnedToday = s.ledger.filter((l) => l.riderId === riderId && l.status !== 'blocked' && l.status !== 'clawed_back' && dayIndex(l.deliveredSim) === today).reduce((t, l) => t + l.amount, 0)

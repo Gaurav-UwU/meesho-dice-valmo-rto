@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { fakeGeo } from '../engine/testkit.ts'
 import { runAudit } from './audit.ts'
-import { OVERTURN_WINDOW_MS, activeCount, captainName, enhancedReview, ladderStep, strikeSupport, STRIKE_ACTIVE_MS } from './captain.ts'
+import { OVERTURN_WINDOW_MS, activeCount, bonusSuspended, captainName, enhancedReview, ladderStep, strikeSupport, STRIKE_ACTIVE_MS } from './captain.ts'
 import { DAY_MS, HOUR_MS } from './clock.ts'
 import { createDay, DEFAULT_CONFIG } from './day.ts'
 import { eventsOf } from './events.ts'
@@ -44,8 +44,8 @@ describe('the strike log and the ladder', () => {
     expect(eventsOf(s, 'STRIKE')[0].data).toMatchObject({ reason: 'phone_far', captainName: captainName(day.hub), strikeId: s.strikeLog[0].id })
   })
 
-  it('the ladder: 0 clear, 1 warning, 2 enhanced review, 3 escalated to the hub manager', () => {
-    expect([0, 1, 2, 3, 4].map(ladderStep)).toEqual(['clear', 'warning', 'enhanced', 'escalated', 'escalated'])
+  it('the ladder: 0 clear, 1 warning, 2 enhanced review, 3 bonus suspended for the rest of the pilot', () => {
+    expect([0, 1, 2, 3, 4].map(ladderStep)).toEqual(['clear', 'warning', 'enhanced', 'suspended', 'suspended'])
     let s = day
     const counts: number[] = []
     for (const [i, id] of ofBonus.slice(0, 3).entries()) {
@@ -55,11 +55,13 @@ describe('the strike log and the ladder', () => {
     expect(counts).toEqual([1, 2, 3])
   })
 
-  it('the third active strike escalates the rider once', () => {
+  it('the third active strike suspends the rider once; the captain decides, there is no hub manager step', () => {
     let s = day
     for (const [i, id] of ofBonus.slice(0, 3).entries()) s = strikeOne(s, id, AT + 10 + i * 10)
-    expect(eventsOf(s, 'RIDER_ESCALATED')).toHaveLength(1)
-    expect(eventsOf(s, 'RIDER_ESCALATED')[0].data).toMatchObject({ riderId: bonusRider })
+    expect(eventsOf(s, 'RIDER_SUSPENDED')).toHaveLength(1)
+    expect(eventsOf(s, 'RIDER_SUSPENDED')[0].data).toMatchObject({ riderId: bonusRider })
+    expect(s.feed.some((f) => /suspended for the rest of the pilot/.test(f.text))).toBe(true)
+    expect(s.feed.some((f) => /hub manager/i.test(f.text))).toBe(false)
   })
 
   it('a strike expires after 30 days (rolling) and no longer counts', () => {
@@ -224,6 +226,36 @@ describe('step 2 of the ladder: every failed attempt is reviewed for 14 days', (
     s = reduce(s, { type: 'overturnStrike', at: AT + 50, strikeId: s.strikeLog[0].id })
     const done = deliverOrder(setPayment(s, bonusId, 'PREPAID'), bonusId, '1111', AT + 200)
     expect(done.ledger[0].status).not.toBe('blocked')
+  })
+})
+
+describe('step 3 of the ladder: the bonus is suspended for the rest of the pilot', () => {
+  const threeStrikes = (): DayState => {
+    let s = day
+    for (const [i, id] of ofBonus.slice(0, 3).entries()) s = strikeOne(s, id, AT + 10 + i * 10)
+    return s
+  }
+  it('a delivered bonus order earns nothing, and the rider stays in the Bonus group so the comparison is not flattered', () => {
+    const s = deliverOrder(setPayment(threeStrikes(), bonusId, 'PREPAID'), bonusId, '1111', AT + 200)
+    expect(ofBonus.slice(0, 3)).not.toContain(bonusId)
+    const row = s.ledger.find((l) => l.orderId === bonusId)!
+    expect(row).toMatchObject({ status: 'blocked' })
+    expect(row.reason).toMatch(/suspended for the rest of the pilot/)
+    expect(s.riders.find((r) => r.id === bonusRider)?.arm).toBe('bonus')
+    expect(runAudit(s).filter((c) => !c.ok)).toEqual([])
+  })
+
+  it('the suspension outlasts the 30-day strike expiry', () => {
+    const old: DayState = { ...day, strikeLog: forgedStrikes(day, bonusRider, 3, day.simNow - 31 * DAY_MS) }
+    expect(activeCount(old, bonusRider)).toBe(0)
+    expect(bonusSuspended(old, bonusRider)).toBe(true)
+  })
+
+  it('an Ops overturn within 48 h lifts it', () => {
+    let s = threeStrikes()
+    expect(bonusSuspended(s, bonusRider)).toBe(true)
+    s = reduce(s, { type: 'overturnStrike', at: AT + 60, strikeId: s.strikeLog[2].id })
+    expect(bonusSuspended(s, bonusRider)).toBe(false)
   })
 })
 

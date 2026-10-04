@@ -50,7 +50,7 @@ export default function Captain() {
           </div>
           <RiderMonitor state={state} />
           <p className="ops-strip">
-            <strong>Real vs simulated:</strong> riders, attempts and customers are synthetic. The ladder (warning, a 14-day enhanced review, escalation to the hub manager) is our proposal; Valmo&apos;s real
+            <strong>Real vs simulated:</strong> riders, attempts and customers are synthetic. The ladder (warning, a 14-day enhanced review, then the bonus suspended for the rest of the pilot) is our proposal; Valmo&apos;s real
             rules and labour practice decide what is allowed. A real rollout needs a captain login and a documented appeal process.
           </p>
         </main>

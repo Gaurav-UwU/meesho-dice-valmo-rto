@@ -7,7 +7,7 @@ import type { BonusReview, ExceptionItem, StopRecord, StrikeReason, StrikeRecord
 
 /**
  * Fake-attempt control with the hub captain (plan 24). Nothing here reads the bonus: strikes, the ladder and the review queue work with
- * the bonus off and for riders in both arms. The bonus only adds two extra consequences (blocked at 2 strikes, and the parking-gap hold).
+ * the bonus off and for riders in both arms. The bonus only adds extra consequences (blocked at 2 active strikes, suspended for the rest of the pilot at 3, and the parking-gap hold).
  */
 
 /** A strike counts for 30 days (rolling) unless Ops overturns it */
@@ -46,10 +46,16 @@ const CAPTAINS: Readonly<Record<string, string>> = {
 export const captainName = (hub: Hub): string => CAPTAINS[hub.id] ?? 'Hub captain'
 export const captainTitle = (hub: Hub): string => `${captainName(hub)}, ${hub.name.split('·').pop()?.trim() ?? hub.name}`
 
-export type LadderStep = 'clear' | 'warning' | 'enhanced' | 'escalated'
+export type LadderStep = 'clear' | 'warning' | 'enhanced' | 'suspended'
 
-/** 0 strikes: clear. 1: warning and coaching. 2: every failed attempt reviewed for 14 days (and any bonus blocked). 3 or more: the hub manager decides. */
-export const ladderStep = (activeCount: number): LadderStep => (activeCount >= 3 ? 'escalated' : activeCount === 2 ? 'enhanced' : activeCount === 1 ? 'warning' : 'clear')
+/**
+ * 0 strikes: clear. 1: warning and coaching. 2: every failed attempt reviewed for 14 days (and any bonus blocked). 3 or more: the bonus is
+ * suspended for the rest of the pilot. The hub captain decides every strike; there is no further step and no one above the captain in the app.
+ */
+export const ladderStep = (activeCount: number): LadderStep => (activeCount >= 3 ? 'suspended' : activeCount === 2 ? 'enhanced' : activeCount === 1 ? 'warning' : 'clear')
+
+/** At this many strikes (not overturned) the rider's bonus is suspended for the rest of the pilot */
+export const SUSPEND_AT = 3
 
 /** A rider's strikes that count right now (or at an earlier moment): inside 30 days and not overturned. */
 export function activeStrikes(s: S, riderId: string, at: number = s.simNow): readonly StrikeRecord[] {
@@ -57,6 +63,17 @@ export function activeStrikes(s: S, riderId: string, at: number = s.simNow): rea
 }
 
 export const activeCount = (s: S, riderId: string, at: number = s.simNow): number => activeStrikes(s, riderId, at).length
+
+/**
+ * Step 3: 3 strikes that Ops did not overturn suspend the rider's bonus for the rest of the pilot. Unlike the other steps it does not lapse after
+ * 30 days. The rider keeps delivering and stays in their group, so dropping weak riders cannot flatter the comparison.
+ */
+export function bonusSuspended(s: S, riderId: string, at: number = s.simNow): boolean {
+  return s.strikeLog.filter((k) => k.riderId === riderId && k.simAt <= at && (k.overturnedSim === undefined || k.overturnedSim > at)).length >= SUSPEND_AT
+}
+
+/** Where the rider stands on the ladder now: a suspension outlasts the strikes that caused it. */
+export const riderStep = (s: S, riderId: string): LadderStep => (bonusSuspended(s, riderId) ? 'suspended' : ladderStep(activeCount(s, riderId)))
 
 /** True while the rider is on the enhanced-review step: 2 or more active strikes, and the latest one is under 14 days old. */
 export function enhancedReview(s: S, riderId: string): boolean {
@@ -97,7 +114,7 @@ export function strikeSupport(s: S, item: ExceptionItem): Corroboration {
 
 export const hasNote = (note: string | undefined): boolean => (note ?? '').trim().length >= NOTE_MIN_CHARS
 
-/** Record a strike on the rider of an attempt, with its reason, the captain and the time. The third active strike escalates the rider. */
+/** Record a strike on the rider of an attempt, with its reason, the captain and the time. The third strike suspends the rider's bonus for the rest of the pilot. */
 export function recordStrike(s: S, at: number, st: StopRecord, riderId: string, reason: StrikeReason, note: string | undefined): S {
   const record: StrikeRecord = {
     id: `k${s.nextId}`,
@@ -112,9 +129,9 @@ export function recordStrike(s: S, at: number, st: StopRecord, riderId: string, 
   next = emit(next, at, 'STRIKE', { riderId, strikeId: record.id, reason, captainName: record.captainName }, { orderId: st.order.id, riderId })
   const count = activeCount(next, riderId)
   next = feedAdd(next, at, 'suspect', `Strike ${count} for ${riderName(s, riderId)}: ${STRIKE_REASON_LABEL[reason].toLowerCase()} on ${st.order.awb} (decided by ${record.captainName})`, st.order.id)
-  if (count === 3) {
-    next = emit(next, at, 'RIDER_ESCALATED', { riderId }, { riderId })
-    next = feedAdd(next, at, 'suspect', `${riderName(s, riderId)} now has 3 active strikes: escalated to the hub manager for a decision outside the app`, st.order.id)
+  if (!bonusSuspended(s, riderId) && bonusSuspended(next, riderId)) {
+    next = emit(next, at, 'RIDER_SUSPENDED', { riderId }, { riderId })
+    next = feedAdd(next, at, 'suspect', `${riderName(s, riderId)} now has 3 strikes: bonus suspended for the rest of the pilot (still in the comparison; Ops can overturn a strike within 48 h)`, st.order.id)
   }
   return next
 }

@@ -1,4 +1,4 @@
-import { activeCount, ladderStep } from '../../domain/captain.ts'
+import { activeCount, riderStep } from '../../domain/captain.ts'
 import { strikeView } from '../../domain/captainView.ts'
 import type { DayState } from '../../domain/types.ts'
 import type { Rider } from '../../engine/types.ts'
@@ -12,7 +12,7 @@ interface Props {
   readonly t: Translate
 }
 
-const LADDER_KEY = { warning: 'ladder1', enhanced: 'ladder2', escalated: 'ladder3' } as const
+const LADDER_KEY = { warning: 'ladder1', enhanced: 'ladder2', suspended: 'ladder3' } as const
 
 /**
  * What the rider sees about their own strikes: a meter (3 pips), the ladder text for where they are, every strike with its reason, and a
@@ -22,7 +22,7 @@ export function StrikeMeter({ state, rider, t }: Props) {
   const send = useSend(state.hub.id)
   const mine = state.strikeLog.filter((k) => k.riderId === rider.id)
   const count = activeCount(state, rider.id)
-  const step = ladderStep(count)
+  const step = riderStep(state, rider.id)
   return (
     <section className="rider-strikes" aria-label={t('strikeTitle')}>
       <div className="rider-strikes-head">

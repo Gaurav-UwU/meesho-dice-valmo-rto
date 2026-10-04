@@ -36,7 +36,7 @@ export const EVENT_FIELDS = {
   STRIKE: ['riderId', 'strikeId', 'reason', 'captainName'],
   STRIKE_OVERTURNED: ['riderId', 'strikeId'],
   REVIEW_ASKED: ['riderId', 'strikeId'],
-  RIDER_ESCALATED: ['riderId'],
+  RIDER_SUSPENDED: ['riderId'],
   // Router
   ROUTER_LANE: ['lane', 'ev', 'inputs'],
   PARCEL_INSPECTED: ['unopened', 'sealOk', 'invoiceOutside', 'by'],
