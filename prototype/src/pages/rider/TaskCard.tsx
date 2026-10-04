@@ -1,4 +1,5 @@
-import type { ReplyKind, StopRecord } from '../../domain/types.ts'
+import { simHm } from '../../domain/calls.ts'
+import type { CallEntry, ReplyKind, StopRecord } from '../../domain/types.ts'
 import { clock, persona, rupees } from '../../ui/format.ts'
 import type { Translate } from './i18n.ts'
 
@@ -13,7 +14,10 @@ interface Props {
   readonly underReview?: boolean
   /** The rider's own line about a bonus held for the captain (parking gap), already in their language */
   readonly holdText?: string
+  /** Calls the app logged on this order since it last went out for delivery */
+  readonly calls: readonly CallEntry[]
   readonly t: Translate
+  readonly onCall: () => void
   readonly onDeliver: () => void
   readonly onEnterCode: () => void
   readonly onAttempt: () => void
@@ -63,7 +67,7 @@ function lockedReason(stop: StopRecord): string | null {
   }
 }
 
-export function TaskCard({ stop, hubName, showBonus, bonusAmount, hasOtp, underReview, holdText, t, onDeliver, onEnterCode, onAttempt, onRefuse }: Props) {
+export function TaskCard({ stop, hubName, showBonus, bonusAmount, hasOtp, underReview, holdText, calls, t, onCall, onDeliver, onEnterCode, onAttempt, onRefuse }: Props) {
   const { order } = stop
   const who = persona(order, hubName)
   const rescheduled = stop.status === 'rescheduled'
@@ -72,6 +76,7 @@ export function TaskCard({ stop, hubName, showBonus, bonusAmount, hasOtp, underR
   const open = stop.status === 'out_for_delivery' || stop.status === 'otp_sent'
   const chips = [...new Set(stop.replies)]
   const dir = `https://www.google.com/maps/dir/?api=1&destination=${order.lat},${order.lng}`
+  const lastCall = calls.at(-1)
 
   return (
     <article className="rider-card" aria-label={`Stop ${stop.seq}, ${who.name}`}>
@@ -117,6 +122,7 @@ export function TaskCard({ stop, hubName, showBonus, bonusAmount, hasOtp, underR
       {rescheduled ? <p className="rider-note">Customer asked for another time</p> : null}
       {open && stop.failedAttempts > 0 ? <p className="rider-note">Attempt {stop.failedAttempts + 1}: an earlier attempt on this order did not deliver.</p> : null}
       {reason ? <p className="rider-note">{reason}</p> : null}
+      {open && lastCall ? <p className="rider-note rider-calls">{`${calls.length} ${calls.length === 1 ? t('callOne') : t('callMany')} · ${t('lastCall')} ${simHm(lastCall.simAt)}`}</p> : null}
 
       <div className="rider-actions">
         <a className="rider-dir" href={dir} target="_blank" rel="noopener noreferrer">
@@ -124,12 +130,16 @@ export function TaskCard({ stop, hubName, showBonus, bonusAmount, hasOtp, underR
         </a>
         {rescheduled ? null : (
           <>
+            {/* No phone number and no tel: link: the call goes through Valmo's masked number, and the app logs it. */}
+            <button type="button" className="rider-act" disabled={!open} title={reason ?? undefined} onClick={onCall}>
+              {t('call')}
+            </button>
             {stop.status === 'otp_sent' ? (
-              <button type="button" className="rider-act primary" onClick={onEnterCode}>
+              <button type="button" className="rider-act primary wide" onClick={onEnterCode}>
                 {t('enterCode')}
               </button>
             ) : (
-              <button type="button" className="rider-act primary" disabled={locked} title={reason ?? undefined} onClick={onDeliver}>
+              <button type="button" className="rider-act primary wide" disabled={locked} title={reason ?? undefined} onClick={onDeliver}>
                 {t('deliver')}
               </button>
             )}

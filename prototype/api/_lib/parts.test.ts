@@ -233,6 +233,18 @@ describe('request validation', () => {
     expect(ok({ type: 'reviewBonus', orderId: oid, decision: 'steal' })).toBe(false)
   })
 
+  it('accepts a rider call (answered or not) and an attempt with no typed call count, and rejects malformed calls (plan 32 B)', () => {
+    const ok = (action: unknown) => parseActionRequest({ hubId: 'lucknow', dayId: 'd1-x', action }).ok
+    const oid = 'lucknow-0001'
+    expect(ok({ type: 'riderCall', orderId: oid, answered: true })).toBe(true)
+    expect(ok({ type: 'riderCall', orderId: oid, answered: false })).toBe(true)
+    expect(ok({ type: 'riderCall', orderId: oid })).toBe(false)
+    expect(ok({ type: 'riderCall', orderId: oid, answered: 'yes' })).toBe(false)
+    expect(ok({ type: 'riderCall', orderId: 'tel:+919999999999', answered: true })).toBe(false)
+    expect(ok({ type: 'riderAttempt', orderId: oid, claim: 'customer_unavailable', evidence: { gpsDistM: 40, waitMin: 6 } })).toBe(true)
+    expect(ok({ type: 'riderAttempt', orderId: oid, claim: 'customer_unavailable', evidence: { gpsDistM: 40, calls: 2, waitMin: 6 } })).toBe(true)
+  })
+
   it('accepts the second-chance options and the pickup handover, and rejects anything else', () => {
     const ok = (action: unknown) => parseActionRequest({ hubId: 'lucknow', dayId: 'd1-x', action }).ok
     const pid = 'P-lucknow-0001'

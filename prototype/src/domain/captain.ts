@@ -2,7 +2,7 @@ import { EVIDENCE_RULE } from '../engine/attempts.ts'
 import type { Hub } from '../engine/types.ts'
 import { DAY_MS, HOUR_MS } from './clock.ts'
 import { emit } from './events.ts'
-import { feedAdd, riderName, type S } from './helpers.ts'
+import { feedAdd, patchStop, riderName, type S } from './helpers.ts'
 import type { BonusReview, ExceptionItem, StopRecord, StrikeReason, StrikeRecord } from './types.ts'
 
 /**
@@ -139,6 +139,10 @@ export function overturnStrike(s: S, a: { readonly at: number; readonly strikeId
   const k = s.strikeLog.find((x) => x.id === a.strikeId)
   if (!k || k.overturnedSim !== undefined || s.simNow - k.simAt > OVERTURN_WINDOW_MS) return s
   let next: S = { ...s, strikeLog: s.strikeLog.map((x) => (x.id === k.id ? { ...x, overturnedSim: s.simNow } : x)) }
+  // The strike marked the rider suspect on that order (its ₹15 lost). Overturned, the mark goes, unless the customer also said nobody came.
+  const st = s.stops[k.orderId]
+  const customerSaidNo = (st?.attemptLog ?? []).some((e) => e.riderId === k.riderId && e.reached === false)
+  if (st?.suspectRiderIds?.includes(k.riderId) && !customerSaidNo) next = patchStop(next, k.orderId, { suspectRiderIds: st.suspectRiderIds.filter((id) => id !== k.riderId) })
   next = emit(next, a.at, 'STRIKE_OVERTURNED', { riderId: k.riderId, strikeId: k.id }, { orderId: k.orderId, riderId: k.riderId })
   return feedAdd(next, a.at, 'info', `Ops overturned a strike on ${riderName(s, k.riderId)} (${s.stops[k.orderId]?.order.awb ?? k.orderId}) within 48 h`, k.orderId)
 }

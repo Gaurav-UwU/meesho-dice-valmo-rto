@@ -3,7 +3,7 @@ import { createRng, hashSeed } from '../engine/rng.ts'
 import type { AttemptEvidence } from '../engine/attempts.ts'
 import type { Action, DayState } from './types.ts'
 
-/** What the rider's phone recorded at the door. Genuine attempts are near the address, with calls and a wait; a fake one is logged from far away. */
+/** What the rider's phone recorded at the door, and how many calls the bot makes first. Genuine attempts are near the address, with calls and a wait; a fake one is logged from far away. */
 function bootEvidence(rng: ReturnType<typeof createRng>, fake: boolean): AttemptEvidence {
   if (fake) return { gpsDistM: 600 + Math.floor(rng.next() * 1500), calls: 0, waitMin: 0 }
   const lazy = rng.chance(AUTOPILOT.lazyAttemptShare)
@@ -68,7 +68,9 @@ export function planAutopilot(s: DayState, opts: AutopilotOptions): readonly Act
     } else {
       const fake = rng.chance(AUTOPILOT.fakeAttemptShare)
       const evidence = bootEvidence(createRng((hashSeed(`${id}-evidence`) ^ opts.seed) >>> 0), fake)
-      actions.push({ type: 'riderAttempt', at: tick(), orderId: id, claim: 'customer_unavailable', evidence })
+      // The bot calls from the task card (the customer does not pick up), so the app logs the calls the attempt then counts.
+      for (let c = 0; c < evidence.calls; c++) actions.push({ type: 'riderCall', at: tick(), orderId: id, answered: false })
+      actions.push({ type: 'riderAttempt', at: tick(), orderId: id, claim: 'customer_unavailable', evidence: { gpsDistM: evidence.gpsDistM, waitMin: evidence.waitMin } })
       actions.push({ type: 'customerReach', at: tick(), orderId: id, reached: !fake })
     }
     // Sim time moves as the bots work: a few minutes per stop.

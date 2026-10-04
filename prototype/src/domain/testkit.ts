@@ -2,6 +2,7 @@ import { fakeGeo } from '../engine/testkit.ts'
 import { createDay } from './day.ts'
 import { reduce } from './reducer.ts'
 import { demoRiders } from './selectors.ts'
+import type { AttemptClaim } from '../engine/attempts.ts'
 import type { RefusedParcel } from '../engine/router.ts'
 import type { Payment } from '../engine/types.ts'
 import type { Action, DayState } from './types.ts'
@@ -29,6 +30,15 @@ export function heroStops(s: DayState): { readonly bonus: string; readonly contr
 
 /** Move the sim clock on by whole hours and fire every timer that is due. */
 export const advanceHours = (s: DayState, hours: number): DayState => reduce(s, { type: 'advanceClock', at: AT + 5000, minutes: hours * 60 })
+
+/**
+ * A failed attempt whose rider first called the customer `evidence.calls` times from the task card (plan 32 B: the app logs the calls; the
+ * attempt's call count is that log, never a typed number).
+ */
+export function attemptWithCalls(s: DayState, orderId: string, evidence: { gpsDistM: number; calls: number; waitMin: number }, at = AT + 1, claim: AttemptClaim = 'customer_unavailable'): DayState {
+  const called = Array.from({ length: evidence.calls }).reduce<DayState>((acc) => reduce(acc, { type: 'riderCall', at, orderId, answered: false }), s)
+  return reduce(called, { type: 'riderAttempt', at, orderId, claim, evidence: { gpsDistM: evidence.gpsDistM, waitMin: evidence.waitMin } })
+}
 
 /** Rider asks for the OTP, the customer reads it out, the rider submits it. */
 export const deliverOrder = (s: DayState, id: string, code = '4321', at = AT + 100): DayState =>

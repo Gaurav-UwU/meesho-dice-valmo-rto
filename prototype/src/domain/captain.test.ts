@@ -9,7 +9,7 @@ import { outcomeKpis } from './captainView.ts'
 import { costLedger } from './ledger.ts'
 import { reduce } from './reducer.ts'
 import { demoRiders, stopsOf } from './selectors.ts'
-import { AT, advanceHours, deliverOrder, forgedStrikes, heroStops, setPayment, startedDay } from './testkit.ts'
+import { AT, advanceHours, attemptWithCalls, deliverOrder, forgedStrikes, heroStops, setPayment, startedDay } from './testkit.ts'
 import type { DayState } from './types.ts'
 
 /**
@@ -26,7 +26,8 @@ const AT_DOOR = { gpsDistM: 40, calls: 3, waitMin: 6 }
 const WEAK = { gpsDistM: 150, calls: 0, waitMin: 2 }
 
 const stopsOfRider = (s: DayState, riderId: string): string[] => stopsOf(s).filter((x) => x.riderId === riderId && x.status === 'out_for_delivery').map((x) => x.order.id)
-const attempt = (s: DayState, orderId: string, evidence: { gpsDistM: number; calls: number; waitMin: number }, at = AT + 1): DayState => reduce(s, { type: 'riderAttempt', at, orderId, claim: 'customer_unavailable', evidence })
+/** The rider calls `evidence.calls` times from the task card (the app logs them), then logs the failed attempt */
+const attempt = (s: DayState, orderId: string, evidence: { gpsDistM: number; calls: number; waitMin: number }, at = AT + 1): DayState => attemptWithCalls(s, orderId, evidence, at)
 const never = (s: DayState, orderId: string, at = AT + 2): DayState => reduce(s, { type: 'customerReach', at, orderId, reached: false })
 const decide = (s: DayState, orderId: string, action: 'confirm' | 'free_reattempt' | 'strike', extra: { reason?: 'phone_far' | 'customer_says_nobody_came' | 'repeated_pattern' | 'other'; note?: string } = {}, at = AT + 3): DayState =>
   reduce(s, { type: 'resolveException', at, orderId, action, ...extra })
@@ -322,7 +323,7 @@ describe('independent of the bonus: a day with the bonus OFF still runs the whol
 describe('the parking-gap hold: a weak earlier attempt by the SAME rider holds the ₹15 for the captain', () => {
   const weakThenDelivered = (evidence: typeof WEAK | typeof AT_DOOR, reached?: boolean): DayState => {
     let s = setPayment(day, bonusId, 'PREPAID')
-    s = reduce(s, { type: 'riderAttempt', at: AT + 1, orderId: bonusId, claim: 'customer_unavailable', evidence })
+    s = attemptWithCalls(s, bonusId, evidence, AT + 1)
     if (reached !== undefined) s = reduce(s, { type: 'customerReach', at: AT + 2, orderId: bonusId, reached })
     s = reduce(s, { type: 'reattempt', at: AT + 3, orderId: bonusId })
     return deliverOrder(s, bonusId, '2468', AT + 10)
@@ -386,13 +387,47 @@ describe('the parking-gap hold: a weak earlier attempt by the SAME rider holds t
     expect(eventsOf(late, 'BONUS_RELEASED')[0].data).toMatchObject({ defaulted: true })
   })
 
-  it('another rider who delivers the order is paid normally (a free re-attempt goes to someone else)', () => {
+  it('a free re-attempt goes back to the same rider; when they deliver, the ₹15 waits for the captain (parking gap)', () => {
     let s = setPayment(day, bonusId, 'PREPAID')
     s = decide(attempt(s, bonusId, FAR), bonusId, 'free_reattempt')
+    expect(s.stops[bonusId].riderId).toBe(bonusRider)
     s = deliverOrder(s, bonusId, '1357', AT + 10)
-    expect(s.stops[bonusId].riderId).not.toBe(bonusRider)
+    expect(s.stops[bonusId].riderId).toBe(bonusRider)
+    expect(s.ledger[0]).toMatchObject({ riderId: bonusRider, status: 'pending' })
+    expect(s.ledger[0].review?.state).toBe('waiting')
+    expect(runAudit(s).every((c) => c.ok)).toBe(true)
+  })
+
+  it('a strike gives the same rider a free re-attempt, but that order\'s ₹15 is lost even when they deliver it', () => {
+    let s = setPayment(day, bonusId, 'PREPAID')
+    s = decide(attempt(s, bonusId, FAR), bonusId, 'strike', { reason: 'phone_far' })
+    expect(s.stops[bonusId].riderId).toBe(bonusRider)
+    s = deliverOrder(s, bonusId, '1357', AT + 10)
+    expect(s.ledger[0]).toMatchObject({ riderId: bonusRider, status: 'blocked' })
+    expect(s.ledger[0].reason).toMatch(/earlier attempt by this rider on this order looked fake/)
     expect(s.ledger[0].review).toBeUndefined()
-    expect(s.ledger[0].status).toBe('pending')
+    expect(runAudit(s).every((c) => c.ok)).toBe(true)
+  })
+
+  it('Ops overturning the strike gives the order back to the parking-gap hold: the same rider delivers and the ₹15 waits for the captain', () => {
+    let s = setPayment(day, bonusId, 'PREPAID')
+    s = decide(attempt(s, bonusId, FAR), bonusId, 'strike', { reason: 'phone_far' })
+    s = reduce(s, { type: 'overturnStrike', at: AT + 5, strikeId: s.strikeLog[0].id })
+    expect(s.stops[bonusId].suspectRiderIds ?? []).toEqual([])
+    s = deliverOrder(s, bonusId, '1357', AT + 10)
+    expect(s.ledger[0]).toMatchObject({ riderId: bonusRider, status: 'pending' })
+    expect(s.ledger[0].review?.state).toBe('waiting')
+    expect(runAudit(s).every((c) => c.ok)).toBe(true)
+  })
+
+  it('an overturned strike does not wash out the customer saying nobody came: still blocked', () => {
+    let s = setPayment(day, bonusId, 'PREPAID')
+    s = never(attempt(s, bonusId, FAR), bonusId)
+    s = decide(s, bonusId, 'strike', { reason: 'phone_far' })
+    s = reduce(s, { type: 'overturnStrike', at: AT + 5, strikeId: s.strikeLog[0].id })
+    expect(s.stops[bonusId].suspectRiderIds).toEqual([bonusRider])
+    s = deliverOrder(s, bonusId, '1357', AT + 10)
+    expect(s.ledger[0].status).toBe('blocked')
   })
 
   it('a captain who confirmed the earlier attempt valid clears it: nothing is held', () => {

@@ -31,7 +31,7 @@ function HoldCard({ state, entry }: { readonly state: DayState; readonly entry: 
         </div>
         <div>
           <dt>Calls</dt>
-          <dd>{w.calls ?? '—'}</dd>
+          <dd>{w.calls === null ? '—' : `${w.calls} (logged by the app)`}</dd>
         </div>
         <div>
           <dt>Waited</dt>

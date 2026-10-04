@@ -72,14 +72,6 @@ export function openException(s: S, orderId: string, at: number, confidence: Att
   return feedAdd(next, at, 'suspect', `Exception opened for ${st.order.awb}: ${why}. ${captainName(s.hub)} has 24 h to decide`, orderId)
 }
 
-/** The same-arm rider (not the one who made the attempt) with the lightest bag */
-function otherRider(s: S, orderId: string): string {
-  const st = s.stops[orderId]
-  const load = (id: string): number => s.stopOrder.filter((sid) => s.stops[sid].riderId === id && !['delivered_a1', 'delivered_a2', 'rto', 'rehomed', 'hub_pickup', 'cancelled'].includes(s.stops[sid].status)).length
-  const pool = s.riders.filter((r) => r.arm === st.arm && r.id !== (st.attemptRiderId ?? st.riderId)).sort((a, b) => load(a.id) - load(b.id) || (a.id < b.id ? -1 : 1))
-  return pool[0]?.id ?? st.riderId
-}
-
 interface Detail {
   readonly reason?: StrikeReason
   readonly note?: string
@@ -112,8 +104,9 @@ function markResolved(s: S, orderId: string, action: ExceptionAction, at: number
 /**
  * Ops (or the 24 h default) decides an open exception.
  *  confirm: the attempt was valid, the normal failed-attempt path continues and the bonus block is lifted.
- *  free_reattempt: another rider of the same arm tries again; the failed attempt does not count against the cap; the first rider is not paid.
- *  strike: the same, plus a confirmed fake attempt on the first rider's record.
+ *  free_reattempt: the SAME rider tries again (they know the area); the failed attempt does not count against the cap. Their weak earlier
+ *    attempt puts a later ₹15 on the parking-gap hold for the captain.
+ *  strike: the same, plus a confirmed fake attempt on the rider's record, and that order's ₹15 is lost even when they deliver it.
  */
 export function resolveExceptionFor(s: S, orderId: string, action: ExceptionAction, at: number, auto = false, detail: Detail = {}): S {
   const st = s.stops[orderId]
@@ -133,14 +126,17 @@ export function resolveExceptionFor(s: S, orderId: string, action: ExceptionActi
     next = patchStop(next, orderId, { assessment, confidence: 'medium', suspectRiderIds: cleared, attemptLog: log })
     return feedAdd(next, at, 'attempt', `${captainName(s.hub)} confirmed the attempt on ${st.order.awb} was valid`, orderId)
   }
-  if (action === 'strike') next = recordStrike(next, at, st, faker, detail.reason as StrikeReason, detail.note)
-  const target = otherRider(next, orderId)
-  next = moveOrder(next, orderId, 'out_for_delivery', {
-    at,
-    reason: 'free re-attempt after an exception',
-    patch: { riderId: target, seq: bagEnd(next, target), failedAttempts: Math.max(0, st.failedAttempts - 1) },
-  })
-  return feedAdd(next, at, 'attempt', `Free re-attempt for ${st.order.awb}: ${riderName(s, target)} (same arm) takes it${auto ? ' after 24 h with no decision' : ''}; it does not count against the attempt cap`, orderId)
+  if (action === 'strike') {
+    next = recordStrike(next, at, st, faker, detail.reason as StrikeReason, detail.note)
+    // A confirmed fake attempt loses this order's ₹15 for good, even though the same rider gets it back and may deliver it.
+    const known = st.suspectRiderIds ?? []
+    if (!known.includes(faker)) next = patchStop(next, orderId, { suspectRiderIds: [...known, faker] })
+  }
+  // The order goes back to the rider who knows the area (plan 32: handing it to someone else raises RTO). The captain's review,
+  // strikes and the parking-gap hold are the guard against a rider who fakes again.
+  const patch = { failedAttempts: Math.max(0, st.failedAttempts - 1), ...(faker === st.riderId ? {} : { riderId: faker, seq: bagEnd(next, faker) }) }
+  next = moveOrder(next, orderId, 'out_for_delivery', { at, reason: 'free re-attempt after an exception', patch })
+  return feedAdd(next, at, 'attempt', `Free re-attempt for ${st.order.awb}: ${riderName(s, faker)} tries again (knows the area)${auto ? ' after 24 h with no decision' : ''}; it does not count against the attempt cap`, orderId)
 }
 
 /** Confidence of a failed attempt, given the evidence and whether the customer contradicts it */

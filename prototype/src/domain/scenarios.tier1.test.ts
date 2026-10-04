@@ -8,7 +8,7 @@ import { eventsOf } from './events.ts'
 import { costLedger, ledgerTotals, savingsLedger } from './ledger.ts'
 import { reduce } from './reducer.ts'
 import { deskItems, kpis, stopsOf } from './selectors.ts'
-import { AT, advanceHours, deliverOrder, forceParcel, forgedStrikes, heroStops, inspectParcel, refuseOrder, run, setPayment, startedDay } from './testkit.ts'
+import { AT, advanceHours, attemptWithCalls, deliverOrder, forceParcel, forgedStrikes, heroStops, inspectParcel, refuseOrder, run, setPayment, startedDay } from './testkit.ts'
 import { activeCount } from './captain.ts'
 import type { DayState } from './types.ts'
 
@@ -121,7 +121,7 @@ describe('bonus blocks at accrual', () => {
   })
 })
 
-describe('scenario 3: a fake attempt becomes an exception and a free re-attempt by another same-arm rider', () => {
+describe('scenario 3: a fake attempt becomes an exception and a free re-attempt by the same rider (who knows the area)', () => {
   const faked = run(day, { type: 'riderAttempt', at: AT, orderId: bonusId, claim: 'customer_unavailable', evidence: { gpsDistM: 900, calls: 0, waitMin: 0 } })
 
   it('logs the evidence, rates it low and opens an exception for Ops', () => {
@@ -134,48 +134,58 @@ describe('scenario 3: a fake attempt becomes an exception and a free re-attempt 
   })
 
   it('a well-evidenced attempt (near the door, 2 calls, 5+ minutes) is high confidence and opens nothing', () => {
-    const s = run(day, { type: 'riderAttempt', at: AT, orderId: bonusId, claim: 'customer_unavailable', evidence: { gpsDistM: 60, calls: 3, waitMin: 8 } })
+    const s = attemptWithCalls(day, bonusId, { gpsDistM: 60, calls: 3, waitMin: 8 }, AT)
     expect(s.stops[bonusId].confidence).toBe('high')
     expect(s.exceptions).toHaveLength(0)
   })
 
   it('a customer who says the rider never came makes it low confidence and opens an exception', () => {
-    const s = run(
-      day,
-      { type: 'riderAttempt', at: AT, orderId: bonusId, claim: 'customer_unavailable', evidence: { gpsDistM: 60, calls: 3, waitMin: 8 } },
-      { type: 'customerReach', at: AT + 1, orderId: bonusId, reached: false },
-    )
+    const s = run(attemptWithCalls(day, bonusId, { gpsDistM: 60, calls: 3, waitMin: 8 }, AT), { type: 'customerReach', at: AT + 1, orderId: bonusId, reached: false })
     expect(s.stops[bonusId].confidence).toBe('low')
     expect(s.exceptions).toHaveLength(1)
   })
 
-  it('"free re-attempt" hands the order to another rider of the same arm and does not count against the attempt cap', () => {
+  it('"free re-attempt" gives the order back to the same rider (who knows the area) and does not count against the attempt cap', () => {
     const s = run(faked, { type: 'resolveException', at: AT + 2, orderId: bonusId, action: 'free_reattempt' })
     const st = s.stops[bonusId]
     expect(st.status).toBe('out_for_delivery')
-    expect(st.riderId).not.toBe(owner)
-    expect(s.riders.find((r) => r.id === st.riderId)?.arm).toBe('bonus')
+    expect(st.riderId).toBe(owner)
     expect(st.arm).toBe('bonus')
     expect(st.failedAttempts).toBe(0)
     expect(s.exceptions[0]).toMatchObject({ status: 'resolved', action: 'free_reattempt', auto: false })
+    expect(s.feed.at(-1)?.text).toMatch(/tries again \(knows the area\); it does not count against the attempt cap/)
   })
 
-  it('the rider who delivers earns the bonus; the rider who faked earns nothing', () => {
+  it('after a free re-attempt the same rider delivers: the ₹15 accrues but waits for the hub captain (the earlier attempt was weak)', () => {
     const s = deliverOrder(setPayment(run(faked, { type: 'resolveException', at: AT + 2, orderId: bonusId, action: 'free_reattempt' }), bonusId, 'PREPAID'), bonusId)
     expect(s.stops[bonusId].status).toBe('delivered_a1')
     const entries = ledgerOf(s, bonusId)
     expect(entries).toHaveLength(1)
-    expect(entries[0].riderId).not.toBe(owner)
+    expect(entries[0].riderId).toBe(owner)
     expect(entries[0].status).toBe('pending')
+    expect(entries[0].review?.state).toBe('waiting')
+    expect(runAudit(s).every((c) => c.ok)).toBe(true)
   })
 
-  it('"strike" adds a strike to the rider and also gives a free re-attempt', () => {
+  it('"strike" adds a strike to the rider and also gives a free re-attempt, to the same rider', () => {
     const s = run(faked, { type: 'resolveException', at: AT + 2, orderId: bonusId, action: 'strike', reason: 'phone_far' })
     expect(activeCount(s, owner)).toBe(1)
     expect(s.strikeLog[0]).toMatchObject({ riderId: owner, orderId: bonusId, reason: 'phone_far' })
     expect(eventsOf(s, 'STRIKE')).toHaveLength(1)
     expect(s.stops[bonusId].status).toBe('out_for_delivery')
-    expect(s.stops[bonusId].riderId).not.toBe(owner)
+    expect(s.stops[bonusId].riderId).toBe(owner)
+    expect(s.stops[bonusId].suspectRiderIds).toEqual([owner])
+  })
+
+  it('after a strike the same rider delivers: that order\'s ₹15 is lost (blocked, "an earlier attempt by this rider")', () => {
+    const struck = run(setPayment(faked, bonusId, 'PREPAID'), { type: 'resolveException', at: AT + 2, orderId: bonusId, action: 'strike', reason: 'phone_far' })
+    const s = deliverOrder(struck, bonusId)
+    expect(s.stops[bonusId].status).toBe('delivered_a1')
+    const entries = ledgerOf(s, bonusId)
+    expect(entries).toHaveLength(1)
+    expect(entries[0]).toMatchObject({ riderId: owner, status: 'blocked' })
+    expect(entries[0].reason).toMatch(/earlier attempt by this rider on this order looked fake/)
+    expect(runAudit(s).every((c) => c.ok)).toBe(true)
   })
 
   it('"confirm valid" keeps the normal failed-attempt path and clears the dispute', () => {
@@ -189,6 +199,7 @@ describe('scenario 3: a fake attempt becomes an exception and a free re-attempt 
     const s = advanceHours(faked, 24)
     expect(s.exceptions[0]).toMatchObject({ status: 'resolved', action: 'free_reattempt', auto: true })
     expect(s.stops[bonusId].status).toBe('out_for_delivery')
+    expect(s.stops[bonusId].riderId).toBe(owner)
     expect(s.stops[bonusId].failedAttempts).toBe(0)
     expect(s.strikeLog).toHaveLength(0)
     expect(s.exceptions[0]).toMatchObject({ captainMissed: true })
@@ -443,7 +454,7 @@ describe('the Audit is green after a full Autopilot day and Close pilot', () => 
 
   it('every check passes', () => {
     const checks = runAudit(closed)
-    expect(checks).toHaveLength(18)
+    expect(checks).toHaveLength(19)
     const red = checks.filter((c) => !c.ok)
     expect(red.map((c) => `${c.id}: ${c.detail}`)).toEqual([])
   })

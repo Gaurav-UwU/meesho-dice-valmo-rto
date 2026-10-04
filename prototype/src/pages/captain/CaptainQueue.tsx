@@ -49,7 +49,7 @@ function DecisionCard({ state, item }: { readonly state: DayState; readonly item
         </div>
         <div>
           <dt>Calls</dt>
-          <dd>{ev ? ev.calls : '—'}</dd>
+          <dd>{ev ? `${ev.calls} (logged by the app)` : '—'}</dd>
         </div>
         <div>
           <dt>Waited</dt>
@@ -68,7 +68,7 @@ function DecisionCard({ state, item }: { readonly state: DayState; readonly item
         <button type="button" className={`btn${suggestConfirm ? ' primary' : ''}`} onClick={() => decide('confirm')} title="The attempt was valid: normal failed-attempt path, the bonus block is lifted">
           Confirm valid
         </button>
-        <button type="button" className="btn" onClick={() => decide('free_reattempt')} title="Another rider of the same arm tries again; it does not count against the attempt cap">
+        <button type="button" className="btn" onClick={() => decide('free_reattempt')} title="The same rider tries again (they know the area); it does not count against the attempt cap, and their ₹15 waits for your review">
           Free re-attempt
         </button>
         <button type="button" className="btn danger" aria-expanded={striking} onClick={() => setStriking((v) => !v)}>

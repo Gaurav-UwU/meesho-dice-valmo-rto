@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react'
-import type { AttemptClaim, AttemptEvidence } from '../../engine/attempts.ts'
+import type { EvidenceInput } from '../../domain/types.ts'
+import type { AttemptClaim } from '../../engine/attempts.ts'
+import type { Translate } from './i18n.ts'
 
 interface Props {
-  readonly onPick: (claim: AttemptClaim, evidence: AttemptEvidence | undefined) => void
+  /** Calls the app logged on this order since it went out (read-only: the rider cannot type a number) */
+  readonly calls: number
+  readonly t: Translate
+  readonly onCallNow: () => void
+  readonly onPick: (claim: AttemptClaim, evidence: EvidenceInput | undefined) => void
   readonly onClose: () => void
 }
 
@@ -18,12 +24,11 @@ const farGps = (): number => 600 + Math.floor(Math.random() * 900)
 
 /**
  * The rider says why they could not deliver, and the phone backs it up: the GPS distance when they tap "I'm at the door",
- * how many times they called, and how long they waited. Strong evidence (near the door, 2+ calls, 5+ minutes) is trusted;
- * a pin far from the address opens an exception for Ops.
+ * the calls the app logged (made from the task card or with "Call now", never typed), and how long they waited. Strong evidence
+ * (near the door, 2+ calls, 5+ minutes) is trusted; a pin far from the address opens an exception for the hub captain.
  */
-export function AttemptSheet({ onPick, onClose }: Props) {
+export function AttemptSheet({ calls, t, onCallNow, onPick, onClose }: Props) {
   const [gps, setGps] = useState<number | null>(null)
-  const [calls, setCalls] = useState(0)
   const [wait, setWait] = useState(0)
 
   useEffect(() => {
@@ -34,7 +39,8 @@ export function AttemptSheet({ onPick, onClose }: Props) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const evidence: AttemptEvidence | undefined = gps === null ? undefined : { gpsDistM: gps, calls, waitMin: wait }
+  // No call count is sent: the app counts the calls it logged.
+  const evidence: EvidenceInput | undefined = gps === null ? undefined : { gpsDistM: gps, waitMin: wait }
 
   return (
     <div className="rider-overlay" role="presentation" onClick={onClose}>
@@ -49,12 +55,10 @@ export function AttemptSheet({ onPick, onClose }: Props) {
             <span>{gps === null ? 'GPS not logged' : `${gps} m from the address`}</span>
           </div>
           <div className="rider-evidence-row">
-            <button type="button" className="rider-chipbtn" onClick={() => setCalls((c) => c + 1)}>
-              Call customer
+            <button type="button" className="rider-chipbtn" onClick={onCallNow}>
+              {t('callNow')}
             </button>
-            <span>
-              {calls} {calls === 1 ? 'call' : 'calls'}
-            </span>
+            <span>{(calls === 1 ? t('callLoggedOne') : t('callsLogged')).replace('{n}', String(calls))}</span>
           </div>
           <div className="rider-evidence-row">
             <button type="button" className="rider-chipbtn" onClick={() => setWait((w) => w + 5)}>

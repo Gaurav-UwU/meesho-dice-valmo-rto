@@ -21,7 +21,7 @@ export interface AuditCheck {
 const list = (items: readonly string[], max = 5): string => `${items.slice(0, max).join('; ')}${items.length > max ? `; and ${items.length - max} more` : ''}`
 
 /**
- * The eighteen checks on the day's own record (prototype spec, Audit tab). Each is green or red. They read the event log and the
+ * The nineteen checks on the day's own record (prototype spec, Audit tab). Each is green or red. They read the event log and the
  * lifecycle, so an action that forgot to log itself, or a screen that shows a different ₹ figure, turns a check red.
  */
 export function runAudit(s: DayState): readonly AuditCheck[] {
@@ -119,6 +119,28 @@ export function runAudit(s: DayState): readonly AuditCheck[] {
     return false
   })
 
+  // Plan 32 B: a failed attempt's call count is the app's own log, never a typed number. One pass over the log: each order's calls since it
+  // last went out must cover the count on its attempt, and each order's call log must match its CALL_LOGGED events.
+  const callsSinceOut = new Map<string, number>()
+  const callsLogged = new Map<string, number>()
+  const overClaimed: string[] = []
+  let attemptsWithCalls = 0
+  for (const e of s.events) {
+    const id = e.orderId
+    if (id === undefined) continue
+    if (e.type === 'ORDER_DISPATCHED') callsSinceOut.set(id, 0)
+    else if (e.type === 'CALL_LOGGED') {
+      callsSinceOut.set(id, (callsSinceOut.get(id) ?? 0) + 1)
+      callsLogged.set(id, (callsLogged.get(id) ?? 0) + 1)
+    } else if (e.type === 'ATTEMPT_LOGGED' && typeof e.data.calls === 'number') {
+      attemptsWithCalls++
+      if (e.data.calls > (callsSinceOut.get(id) ?? 0)) overClaimed.push(id)
+    }
+  }
+  const callLogOff = stops.filter((x) => (x.callLog?.length ?? 0) !== (callsLogged.get(x.order.id) ?? 0)).map((x) => x.order.id)
+  const callsOk = overClaimed.length === 0 && callLogOff.length === 0
+  const totalCalls = [...callsLogged.values()].reduce((t, n) => t + n, 0)
+
   return [
     { id: 'orders-balance', label: 'Orders = terminal + open', ok: terminal.length + open === stops.length && missing.length === 0, detail: missing.length === 0 ? `${stops.length} orders = ${terminal.length} in a terminal state + ${open} still open` : `orders with no record: ${list(missing)}` },
     { id: 'one-terminal', label: 'Every order has exactly one terminal state (or is open)', ok: wrongTerminal.length === 0, detail: wrongTerminal.length === 0 ? `${terminal.length} terminal orders each ended once; ${open} are open` : `wrong for ${list(wrongTerminal.map((x) => x.order.id))}` },
@@ -196,6 +218,14 @@ export function runAudit(s: DayState): readonly AuditCheck[] {
         heldBad.length === 0
           ? `${s.ledger.filter((l) => l.review !== undefined).length} bonuses went through the parking-gap check: withheld ones have a captain and a reason, default releases came after the 7-day window`
           : `held bonuses that do not add up: ${list(heldBad.map((l) => l.orderId))}`,
+    },
+    {
+      id: 'calls-logged',
+      label: "Every attempt's call count matches the calls the app logged",
+      ok: callsOk,
+      detail: callsOk
+        ? `${attemptsWithCalls} attempt${attemptsWithCalls === 1 ? '' : 's'} with evidence, none claiming more calls than the app logged since the order went out (${totalCalls} call${totalCalls === 1 ? '' : 's'} logged, none typed by a rider)`
+        : `${overClaimed.length > 0 ? `attempts claiming more calls than the app logged: ${list(overClaimed)}` : ''}${overClaimed.length > 0 && callLogOff.length > 0 ? '; ' : ''}${callLogOff.length > 0 ? `call logs that do not match the event log: ${list(callLogOff)}` : ''}`,
     },
   ]
 }

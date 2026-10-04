@@ -17,7 +17,6 @@ export function Hero() {
       </div>
       <div className="land-hero-grid">
         <div className="land-hero-copy">
-          <p className="land-eyebrow">Team GPS · IIT Bombay · Meesho DICE 3.0</p>
           <h1>
             {HERO.title} <span>{HERO.titleSpan}</span>
           </h1>
@@ -30,11 +29,6 @@ export function Hero() {
               Skip to the decision tool
             </Link>
           </div>
-          <ul className="land-chips" aria-label="Good to know">
-            <li>About 6 minutes</li>
-            <li>No sign-in</li>
-            <li>Synthetic data, not an official Valmo app</li>
-          </ul>
         </div>
         <ol className="land-flow" aria-label="What you will see">
           {HERO.flow.map((f, i) => (

@@ -1,4 +1,4 @@
-import { assessAttempt, attemptConfidence } from '../engine/attempts.ts'
+import { assessAttempt, attemptConfidence, type AttemptEvidence } from '../engine/attempts.ts'
 import { roadKmEstimate } from '../engine/geo.ts'
 import { logit, sigmoid } from '../engine/math.ts'
 import { flagBonusEligible, rescueScore } from '../engine/rescue.ts'
@@ -27,6 +27,7 @@ import {
   rescheduleCheckText,
 } from './messages.ts'
 import { askReview, overturnStrike, reviewBonus } from './captain.ts'
+import { callsSinceDispatch, riderCall } from './calls.ts'
 import { closeAsRto, confidenceOf, openException, overtakeException, resolveExceptionFor, retryOne } from './orders.ts'
 import { buildParcel, SHOWCASE } from './parcels.ts'
 import { plannedRuleHash } from './rule.ts'
@@ -270,7 +271,9 @@ function submitOtp(s: S, a: Extract<Action, { type: 'submitOtp' }>): S {
 function riderAttempt(s: S, a: Extract<Action, { type: 'riderAttempt' }>): S {
   const st = s.stops[a.orderId]
   if (!st || (st.status !== 'out_for_delivery' && st.status !== 'otp_sent')) return s
-  const confidence = attemptConfidence(a.evidence, false)
+  // The call count is the app's own log since the order went out, never a number the rider typed.
+  const evidence: AttemptEvidence | undefined = a.evidence ? { gpsDistM: a.evidence.gpsDistM, calls: callsSinceDispatch(s, a.orderId).length, waitMin: a.evidence.waitMin } : undefined
+  const confidence = attemptConfidence(evidence, false)
   let next = moveOrder(s, a.orderId, 'ndr', {
     at: a.at,
     reason: 'attempt logged',
@@ -279,19 +282,19 @@ function riderAttempt(s: S, a: Extract<Action, { type: 'riderAttempt' }>): S {
       claim: a.claim,
       answers: { riderReached: null, askedReschedule: null },
       assessment: undefined,
-      evidence: a.evidence,
+      evidence,
       confidence,
       attemptRiderId: st.riderId,
       failedSim: s.simNow,
       // Every failed attempt stays on the order, so a later attempt never erases what an earlier one looked like.
-      attemptLog: [...(st.attemptLog ?? []), { riderId: st.riderId, simAt: s.simNow, confidence, ...(a.evidence ? { evidence: a.evidence } : {}), reached: null }],
+      attemptLog: [...(st.attemptLog ?? []), { riderId: st.riderId, simAt: s.simNow, confidence, ...(evidence ? { evidence } : {}), reached: null }],
     },
   })
   next = emit(
     next,
     a.at,
     'ATTEMPT_LOGGED',
-    { reason: a.claim, gpsDistM: a.evidence?.gpsDistM ?? null, calls: a.evidence?.calls ?? null, waitMin: a.evidence?.waitMin ?? null, confidence },
+    { reason: a.claim, gpsDistM: evidence?.gpsDistM ?? null, calls: evidence?.calls ?? null, waitMin: evidence?.waitMin ?? null, confidence },
     { orderId: a.orderId, riderId: st.riderId },
   )
   next = sendProactive(next, { orderId: a.orderId, at: a.at, direction: 'out', kind: 'attempt_check', text: attemptCheckText(st.order.awb), buttons: REACH_BUTTONS })
@@ -400,6 +403,8 @@ function apply(s: S, a: Action): S {
       return submitOtp(s, a)
     case 'riderAttempt':
       return riderAttempt(s, a)
+    case 'riderCall':
+      return riderCall(s, a)
     case 'customerReach':
       return customerReach(s, a)
     case 'customerAskedReschedule':

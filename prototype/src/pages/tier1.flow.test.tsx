@@ -90,7 +90,8 @@ describe('rider: refusal reasons and proof at the door', () => {
     await user.click(within(review).getByRole('button', { name: 'Free re-attempt' }))
     await waitFor(() => expect(state().exceptions[0].status).toBe('resolved'))
     expect(state().stops[hero].status).toBe('out_for_delivery')
-    expect(state().stops[hero].riderId).not.toBe(rider.id)
+    // The free re-attempt goes back to the same rider, who knows the area.
+    expect(state().stops[hero].riderId).toBe(rider.id)
   })
 
   it('a well-evidenced attempt (at the door, two calls, ten minutes) is trusted and opens nothing', async () => {
@@ -100,8 +101,11 @@ describe('rider: refusal reasons and proof at the door', () => {
     const user = userEvent.setup()
     await user.click((await screen.findAllByRole('button', { name: 'Attempted' }))[0])
     await user.click(await screen.findByRole('button', { name: /I'm at the door/ }))
-    await user.click(screen.getByRole('button', { name: 'Call customer' }))
-    await user.click(screen.getByRole('button', { name: 'Call customer' }))
+    // Two calls from the sheet's "Call now": the app logs them (the rider cannot type a count).
+    for (let i = 0; i < 2; i++) {
+      await user.click(screen.getByRole('button', { name: 'Call now' }))
+      await user.click(within(await screen.findByRole('dialog', { name: /Call the customer/ })).getByRole('button', { name: 'No answer' }))
+    }
     await user.click(screen.getByRole('button', { name: /Waited 5 more min/ }))
     await user.click(screen.getByRole('button', { name: /Waited 5 more min/ }))
     await user.click(screen.getByRole('button', { name: 'Customer unavailable' }))
@@ -147,9 +151,9 @@ describe('ops: the sim clock, Close pilot and the Audit', () => {
     await waitFor(() => expect(state().simNow).toBeGreaterThan(SIM_START + 7 * DAY_MS))
 
     show('/audit?hub=lucknow', 'audit')
-    expect(await screen.findByText('All 18 checks are green')).toBeTruthy()
+    expect(await screen.findByText('All 19 checks are green')).toBeTruthy()
     const list = screen.getByRole('list', { name: 'Audit checks' })
-    expect(within(list).getAllByRole('listitem')).toHaveLength(18)
+    expect(within(list).getAllByRole('listitem')).toHaveLength(19)
     expect(within(list).getByText(/Nothing delivered without a verified OTP/)).toBeTruthy()
   })
 

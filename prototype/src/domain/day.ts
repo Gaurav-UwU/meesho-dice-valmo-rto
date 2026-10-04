@@ -7,7 +7,8 @@ import { SIM_START } from './clock.ts'
 import type { DayConfig, DayState, StopRecord } from './types.ts'
 
 /** Bump when the shape of DayState changes (see DayState.schema). */
-export const DAY_SCHEMA = 8
+// 9 (plan 32): stops carry an app-logged call log, and an attempt's call count comes from it (CALL_LOGGED), so a day with typed counts is replaced.
+export const DAY_SCHEMA = 9
 
 export const DEFAULT_CONFIG: DayConfig = { maxAttempts: 2, bonus: 15, uplift: 0.12, basePay: 20 }
 

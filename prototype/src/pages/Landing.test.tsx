@@ -35,6 +35,18 @@ describe('Landing: one job, the demo', () => {
     expect(screen.getByRole('link', { name: 'Skip to the decision tool' }).getAttribute('href')).toBe('/pilot')
   })
 
+  it('has no eyebrow line and no "good to know" chips, but keeps the "not an official Valmo app" disclaimer in the footer (plan 32 C)', () => {
+    show()
+    expect(screen.queryByText('Team GPS · IIT Bombay · Meesho DICE 3.0')).toBeNull()
+    expect(screen.queryByRole('list', { name: 'Good to know' })).toBeNull()
+    expect(screen.queryByText('About 6 minutes')).toBeNull()
+    expect(screen.queryByText('No sign-in')).toBeNull()
+    const footer = screen.getByRole('contentinfo')
+    expect(footer.textContent).toMatch(/Not an official Valmo app/)
+    expect(footer.textContent).toMatch(/Synthetic data/)
+    expect(footer.textContent).toMatch(/Team GPS \(IIT Bombay\)/)
+  })
+
   it('tells you to open the windows (Ops, Rider, Customer and the hub captain), each in a new tab, on the Lucknow hub', () => {
     show()
     const setup = screen.getByRole('region', { name: /Open the windows/ })

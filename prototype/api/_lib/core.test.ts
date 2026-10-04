@@ -450,7 +450,7 @@ describe('a day saved by an older version of the app', () => {
     const r = await runEnsure(h.deps, HUB)
     expect(r.ok).toBe(true)
     const day = h.db.days.get(HUB)!
-    expect(day.schema).toBe(8)
+    expect(day.schema).toBe(9)
     expect(day.dayNo).toBe(1)
     expect(day.version).toBe(42)
     expect(day.started).toBe(false)
@@ -482,7 +482,7 @@ describe('a day saved by an older version of the app', () => {
     h.db.days.set(HUB, OLD_SHAPE_V5(9))
     const r = await runReset(h.deps, HUB)
     expect(r.ok).toBe(true)
-    expect(h.db.days.get(HUB)).toMatchObject({ schema: 8, dayNo: 1, version: 10 })
+    expect(h.db.days.get(HUB)).toMatchObject({ schema: 9, dayNo: 1, version: 10 })
   })
 })
 

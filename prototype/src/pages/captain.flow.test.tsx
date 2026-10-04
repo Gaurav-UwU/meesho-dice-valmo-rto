@@ -35,6 +35,11 @@ const show = (url: string, page: keyof typeof PAGES): void => {
 
 const FAR = { gpsDistM: 900, calls: 0, waitMin: 0 }
 const AT_DOOR = { gpsDistM: 40, calls: 3, waitMin: 6 }
+/** The rider calls 3 times from the task card (the app logs them), then logs the failed attempt at the door */
+const attemptAtDoor = async (orderId: string): Promise<void> => {
+  for (let i = 0; i < AT_DOOR.calls; i++) await store.send('lucknow', { type: 'riderCall', orderId, answered: false })
+  await store.send('lucknow', { type: 'riderAttempt', orderId, claim: 'customer_unavailable', evidence: AT_DOOR })
+}
 
 beforeEach(async () => {
   store = createLocalStore({ loadGeo: async (id) => syntheticGeo(getHub(id)) })
@@ -45,6 +50,24 @@ afterEach(cleanup)
 const heroBonus = (): { rider: string; order: string } => ({ rider: demoRiders(state()).bonus!.id, order: demoStops(state()).bonus[0] })
 
 describe('the captain screen', () => {
+  it('Free re-attempt says the same rider tries again (plan 32 A)', async () => {
+    const { order } = heroBonus()
+    await store.send('lucknow', { type: 'riderAttempt', orderId: order, claim: 'customer_unavailable', evidence: FAR })
+    show('/captain?hub=lucknow', 'captain')
+    const queue = await screen.findByRole('region', { name: 'Review queue' })
+    expect(within(queue).getByRole('button', { name: 'Free re-attempt' }).getAttribute('title')).toMatch(/same rider tries again/i)
+  })
+
+  it('the evidence card shows the calls the app logged, not a number the rider typed (plan 32 B)', async () => {
+    const { order } = heroBonus()
+    await store.send('lucknow', { type: 'riderCall', orderId: order, answered: false })
+    await store.send('lucknow', { type: 'riderCall', orderId: order, answered: false })
+    await store.send('lucknow', { type: 'riderAttempt', orderId: order, claim: 'customer_unavailable', evidence: { gpsDistM: 900, calls: 9, waitMin: 0 } })
+    show('/captain?hub=lucknow', 'captain')
+    const queue = await screen.findByRole('region', { name: 'Review queue' })
+    expect(within(queue).getByText('2 (logged by the app)')).toBeTruthy()
+  })
+
   it('says who the captain is, that there is no login in the demo, and shows an empty queue honestly', async () => {
     show('/captain?hub=lucknow', 'captain')
     expect(await screen.findByText('demo, no login')).toBeTruthy()
@@ -72,7 +95,7 @@ describe('the captain screen', () => {
 
   it('a customer’s word alone is not enough: it needs a written note', async () => {
     const { order } = heroBonus()
-    await store.send('lucknow', { type: 'riderAttempt', orderId: order, claim: 'customer_unavailable', evidence: AT_DOOR })
+    await attemptAtDoor(order)
     await store.send('lucknow', { type: 'customerReach', orderId: order, reached: false })
     show('/captain?hub=lucknow', 'captain')
     const user = userEvent.setup()
@@ -98,7 +121,7 @@ describe('the captain screen', () => {
       await store.send('lucknow', { type: 'resolveException', orderId: id, action: 'strike', reason: 'phone_far' })
     }
     expect(activeCount(state(), rider)).toBe(2)
-    await store.send('lucknow', { type: 'riderAttempt', orderId: bag[2], claim: 'customer_unavailable', evidence: AT_DOOR })
+    await attemptAtDoor(bag[2])
     show('/captain?hub=lucknow', 'captain')
     const queue = await screen.findByRole('region', { name: 'Review queue' })
     expect(within(queue).getByText(/Suggested: Confirm valid/)).toBeTruthy()

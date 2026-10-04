@@ -19,8 +19,8 @@ const collected = reduce(reserved, { type: 'deskHandover', at: AT + 10, parcelId
 const held = run(inspectParcel(forceParcel(refuseOrder(day, bonusId), bonusId, { reason: 'not_ordered', sellerState: day.hub.state, sellerGst: false, unopened: true, sealOk: true, sellerOptedIn: true, invoiceOutside: true, demandRate: 0.3 }), bonusId), { type: 'deskHold', at: AT + 3, parcelId: pid })
 
 describe('Audit: no pickup handed over without a verified code', () => {
-  it('has eighteen checks now', () => {
-    expect(runAudit(day)).toHaveLength(18)
+  it('has nineteen checks now (plan 32 added the call-log check)', () => {
+    expect(runAudit(day)).toHaveLength(19)
   })
 
   it('is green with no pickups, with a reserved pickup, and with a collected one', () => {

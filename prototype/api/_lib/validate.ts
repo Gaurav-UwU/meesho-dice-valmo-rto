@@ -22,8 +22,10 @@ const ActionInputSchema = z.discriminatedUnion('type', [
     type: z.literal('riderAttempt'),
     orderId,
     claim: z.enum(['customer_unavailable', 'reschedule_requested', 'address_not_found']),
-    evidence: z.object({ gpsDistM: z.number().min(0).max(100_000), calls: z.number().int().min(0).max(50), waitMin: z.number().min(0).max(600) }).optional(),
+    // `calls` is accepted from an old client but ignored: the app counts the calls it logged (riderCall).
+    evidence: z.object({ gpsDistM: z.number().min(0).max(100_000), calls: z.number().int().min(0).max(50).optional(), waitMin: z.number().min(0).max(600) }).optional(),
   }),
+  z.object({ type: z.literal('riderCall'), orderId, answered: z.boolean() }),
   z.object({ type: z.literal('customerReach'), orderId, reached: z.boolean() }),
   z.object({ type: z.literal('customerAskedReschedule'), orderId, asked: z.boolean() }),
   z.object({ type: z.literal('riderRefuse'), orderId, reason: z.enum(['no_cash', 'want_later', 'not_home', 'changed_mind', 'cheaper_elsewhere', 'not_ordered', 'damaged']).optional() }),

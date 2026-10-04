@@ -21,12 +21,12 @@ npx tsc -b && npx oxlint && npx vite build
 |---|---|---|
 | `/` | Anyone | Landing: the 90-second demo, real vs simulated, QR codes |
 | `/ops` | Valmo ops team | Live map, KPIs, Bonus vs Control, suspect attempts, feed. Start day / Autopilot / Reset |
-| `/rider` | Rider | Clone of Valmo Pilot with the green ₹+15 chip (Bonus riders only). Deliver, Attempted, Refused with OTP |
+| `/rider` | Rider | Clone of Valmo Pilot with the green ₹+15 chip (Bonus riders only). Call (masked number, demo: no real call; the app logs every call as attempt evidence), Deliver, Attempted, Refused with OTP |
 | `/customer` | Customer | On-screen WhatsApp (Demo mode) with Valmo's wording and reply buttons |
 | `/desk` | Hub operator | Refused-Parcel Desk: inspect a parcel, second chance (deliver again, different time, pay now, pick up at hub), Hold & Re-home on a match forecast, consolidated return, pilot KPIs |
 | `/pilot` | Meesho decision-maker | 30-day A/B simulator (paired riders, pair-by-pair 95% range, fair-comparison check, two safety rules), GO / RE-PRICE / KILL, P&L, break-even |
-| `/captain` | Hub captain | Fake-attempt control: review queue with evidence, Confirm valid / Free re-attempt / Strike with a reason, held bonuses, rider monitor, scorecard, outcome numbers. Works with the bonus off. Demo: no login |
-| `/audit` | Anyone | Eighteen checks on the day's own record, each green or red |
+| `/captain` | Hub captain | Fake-attempt control: review queue with evidence, Confirm valid / Free re-attempt (back to the same rider) / Strike with a reason (that order's ₹15 is lost), held bonuses, rider monitor, scorecard, outcome numbers. Works with the bonus off. Demo: no login |
+| `/audit` | Anyone | Nineteen checks on the day's own record, each green or red (the newest: every attempt's call count matches the calls the app logged) |
 
 Add `?hub=lucknow|powai|whitefield|gaya` to any link. Open Ops, Rider and Customer in separate tabs of one browser and they move together; to use several phones, see "How to run the multi-phone demo" under Modes.
 

@@ -29,6 +29,8 @@ export const EVENT_FIELDS = {
   RESCHEDULED: ['toSimAt'],
   REFUSED: ['reason'],
   // Evidence
+  /** A call from the rider's task card, logged by the app */
+  CALL_LOGGED: ['answered'],
   ATTEMPT_LOGGED: ['reason', 'gpsDistM', 'calls', 'waitMin', 'confidence'],
   ATTEMPT_CHECK_ANSWERED: ['reached'],
   EXCEPTION_OPENED: ['confidence'],

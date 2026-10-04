@@ -44,7 +44,7 @@ export const DEMO_STEPS: readonly DemoStep[] = [
     id: 'fake',
     title: 'Catch a fake attempt',
     doThis: 'On the rider app tap Attempted, press “Demo: log it from far away”, pick a reason. Then open the Hub captain screen: the attempt is in “To review”. Press Free re-attempt, or Strike… and pick a reason chip.',
-    see: 'A GPS pin 900 m from the door is low confidence, so it goes to the hub captain (Ops only reads it). Another rider of the same arm takes the order and the first rider is not paid. A strike needs a reason and supporting evidence, shows on the rider app as a strike meter (in Hindi too), and Ops can overturn it within 48 h. This works with the bonus off, for Control riders too.',
+    see: 'A GPS pin 900 m from the door is low confidence, so it goes to the hub captain (Ops only reads it). The same rider tries again (they know the area): a free re-attempt holds their ₹15 for the captain, and a strike loses that order’s ₹15 for good. A strike needs a reason and supporting evidence, shows on the rider app as a strike meter (in Hindi too), and Ops can overturn it within 48 h. This works with the bonus off, for Control riders too.',
     links: [
       { route: '/rider', label: 'Open Rider' },
       { route: '/captain', label: 'Open Hub captain' },

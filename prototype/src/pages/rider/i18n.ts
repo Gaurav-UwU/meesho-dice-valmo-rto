@@ -51,6 +51,18 @@ const EN = {
   reasonNobodyCame: 'Customer says nobody came',
   reasonPattern: 'Repeated pattern',
   reasonOther: 'Other',
+  call: 'Call',
+  callTitle: 'Call the customer',
+  callMasked: 'Calls go through Valmo’s masked number (demo: no real call). The app logs every call.',
+  callAnswered: 'Answered',
+  callNoAnswer: 'No answer',
+  cancel: 'Cancel',
+  callOne: 'call',
+  callMany: 'calls',
+  lastCall: 'last',
+  callLoggedOne: '{n} call logged by the app',
+  callsLogged: '{n} calls logged by the app',
+  callNow: 'Call now',
 } as const
 
 export type StringKey = keyof typeof EN
@@ -106,6 +118,18 @@ const HI: Readonly<Record<StringKey, string>> = {
   reasonNobodyCame: 'ग्राहक कहता है कोई नहीं आया',
   reasonPattern: 'बार-बार का पैटर्न',
   reasonOther: 'अन्य',
+  call: 'कॉल करें',
+  callTitle: 'ग्राहक को कॉल करें',
+  callMasked: 'कॉल Valmo के मास्क्ड नंबर से जाती है (डेमो: असली कॉल नहीं)। ऐप हर कॉल दर्ज करता है।',
+  callAnswered: 'बात हुई',
+  callNoAnswer: 'कॉल नहीं उठी',
+  cancel: 'रद्द करें',
+  callOne: 'कॉल',
+  callMany: 'कॉल',
+  lastCall: 'आखिरी',
+  callLoggedOne: 'ऐप ने {n} कॉल दर्ज की',
+  callsLogged: 'ऐप ने {n} कॉल दर्ज कीं',
+  callNow: 'अभी कॉल करें',
 }
 
 const DICTS: Readonly<Record<Lang, Readonly<Record<StringKey, string>>>> = { en: EN, hi: HI }

@@ -17,7 +17,7 @@ export interface StopRecord {
   readonly pRto: number
   readonly score: number
   readonly flagged: boolean
-  /** The rider who holds the order now. A re-attempt can hand it to another rider. */
+  /** The rider who holds the order now. A free re-attempt after the captain's review stays with this rider; only an Ops hand-over (`reattempt` with a rider) moves it. */
   readonly riderId: string
   readonly seq: number
   readonly status: StopStatus
@@ -38,6 +38,8 @@ export interface StopRecord {
   readonly attemptRiderId?: string
   /** Every failed attempt on this order, in order, with what the rider's phone recorded and what the customer answered. A later attempt never erases an earlier one. */
   readonly attemptLog?: readonly AttemptEntry[]
+  /** Every call the rider made to the customer from the task card, logged by the app (never typed by the rider). Append-only. */
+  readonly callLog?: readonly CallEntry[]
   /** Every rider whose own attempt on this order looked fake (the customer said nobody came). A later attempt never washes it out; a captain confirming the attempt valid clears that rider. */
   readonly suspectRiderIds?: readonly string[]
   /** Sim time of the last failed attempt: a failed order is decided at the next day's start */
@@ -63,6 +65,19 @@ export interface StopRecord {
   /** Set when this stop is a re-homed parcel (buyer 2): its own cohort, outside the pilot metrics */
   readonly rehomedFrom?: string
 }
+
+/** One call from the rider's task card, through Valmo's masked number (demo: no real call). The app logs it; the rider cannot edit it. */
+export interface CallEntry {
+  readonly simAt: number
+  readonly answered: boolean
+  readonly riderId: string
+}
+
+/**
+ * What the rider's phone sends with a failed attempt. `calls` is ignored (an old client may still send it): the call count on the attempt is
+ * the number of calls the app logged since the order last went out for delivery.
+ */
+export type EvidenceInput = Omit<AttemptEvidence, 'calls'> & { readonly calls?: number }
 
 /** One failed attempt on an order. `reached` is the customer's WhatsApp answer to "did the rider come?" (null until they answer). */
 export interface AttemptEntry {
@@ -333,7 +348,9 @@ export type Action =
   | { readonly type: 'customerPayment'; readonly at: number; readonly orderId: string; readonly ok: boolean }
   | { readonly type: 'riderDeliver'; readonly at: number; readonly orderId: string; readonly code: string }
   | { readonly type: 'submitOtp'; readonly at: number; readonly orderId: string; readonly code: string }
-  | { readonly type: 'riderAttempt'; readonly at: number; readonly orderId: string; readonly claim: AttemptClaim; readonly evidence?: AttemptEvidence }
+  | { readonly type: 'riderAttempt'; readonly at: number; readonly orderId: string; readonly claim: AttemptClaim; readonly evidence?: EvidenceInput }
+  /** The rider called the customer from the task card (masked number; demo: no real call). Only while the order is out with that rider. */
+  | { readonly type: 'riderCall'; readonly at: number; readonly orderId: string; readonly answered: boolean }
   | { readonly type: 'customerReach'; readonly at: number; readonly orderId: string; readonly reached: boolean }
   | { readonly type: 'customerAskedReschedule'; readonly at: number; readonly orderId: string; readonly asked: boolean }
   | { readonly type: 'riderRefuse'; readonly at: number; readonly orderId: string; readonly code: string; readonly reason?: RefusalReason }

@@ -180,12 +180,26 @@ describe('1c(v): a suspect attempt is not washed out by a later attempt', () => 
     expect(s.stops[bonusId].suspectRiderIds ?? []).toEqual([])
   })
 
-  it('another rider who delivers the order is paid normally', () => {
+  it('another rider who delivers the order is paid normally (an Ops hand-over to a same-arm rider)', () => {
     let s = attempt(three, AT, faked)
     s = reduce(s, { type: 'customerReach', at: AT + 1, orderId: bonusId, reached: false })
+    const first = s.stops[bonusId].attemptRiderId!
+    const other = s.riders.find((r) => r.arm === s.stops[bonusId].arm && r.id !== first)!.id
+    s = reduce(s, { type: 'reattempt', at: AT + 2, orderId: bonusId, riderId: other })
+    const done = deliverOrder(s, bonusId, '3333', AT + 10)
+    expect(done.stops[bonusId].riderId).toBe(other)
+    expect(done.ledger[0].status).not.toBe('blocked')
+  })
+
+  it('a free re-attempt goes back to the same rider, who is still blocked: the customer said nobody came', () => {
+    let s = attempt(three, AT, faked)
+    s = reduce(s, { type: 'customerReach', at: AT + 1, orderId: bonusId, reached: false })
+    const first = s.stops[bonusId].attemptRiderId!
     s = reduce(s, { type: 'resolveException', at: AT + 2, orderId: bonusId, action: 'free_reattempt' })
     const done = deliverOrder(s, bonusId, '3333', AT + 10)
-    expect(done.ledger[0].status).not.toBe('blocked')
+    expect(done.stops[bonusId].riderId).toBe(first)
+    expect(done.ledger[0].status).toBe('blocked')
+    expect(done.ledger[0].reason).toMatch(/earlier attempt by this rider/)
   })
 })
 

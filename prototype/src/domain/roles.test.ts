@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { CUSTOMER_ACTIONS, RIDER_ACTIONS, roleCan, type ActionType } from './roles.ts'
 
 const ALL: readonly ActionType[] = [
-  'startDay', 'customerReply', 'customerPayment', 'riderDeliver', 'submitOtp', 'riderAttempt', 'customerReach', 'customerAskedReschedule', 'riderRefuse',
+  'startDay', 'customerReply', 'customerPayment', 'riderDeliver', 'submitOtp', 'riderAttempt', 'riderCall', 'customerReach', 'customerAskedReschedule', 'riderRefuse',
   'deskSecondChance', 'deskInspect', 'deskSkipSecondChance', 'customerSecondChance', 'deskHandover', 'deskSetParam', 'deskHold', 'deskMatch', 'deskConsolidate',
   'reattempt', 'dispatchNextDay', 'resolveException', 'overturnStrike', 'riderAskReview', 'reviewBonus', 'openReturn', 'reconcileCod', 'advanceClock', 'advanceDay', 'nextDay', 'closePilot',
 ]
@@ -11,7 +11,7 @@ describe('roles', () => {
   it('a rider key can send the rider actions and the customer replies, and nothing else', () => {
     const allowed = ALL.filter((t) => roleCan('rider', t)).sort()
     expect(allowed).toEqual([...RIDER_ACTIONS, ...CUSTOMER_ACTIONS].sort())
-    for (const t of ['riderDeliver', 'submitOtp', 'riderAttempt', 'riderRefuse'] as const) expect(roleCan('rider', t)).toBe(true)
+    for (const t of ['riderDeliver', 'submitOtp', 'riderAttempt', 'riderRefuse', 'riderCall'] as const) expect(roleCan('rider', t)).toBe(true)
   })
 
   it('a rider key cannot decide, hold, move the clock, close the pilot or start the day', () => {

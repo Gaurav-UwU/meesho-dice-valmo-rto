@@ -9,8 +9,8 @@ export type Role = 'rider' | 'captain'
 
 export type ActionType = Action['type']
 
-/** What a rider's phone does. `riderAskReview` is the rider asking for a review of their own strike: it only flags it, once. */
-export const RIDER_ACTIONS: ReadonlySet<ActionType> = new Set<ActionType>(['riderDeliver', 'submitOtp', 'riderAttempt', 'riderRefuse', 'riderAskReview'])
+/** What a rider's phone does. `riderCall` logs a call from the task card on the order the rider holds. `riderAskReview` is the rider asking for a review of their own strike: it only flags it, once. */
+export const RIDER_ACTIONS: ReadonlySet<ActionType> = new Set<ActionType>(['riderDeliver', 'submitOtp', 'riderAttempt', 'riderCall', 'riderRefuse', 'riderAskReview'])
 
 /** What a customer's phone does (on a real number only that customer's own WhatsApp reply may answer: the server guards it separately) */
 export const CUSTOMER_ACTIONS: ReadonlySet<ActionType> = new Set<ActionType>(['customerReply', 'customerPayment', 'customerReach', 'customerAskedReschedule', 'customerSecondChance'])

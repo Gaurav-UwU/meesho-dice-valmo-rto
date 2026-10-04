@@ -240,6 +240,9 @@
   background: var(--valmo-navy);
   color: #fff;
 }
+.rider-act.wide {
+  flex-basis: 100%;
+}
 .rider-act.danger {
   border-color: var(--danger);
   color: var(--danger);

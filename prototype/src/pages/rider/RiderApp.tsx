@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { isDelivered } from '../../domain/lifecycle.ts'
 import { riderBag, riderEarnings } from '../../domain/selectors.ts'
-import type { DayState, StopRecord, StopStatus } from '../../domain/types.ts'
-import type { AttemptClaim, AttemptEvidence } from '../../engine/attempts.ts'
+import { callsSinceDispatch } from '../../domain/calls.ts'
+import type { DayState, EvidenceInput, StopRecord, StopStatus } from '../../domain/types.ts'
+import type { AttemptClaim } from '../../engine/attempts.ts'
 import type { RefusalReason } from '../../engine/router.ts'
 import type { Hub, Rider } from '../../engine/types.ts'
 import { useSend } from '../../store/StoreContext.tsx'
 import { Footer } from '../../ui/Footer.tsx'
 import { AttemptSheet } from './AttemptSheet.tsx'
+import { CallSheet } from './CallSheet.tsx'
 import { EarningsCard } from './EarningsCard.tsx'
 import { translator, type Lang, type Translate } from './i18n.ts'
 import { OtpSheet } from './OtpSheet.tsx'
@@ -71,6 +73,7 @@ export function RiderApp({ state, hub, rider, onSwitch }: Props) {
   const [otpFor, setOtpFor] = useState<string | null>(null)
   const [attemptFor, setAttemptFor] = useState<string | null>(null)
   const [refuseFor, setRefuseFor] = useState<string | null>(null)
+  const [callFor, setCallFor] = useState<string | null>(null)
   const t = useMemo(() => translator(lang), [lang])
 
   const isBonus = rider.arm === 'bonus'
@@ -97,9 +100,13 @@ export function RiderApp({ state, hub, rider, onSwitch }: Props) {
     }
     setRefuseFor(null)
   }
-  const attempt = (claim: AttemptClaim, evidence: AttemptEvidence | undefined): void => {
+  const attempt = (claim: AttemptClaim, evidence: EvidenceInput | undefined): void => {
     if (attemptFor) void send({ type: 'riderAttempt', orderId: attemptFor, claim, evidence })
     setAttemptFor(null)
+  }
+  const logCall = (answered: boolean): void => {
+    if (callFor) void send({ type: 'riderCall', orderId: callFor, answered })
+    setCallFor(null)
   }
 
   return (
@@ -146,7 +153,9 @@ export function RiderApp({ state, hub, rider, onSwitch }: Props) {
               hasOtp={state.otps[stop.order.id] !== undefined}
               underReview={state.exceptions.some((e) => e.orderId === stop.order.id && e.status === 'open')}
               holdText={heldText(state, stop, rider.id, t)}
+              calls={callsSinceDispatch(state, stop.order.id)}
               t={t}
+              onCall={() => setCallFor(stop.order.id)}
               onDeliver={() => deliver(stop.order.id)}
               onEnterCode={() => setOtpFor(stop.order.id)}
               onAttempt={() => setAttemptFor(stop.order.id)}
@@ -174,7 +183,19 @@ export function RiderApp({ state, hub, rider, onSwitch }: Props) {
           onClose={() => setOtpFor(null)}
         />
       ) : null}
-      {attemptFor ? <AttemptSheet onPick={attempt} onClose={() => setAttemptFor(null)} /> : null}
+      {attemptFor ? (
+        <AttemptSheet
+          calls={callsSinceDispatch(state, attemptFor).length}
+          t={t}
+          onCallNow={() => setCallFor(attemptFor)}
+          onPick={attempt}
+          // While the call sheet is open on top, Escape closes only the call sheet.
+          onClose={() => {
+            if (callFor === null) setAttemptFor(null)
+          }}
+        />
+      ) : null}
+      {callFor ? <CallSheet t={t} onLog={logCall} onClose={() => setCallFor(null)} /> : null}
       {refuseFor ? <RefusalSheet onPick={refuse} onClose={() => setRefuseFor(null)} /> : null}
     </div>
   )

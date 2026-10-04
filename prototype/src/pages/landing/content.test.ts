@@ -76,3 +76,14 @@ describe('landing copy describes the paired pilot, not the old clustered one', (
     expect(pilotStep.see).not.toMatch(/deck assumption the answer is RE-PRICE|it becomes GO/)
   })
 })
+
+describe('the fake-attempt step says the free re-attempt goes back to the same rider (plan 32 A)', () => {
+  const fake = DEMO_STEPS.find((d) => d.id === 'fake')!
+
+  it('the same rider tries again; a strike still loses that order’s ₹15', () => {
+    expect(fake.see).toMatch(/same rider tries again/i)
+    expect(fake.see).not.toMatch(/another rider/i)
+    expect(fake.see).toMatch(/strike/i)
+    expect(fake.see).toMatch(/₹15/)
+  })
+})
