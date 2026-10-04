@@ -2,7 +2,7 @@
 
 **Read this first in every new session.** It maps every file, says which one is current, and records the decisions that override older notes.
 For "where exactly we left off", read [`work/NEXT-SESSION.md`](work/NEXT-SESSION.md) next.
-Last updated: **2 Oct, Session 17: prompt 27 build DEPLOYED to production** (relative fake-attempt rule, hub-captain control, Live key split; 1,249 tests; Demo mode verified live; Live mode waits for CAPTAIN_KEY in Vercel). Before that, Session 16 built it on branch `claude/bold-davinci-pw2kx4`. Earlier: (2 Oct, Session 15: Desk v3 merged and deployed, 1,104 tests; next build is fake-attempt control, plan 24; the all-changes build prompt is `work/27-build-prompt-all-changes.md`)**.
+Last updated: **4 Oct, Session 19: prototype and deck aligned** (early-arrival WhatsApp with "Keep my promised date"; ladder step 3 = bonus suspended for the rest of the pilot, no hub manager; the captain gets no incentive; 1,263 tests; preview only, prod waits for "go prod"; deck slides 2, 5, 6, 7, 8 updated). Before that: **2 Oct, Session 17: prompt 27 build DEPLOYED to production** (relative fake-attempt rule, hub-captain control, Live key split; 1,249 tests; Demo mode verified live; Live mode waits for CAPTAIN_KEY in Vercel). Before that, Session 16 built it on branch `claude/bold-davinci-pw2kx4`. Earlier: (2 Oct, Session 15: Desk v3 merged and deployed, 1,104 tests; next build is fake-attempt control, plan 24; the all-changes build prompt is `work/27-build-prompt-all-changes.md`)**.
 
 ---
 
