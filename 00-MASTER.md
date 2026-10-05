@@ -78,7 +78,7 @@ Legend: ⭐ current, use it · 📚 background, still valid · ⚠️ partly sup
 | [`work/17-prototype-audit.md`](work/17-prototype-audit.md) | ⭐ | 1 Oct audit of the prototype: Live Close pilot messages real phones, fake-attempt guardrail reads 0%, no git, stale README, and more |
 | [`work/16-deck-changes-prototype-v2.md`](work/16-deck-changes-prototype-v2.md) | 📚 history (the teammate uses 14 + 23) | Deck edits caused by prototype v2 (headline, bonus lifecycle, Router EV) + pending number fixes. **The section added at the bottom on 1 Oct (Session 11) is the final pilot method, rule table and numbers for slide 5; its top part's old rule table is superseded** |
 | [`work/12-prototype-theme.md`](work/12-prototype-theme.md) | ⭐ | Colours, fonts and real UI patterns copied from Valmo's own apps (Valmo Pilot = rider, Valmo Operations = hub), plus the R1 deck palette |
-| `research/ui-refs/` | ⭐ | Play Store screenshots of Valmo Pilot + Valmo Operations |
+| `research/ui-refs/` | (removed) | Play Store screenshots of Valmo Pilot + Valmo Operations: removed 5 Oct before the repo went public (kept only in history); colours are recorded in `work/12-prototype-theme.md` |
 | `prototype/` | ⭐ built + deployed | Vite + React 19 + TS. Demo mode complete (Live mode coded, WhatsApp sending blocked by the Twilio trial). Engine in `src/engine/` (incl. `verdict.ts`, `headline.ts`, `pilot.ts`), the day as a pure reducer in `src/domain/` (`lifecycle.ts`), screens in `src/pages/`. `npm test`, `npx tsc -b`, `npx oxlint`, `npm run build`; deploy with `node scripts/build-api.mjs && npx vercel deploy --prod --yes` |
 
 ### Research
