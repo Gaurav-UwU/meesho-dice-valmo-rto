@@ -32,3 +32,16 @@ prototype/data/cache/
 Thumbs.db
 ~$*
 *.log
+
+# Kept on disk, not in the public repo: this repo holds only the prototype (5 Oct 2026)
+/00-MASTER.md
+/CONTEXT.md
+/work/
+/research/
+/round1-deck.html
+/iteration-flowmaps.excalidraw
+/*.pptx
+/*.pdf
+/Round 2 submission/
+/deck-screenshots/
+/.claude/

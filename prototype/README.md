@@ -3,7 +3,7 @@
 A working prototype of the Rescue Bonus, two-way WhatsApp and the Refused-Parcel Router for Valmo's RTO problem.
 Not an official Valmo app. All orders, riders and outcomes are synthetic and labelled that way on every screen.
 
-Specs: `../work/08-prototype-spec.md` (plan), `../work/12-prototype-theme.md` (look), diagrams in `../work/diagrams/`.
+Live: https://valmo-rescue-console.vercel.app (demo mode, no sign-in).
 
 ## Run it
 
