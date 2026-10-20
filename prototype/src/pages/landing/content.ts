@@ -71,7 +71,7 @@ export const DEMO_STEPS: readonly DemoStep[] = [
     id: 'audit',
     title: 'Check the numbers',
     doThis: 'Open the Audit.',
-    see: 'Eighteen checks on the day’s own record, all green: one final state per order, nothing delivered without an OTP, nothing held without an inspection, no pickup without a verified code, every strike decided by the captain with a reason, the ledger equals every screen.',
+    see: 'Nineteen checks on the day’s own record, all green. Each order has one final state, nothing is delivered without an OTP or held without an inspection, no pickup happens without a verified code, every strike has the captain’s reason, every attempt’s call count matches the calls the app logged, and the ledger equals every screen.',
     links: [{ route: '/audit', label: 'Open Audit' }],
   },
   {
@@ -83,28 +83,38 @@ export const DEMO_STEPS: readonly DemoStep[] = [
   },
 ]
 
+/** The hero follows the final deck (slide 2: diagnose, rescue, prove, recover; long game on slide 11). */
 export const HERO = {
-  title: 'Fix every way a COD order fails',
-  titleSpan: 'in about six minutes',
+  title: 'Cut RTO at the last mile',
+  titleSpan: 'and prove it pays',
   pitch:
-    'A failed order isn’t always a changed mind: the parcel came early, the rider gave up, or nobody knocked. Try the fixes together: ₹15 for the hard delivery, a hub captain who checks fake attempts, and a router that finds each refused parcel its cheapest way back. A fair test decides which ones scale.',
+    'Seven in ten failed orders could still have been delivered, because the customer wasn’t ready or the parcel never properly reached the door. This six-minute demo plays one hub day with our fixes: a ₹15 bonus for delivering the riskiest 20% of orders, a hub captain who checks every suspect attempt, two-way WhatsApp for the customer, and a router for parcels that are still refused. A 90-day pilot on paired riders decides whether the bonus is worth scaling.',
   flow: [
-    { label: 'A risky order is flagged', note: 'top 20% by Rescue Score' },
-    { label: 'The rider earns ₹15 for delivering it', note: 'confirmed with an OTP, on any attempt' },
-    { label: 'Fake attempts reach the hub captain', note: 'evidence first; a strike needs a reason' },
-    { label: 'A refused parcel finds a cheaper way back', note: 'second chance, a nearby buyer, or a batched return' },
-    { label: 'A fair test decides', note: 'GO, RE-PRICE or KILL' },
+    { label: 'The riskiest orders are flagged', note: 'top 20% by Rescue Score; the rider sees only the bonus label' },
+    { label: 'The rider earns ₹15 for delivering one', note: 'paid on any attempt, confirmed with an OTP' },
+    { label: 'Every failed attempt leaves a record', note: 'GPS distance, calls and waiting time; the hub captain decides the suspect ones' },
+    { label: 'The customer answers on WhatsApp', note: 'I’m home, pay by UPI, change the time or fix the address' },
+    { label: 'A refused parcel takes the cheapest way back', note: 'second chance, a nearby buyer, or a grouped return' },
+    { label: 'A paired pilot decides', note: 'GO, RE-PRICE or KILL; it scales only if each rescue costs under ₹120' },
   ],
 } as const
 
 export const MOVES = [
   {
     tag: 'Now',
-    title: 'Rescue Bonus + fake-attempt control',
-    text: '₹15 when a top-20% risky order is delivered; suspicious attempts go to the hub captain, with or without the bonus.',
+    title: 'The 90-day pilot',
+    text: '₹15 Rescue Bonus, attempt verification and two-way WhatsApp on 24 matched rider pairs. If the bonus is stopped, verification and WhatsApp keep running.',
   },
-  { tag: 'Next', title: 'Refused-Parcel Router', text: 'Each refused parcel takes its cheapest legal recovery.' },
-  { tag: 'Later', title: 'Pay by difficulty', text: 'Price each stop by how hard it really is.' },
+  {
+    tag: 'Next',
+    title: 'Refused-Parcel Router',
+    text: 'Each refused parcel takes its cheapest legal way back, starting with non-GST sellers in Uttar Pradesh.',
+  },
+  {
+    tag: 'Later',
+    title: 'Price per stop',
+    text: 'Verified difficulty sets what each stop pays, and every delivery adds to Meesho’s delivery map.',
+  },
 ] as const
 
 export interface RealRow {

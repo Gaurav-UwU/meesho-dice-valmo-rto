@@ -1,19 +1,31 @@
 import { describe, expect, it } from 'vitest'
+import { runAudit } from '../../domain/audit.ts'
+import { startedDay } from '../../domain/testkit.ts'
 import { DEMO_STEPS, HERO, MOVES, REAL_VS_SIMULATED } from './content.ts'
 
-describe('the landing hero presents the whole toolkit, not only the bonus', () => {
+describe('the landing hero follows the final deck (slide 2), not only the bonus', () => {
   const heroText = `${HERO.title} ${HERO.titleSpan} ${HERO.pitch}`
 
   it('the headline is not about the bonus alone', () => {
     expect(`${HERO.title} ${HERO.titleSpan}`).not.toMatch(/₹15|bonus/i)
   })
 
-  it('the pitch names all three tools and the fair test', () => {
+  it('the headline carries the deck: cut RTO at the last mile and prove it pays', () => {
+    expect(`${HERO.title} ${HERO.titleSpan}`).toMatch(/Cut RTO at the last mile and prove it pays/)
+  })
+
+  it('the pitch leads with the research finding, then names the three pilot pieces, the router and the pilot', () => {
+    expect(heroText).toMatch(/Seven in ten failed orders could still have been delivered/)
     expect(heroText).toMatch(/₹15/)
-    expect(heroText).toMatch(/fake attempt/i)
     expect(heroText).toMatch(/hub captain/i)
-    expect(heroText).toMatch(/refused parcel/i)
-    expect(heroText).toMatch(/fair test/i)
+    expect(heroText).toMatch(/WhatsApp/)
+    expect(heroText).toMatch(/refused/i)
+    expect(heroText).toMatch(/90-day pilot/)
+  })
+
+  it('the copy has no dashes as connectors (humanizer rule)', () => {
+    const all = [HERO.title, HERO.titleSpan, HERO.pitch, ...HERO.flow.flatMap((f) => [f.label, f.note]), ...MOVES.flatMap((m) => [m.title, m.text])].join(' ')
+    expect(all).not.toMatch(/[—–]| -- /)
   })
 
   it('the "what you will see" flow has a step for each tool', () => {
@@ -21,15 +33,35 @@ describe('the landing hero presents the whole toolkit, not only the bonus', () =
     expect(HERO.flow.length).toBeGreaterThanOrEqual(5)
     expect(flow).toMatch(/₹15/)
     expect(flow).toMatch(/hub captain/i)
+    expect(flow).toMatch(/WhatsApp/)
     expect(flow).toMatch(/refused parcel/i)
     expect(flow).toMatch(/GO, RE-PRICE or KILL/)
+    expect(flow).toMatch(/₹120/)
   })
 
-  it('the moves put fake-attempt control next to the bonus, and say it works without it', () => {
+  it('now is the pilot (bonus, verification, WhatsApp), and verification and WhatsApp outlive a stopped bonus', () => {
     const now = MOVES.find((m) => m.tag === 'Now')!
-    expect(`${now.title} ${now.text}`).toMatch(/fake-attempt/i)
-    expect(now.text).toMatch(/with or without the bonus/i)
-    expect(MOVES.map((m) => m.title).join(' ')).toMatch(/Refused-Parcel Router/)
+    expect(`${now.title} ${now.text}`).toMatch(/90-day pilot/i)
+    expect(now.text).toMatch(/attempt verification/i)
+    expect(now.text).toMatch(/WhatsApp/)
+    expect(now.text).toMatch(/bonus is stopped, verification and WhatsApp keep running/i)
+  })
+
+  it('next is the router, later is the deck long game: price per stop and the delivery map', () => {
+    expect(MOVES.find((m) => m.tag === 'Next')!.title).toMatch(/Refused-Parcel Router/)
+    const later = MOVES.find((m) => m.tag === 'Later')!
+    expect(`${later.title} ${later.text}`).toMatch(/price per stop/i)
+    expect(later.text).toMatch(/delivery map/i)
+  })
+})
+
+describe('the audit step states the real number of checks', () => {
+  const WORDS: Readonly<Record<number, string>> = { 18: 'Eighteen', 19: 'Nineteen', 20: 'Twenty', 21: 'Twenty-one' }
+
+  it('names as many checks as the audit runs', () => {
+    const n = runAudit(startedDay()).length
+    const audit = DEMO_STEPS.find((s) => s.id === 'audit')!
+    expect(audit.see.startsWith(`${WORDS[n]} checks`)).toBe(true)
   })
 })
 
