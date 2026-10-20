@@ -128,7 +128,7 @@ describe('the captain screen', () => {
     expect(within(queue).getByText(/enhanced review/)).toBeTruthy()
   })
 
-  it('shows the rider monitor with a status and a timeline on click, and the scorecard', async () => {
+  it('shows the rider monitor with a status and a timeline on click; no scorecard or outcome panel', async () => {
     const { rider, order } = heroBonus()
     await store.send('lucknow', { type: 'riderAttempt', orderId: order, claim: 'customer_unavailable', evidence: FAR })
     await store.send('lucknow', { type: 'resolveException', orderId: order, action: 'strike', reason: 'phone_far' })
@@ -140,18 +140,10 @@ describe('the captain screen', () => {
     await user.click(within(monitor).getByRole('button', { name }))
     const timeline = within(monitor).getByRole('list', { name: 'Rider timeline' })
     expect(within(timeline).getAllByRole('listitem').length).toBeGreaterThanOrEqual(3)
-    const card = screen.getByRole('region', { name: 'Captain scorecard' })
-    expect(within(card).getByText('Strikes issued').nextElementSibling?.textContent).toBe('1')
+    expect(screen.queryByRole('region', { name: 'Captain scorecard' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Outcome of fake-attempt control' })).toBeNull()
   })
 
-  it('the outcome panel says too early under 30 attempts and labels the 4% as an assumption', async () => {
-    show('/captain?hub=lucknow', 'captain')
-    const panel = await screen.findByRole('region', { name: 'Outcome of fake-attempt control' })
-    expect(within(panel).getByText(/too early: 0 of 30 attempts/)).toBeTruthy()
-    expect(panel.textContent).toMatch(/4% fake share in the simulation is an assumption/)
-    expect(panel.textContent).toMatch(/part of the hub captain’s job/)
-    expect(panel.textContent).not.toMatch(/1 in 10|Minus reviews|₹10/)
-  })
 })
 
 describe('Ops: read-only, with an overturn', () => {
@@ -254,26 +246,23 @@ describe('the parking-gap hold on the captain screen', () => {
 })
 
 describe('with the bonus OFF the captain screen still works', () => {
-  it('shows the review queue and the outcome panel, and no held-bonus panel or bonus-paid line', async () => {
+  it('shows the review queue, and no held-bonus panel', async () => {
     const { createDay, DEFAULT_CONFIG } = await import('../domain/day.ts')
     const { fakeGeo } = await import('../engine/testkit.ts')
     const { reduce } = await import('../domain/reducer.ts')
     const day = reduce(createDay(fakeGeo(0, 1), { seed: 11, orders: 120, riders: 6, config: { ...DEFAULT_CONFIG, bonus: 0 } }), { type: 'startDay', at: 1_000_000 })
     const { CaptainQueue } = await import('./captain/CaptainQueue.tsx')
     const { HeldBonuses } = await import('./captain/HeldBonuses.tsx')
-    const { OutcomePanel } = await import('./captain/OutcomePanel.tsx')
     cleanup()
     render(
       <MemoryRouter>
         <StoreProvider store={store}>
           <CaptainQueue state={day} />
           <HeldBonuses state={day} />
-          <OutcomePanel state={day} />
         </StoreProvider>
       </MemoryRouter>,
     )
     expect(screen.getByRole('region', { name: 'Review queue' })).toBeTruthy()
     expect(screen.queryByRole('region', { name: 'Held bonuses' })).toBeNull()
-    expect(screen.getByRole('region', { name: 'Outcome of fake-attempt control' }).textContent).not.toMatch(/bonus paid on recovered/i)
   })
 })

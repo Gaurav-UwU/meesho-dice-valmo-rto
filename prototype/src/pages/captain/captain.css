@@ -33,13 +33,11 @@
   gap: 8px;
   margin: 8px 0;
 }
-.cap-evidence dt,
-.cap-tiles dt {
+.cap-evidence dt {
   font-size: 12px;
   color: #6a7a96;
 }
-.cap-evidence dd,
-.cap-tiles dd {
+.cap-evidence dd {
   margin: 2px 0 0;
   font-weight: 600;
 }
@@ -88,23 +86,6 @@
   border: 1px solid #9aa9c2;
   border-radius: 6px;
   font: inherit;
-}
-.cap-tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
-  margin: 8px 0;
-}
-.cap-tiles small {
-  display: block;
-  color: #6a7a96;
-  font-size: 11px;
-}
-.cap-money p {
-  margin: 4px 0;
-}
-.cap-net {
-  font-size: 16px;
 }
 .cap-timeline {
   margin: 0;

@@ -1,44 +1,10 @@
 import { Fragment, useState } from 'react'
 import { clockText } from '../../domain/clock.ts'
-import { captainScorecard, hubMedianDisputedRate, MEDIAN_MIN_ATTEMPTS, riderMonitor, riderTimeline, WATCH_DISPUTES, WATCH_MULTIPLE, type MonitorStatus } from '../../domain/captainView.ts'
+import { hubMedianDisputedRate, MEDIAN_MIN_ATTEMPTS, riderMonitor, riderTimeline, WATCH_DISPUTES, WATCH_MULTIPLE, type MonitorStatus } from '../../domain/captainView.ts'
 import type { DayState } from '../../domain/types.ts'
 
 const pct = (x: number): string => `${(x * 100).toFixed(0)}%`
 const TONE: Readonly<Record<MonitorStatus, string>> = { Clear: '', Watch: 'is-amber', Warning: 'is-red', Suspended: 'is-red' }
-
-/** The captain's scorecard: how this captain is doing, so a captain's silence or over-striking is itself visible to Ops. */
-export function Scorecard({ state }: { readonly state: DayState }) {
-  const c = captainScorecard(state)
-  return (
-    <section className="ops-card" aria-label="Captain scorecard">
-      <div className="ops-card-head">
-        <h2>Captain scorecard</h2>
-        <span className="ops-muted">this hub, this day</span>
-      </div>
-      <dl className="cap-tiles">
-        <div>
-          <dt>Decided in time</dt>
-          <dd>{c.decidedInTimeShare === undefined ? '—' : pct(c.decidedInTimeShare)}</dd>
-          <small>
-            {c.decided} decided · {c.autoExpired} the captain did not decide
-          </small>
-        </div>
-        <div>
-          <dt>Strikes issued</dt>
-          <dd>{c.strikes}</dd>
-        </div>
-        <div>
-          <dt>Overturned by Ops</dt>
-          <dd>{c.overturned}</dd>
-        </div>
-        <div>
-          <dt>Reviews asked by riders</dt>
-          <dd>{c.reviewsAsked}</dd>
-        </div>
-      </dl>
-    </section>
-  )
-}
 
 /** Every rider at the hub: attempts, disputes, strikes, a status you can explain in one line, and a timeline on click. */
 export function RiderMonitor({ state }: { readonly state: DayState }) {

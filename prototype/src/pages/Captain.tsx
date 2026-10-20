@@ -10,11 +10,10 @@ import './ops/ops.css'
 import './captain/captain.css'
 import { CaptainQueue } from './captain/CaptainQueue.tsx'
 import { HeldBonuses } from './captain/HeldBonuses.tsx'
-import { OutcomePanel } from './captain/OutcomePanel.tsx'
-import { RiderMonitor, Scorecard } from './captain/RiderMonitor.tsx'
+import { RiderMonitor } from './captain/RiderMonitor.tsx'
 
 /**
- * The hub captain's screen (/captain?hub=): the review queue with evidence, held bonuses, the rider monitor, a scorecard and the outcome numbers.
+ * The hub captain's screen (/captain?hub=): the review queue with evidence, held bonuses and the rider monitor.
  * The captain decides disputed attempts; Ops can only read them (and overturn a strike within 48 h). Works with the bonus off, in both arms.
  * Demo build: no login. A live rollout needs a captain login (Live mode uses the captain key).
  */
@@ -44,10 +43,6 @@ export default function Captain() {
           {!state.started ? <p className="ops-note">The day has not started yet: start it on the Ops console, then come back.</p> : null}
           <CaptainQueue state={state} />
           <HeldBonuses state={state} />
-          <div className="ops-pair">
-            <Scorecard state={state} />
-            <OutcomePanel state={state} />
-          </div>
           <RiderMonitor state={state} />
           <p className="ops-strip">
             <strong>Real vs simulated:</strong> riders, attempts and customers are synthetic. The ladder (warning, a 14-day enhanced review, then the bonus suspended for the rest of the pilot) is our proposal; Valmo&apos;s real
