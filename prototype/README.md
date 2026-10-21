@@ -23,7 +23,7 @@ npx tsc -b && npx oxlint && npx vite build
 | `/ops` | Valmo ops team | Live map, KPIs, Bonus vs Control, suspect attempts, feed. Start day / Autopilot / Reset |
 | `/rider` | Rider | Clone of Valmo Pilot with the green ₹+15 chip (Bonus riders only). Call (masked number, demo: no real call; the app logs every call as attempt evidence), Deliver, Attempted, Refused with OTP |
 | `/customer` | Customer | On-screen WhatsApp (Demo mode) with Valmo's wording and reply buttons. The first message is in English and Hindi, the next asks which language to use from then on (Live: reply HINDI or ENGLISH) |
-| `/desk` | Hub operator | Refused-Parcel Desk: inspect a parcel, second chance (deliver again, different time, pay now, pick up at hub), Hold & Re-home on a match forecast, consolidated return, pilot KPIs |
+| `/desk` | Hub operator | Refused-Parcel Desk: inspect a parcel, second chance on WhatsApp, one question at a time (still want it? deliver, pick up at the hub or cancel; then the day, how to pay for COD, and the address), Hold & Re-home on a match forecast, consolidated return, pilot KPIs |
 | `/pilot` | Meesho decision-maker | 30-day A/B simulator (paired riders, pair-by-pair 95% range, fair-comparison check, two safety rules), GO / RE-PRICE / KILL, P&L, break-even |
 | `/captain` | Hub captain | Fake-attempt control: review queue with evidence, Confirm valid / Free re-attempt (back to the same rider) / Strike with a reason (that order's ₹15 is lost), held bonuses, rider monitor, scorecard, outcome numbers. Works with the bonus off. Demo: no login |
 | `/audit` | Anyone | Nineteen checks on the day's own record, each green or red (the newest: every attempt's call count matches the calls the app logged) |
@@ -36,7 +36,7 @@ Add `?hub=lucknow|powai|whitefield|gaya` to any link. Open Ops, Rider and Custom
 3. `/rider` pick **Demo Bonus rider**. Green chip on flagged stops. Tap **Deliver**.
 4. `/customer` read the OTP, type it into the rider sheet. ₹15 shows as pending; ops updates live.
 5. `/rider` mark another stop **Attempted**, then on `/customer` answer **No, the agent never came**: it lands in the ops suspect queue and blocks the bonus.
-6. `/rider` **Refused** on demo stops. The first four give four different Router outcomes on `/desk`: Hold & Re-home (press **Record inspection** first: Hold needs it), second chance, out-of-state seller, broken seal.
+6. `/rider` **Refused** on demo stops. The first four give four different Router outcomes on `/desk`: Hold & Re-home (press **Record inspection** first: Hold needs it), second chance, out-of-state seller, broken seal. Not sure why the customer refused? Pick **Other (not sure why)**: the Router offers the second chance and the customer's reply decides the lane.
 7. `/pilot` move the uplift slider (riders are paired on past delivery rate, the range is worked out pair by pair): at the top 20%, +8 gives RE-PRICE, +12 gives GO on the default seed (about 6 runs in 10 at +12; about 97 in 100 at +15), 0 gives KILL. Look for the ✔ Fair comparison line. The landing page (`/`) has the full walkthrough.
 
 ## Modes
