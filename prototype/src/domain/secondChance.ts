@@ -122,6 +122,13 @@ export function customerSecondChance(s: S, a: Extract<Action, { type: 'customerS
       }
       return reservePickup(next, p, a.at)
     }
+    case 'address': {
+      // Out again as attempt 2, and the customer is asked for the exact spot: the share-location step then moves the pin (deck slide 9).
+      const out = deliverAgain(next, p, a.at, 'address', 'second chance: the customer will share the exact spot')
+      if (findParcel(out, p.id)?.state !== 'recovered') return out
+      const asked = patchStop(out, p.orderId, { replies: [...out.stops[p.orderId].replies, 'fix_address'] })
+      return msgAdd(asked, { orderId: p.orderId, at: a.at, direction: 'out', kind: 'ack', text: wa.replyAck.fix_address })
+    }
   }
 }
 

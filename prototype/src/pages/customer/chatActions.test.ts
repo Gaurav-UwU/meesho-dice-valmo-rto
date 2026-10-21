@@ -18,6 +18,7 @@ describe('the customer phone turns the second-chance buttons into actions', () =
     ['later', { accept: true, option: 'later' }],
     ['pay', { accept: true, option: 'pay' }],
     ['pickup', { accept: true, option: 'pickup' }],
+    ['address', { accept: true, option: 'address' }],
     ['decline', { accept: false }],
   ])('button %s', (id, expected) => {
     const s = offered()

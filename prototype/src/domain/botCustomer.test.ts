@@ -20,7 +20,7 @@ describe('the simulated customer (bots) picks from a fixed mix by refusal reason
   it('is deterministic for a parcel and follows the mix over many parcels', () => {
     expect(drawOption('no_cash', 'P-a')).toBe(drawOption('no_cash', 'P-a'))
     const n = 4000
-    const counts = { deliver: 0, later: 0, pay: 0, pickup: 0 }
+    const counts = { deliver: 0, later: 0, pay: 0, pickup: 0, address: 0 }
     for (let i = 0; i < n; i++) counts[drawOption('no_cash', `P-x${i}`)]++
     // "No cash on hand" mostly pays by UPI.
     expect(counts.pay / n).toBeGreaterThan(0.45)

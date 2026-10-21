@@ -26,7 +26,7 @@ export function languageFromReply(text: string): WaLang | null {
 }
 
 /** The second-chance offer's button ids and the option each one stands for. The id decides, never the position: a pickup is left out when the shelf is full. */
-const SECOND_CHANCE_IDS: Readonly<Record<string, 'deliver' | 'later' | 'pay' | 'pickup'>> = { accept: 'deliver', later: 'later', pay: 'pay', pickup: 'pickup' }
+const SECOND_CHANCE_IDS: Readonly<Record<string, 'deliver' | 'later' | 'pay' | 'pickup' | 'address'>> = { accept: 'deliver', later: 'later', pay: 'pay', pickup: 'pickup', address: 'address' }
 
 const WORD_TO_INDEX: Readonly<Record<string, number>> = { yes: 0, y: 0, haan: 0, no: 1, n: 1, nahi: 1 }
 

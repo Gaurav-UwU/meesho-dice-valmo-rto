@@ -185,10 +185,10 @@ export interface BonusReview {
 export type ParcelState = 'queued' | 'second_chance_sent' | 'recovered' | 'held' | 'pickup_reserved' | 'picked_up' | 'rehomed' | 'batched'
 
 /** What a customer picked on the second-chance WhatsApp. `later` asks "which day?"; `tomorrow` and `day_after` answer it. */
-export type SecondChanceOption = 'deliver' | 'later' | 'tomorrow' | 'day_after' | 'pay' | 'pickup'
+export type SecondChanceOption = 'deliver' | 'later' | 'tomorrow' | 'day_after' | 'pay' | 'pickup' | 'address'
 
 /** The option the customer finally took (for the KPIs): a different time, paying now and a pickup at the hub each end differently. */
-export type SecondChanceChoice = 'deliver' | 'later' | 'pay' | 'pickup'
+export type SecondChanceChoice = 'deliver' | 'later' | 'pay' | 'pickup' | 'address'
 
 /** The customer asked a question the Desk is waiting on (which day? did the payment go through?) */
 export type Awaiting = 'when' | 'pay'

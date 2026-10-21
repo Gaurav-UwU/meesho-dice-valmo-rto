@@ -18,17 +18,17 @@ const pid = `P-${bonusId}`
 /** A COD order refused as "not home" (a soft refusal: the Router offers the second chance first). */
 const refused = (payment: 'COD' | 'PREPAID' = 'COD'): DayState => forceParcel(refuseOrder(setPayment(day, bonusId, payment), bonusId), bonusId, { reason: 'not_home' })
 const offered = (s = refused()): DayState => run(s, { type: 'deskSecondChance', at: AT + 2, parcelId: pid })
-const choose = (s: DayState, option: 'deliver' | 'later' | 'tomorrow' | 'day_after' | 'pay' | 'pickup', at = AT + 3): DayState =>
+const choose = (s: DayState, option: 'deliver' | 'later' | 'tomorrow' | 'day_after' | 'pay' | 'pickup' | 'address', at = AT + 3): DayState =>
   reduce(s, { type: 'customerSecondChance', at, parcelId: pid, accept: true, option })
 const record = (s: DayState) => s.parcels.find((p) => p.id === pid)!
 const order = (s: DayState) => s.stops[bonusId]
 const messagesOf = (s: DayState, kind: string) => s.messages.filter((m) => m.orderId === bonusId && m.kind === kind)
 
 describe('the second-chance offer carries the options the customer can really take', () => {
-  it('offers Deliver again, Different time, Pay now by UPI, Pick up at hub and Cancel order, in that order', () => {
+  it('offers Deliver again, Different time, Pay now by UPI, Pick up at hub, Share address and Cancel order, in that order (deck slide 9)', () => {
     const msg = messagesOf(offered(), 'second_chance').at(-1)!
-    expect(msg.buttons?.map((b) => b.id)).toEqual(['accept', 'later', 'pay', 'pickup', 'decline'])
-    expect(msg.buttons?.map((b) => b.label)).toEqual(['🔁 Deliver again', '🕐 Different time', '💳 Pay now by UPI', '🏬 Pick up at hub', '❌ Cancel order'])
+    expect(msg.buttons?.map((b) => b.id)).toEqual(['accept', 'later', 'pay', 'pickup', 'address', 'decline'])
+    expect(msg.buttons?.map((b) => b.label)).toEqual(['🔁 Deliver again', '🕐 Different time', '💳 Pay now by UPI', '🏬 Pick up at hub', '📍 Share address', '❌ Cancel order'])
     expect(record(offered()).pickupOffered).toBe(true)
   })
 
@@ -36,16 +36,52 @@ describe('the second-chance offer carries the options the customer can really ta
     const full = reduce(refused(), { type: 'deskSetParam', at: AT + 1, param: 'shelfCapacity', value: 0 })
     const s = offered(full)
     expect(record(s).pickupOffered).toBe(false)
-    expect(messagesOf(s, 'second_chance').at(-1)!.buttons?.map((b) => b.id)).toEqual(['accept', 'later', 'pay', 'decline'])
+    expect(messagesOf(s, 'second_chance').at(-1)!.buttons?.map((b) => b.id)).toEqual(['accept', 'later', 'pay', 'address', 'decline'])
   })
 
   it('does not offer Pay now on an order that is already prepaid', () => {
     const s = offered(refused('PREPAID'))
-    expect(messagesOf(s, 'second_chance').at(-1)!.buttons?.map((b) => b.id)).toEqual(['accept', 'later', 'pickup', 'decline'])
+    expect(messagesOf(s, 'second_chance').at(-1)!.buttons?.map((b) => b.id)).toEqual(['accept', 'later', 'pickup', 'address', 'decline'])
   })
 
   it('the offer is the only proactive message: it counts, and the order stays inside the cap of 4', () => {
     expect(proactiveCount(offered(), bonusId)).toBeLessThanOrEqual(CONTACT_CAP)
+  })
+})
+
+describe('Share address: the order goes out again and the customer drops a pin', () => {
+  const near = { lat: 26.851, lng: 81.001 }
+
+  it('puts the order back in the bag as attempt 2 and asks for a live location, without using a proactive message', () => {
+    const before = offered()
+    const s = choose(before, 'address')
+    expect(record(s)).toMatchObject({ state: 'recovered', choice: 'address' })
+    expect(order(s).status).toBe('out_for_delivery')
+    expect(order(s).viaSecondChance).toBe(true)
+    expect(order(s).replies).toContain('fix_address')
+    expect(s.messages.filter((m) => m.orderId === bonusId).at(-1)!.text).toMatch(/share your live location/i)
+    expect(eventsOf(s, 'SECOND_CHANCE_ACCEPTED', bonusId)).toHaveLength(1)
+    expect(proactiveCount(s, bonusId)).toBe(proactiveCount(before, bonusId))
+  })
+
+  it('the shared pin moves the order, clears the address flag, and the delivery books the saving', () => {
+    let s = choose(offered(), 'address')
+    s = reduce(s, { type: 'customerReply', at: AT + 4, orderId: bonusId, reply: 'fix_address', location: near })
+    expect(order(s).order.addressQuality).toBe('clear')
+    expect(order(s).location).toBeDefined()
+    const done = deliverOrder(s, bonusId, '1357')
+    expect(order(done).status).toBe('delivered_a2')
+    expect(savingsLedger(done).total).toBeGreaterThan(0)
+    expect(runAudit(done).filter((c) => !c.ok)).toEqual([])
+  })
+
+  it('with no attempt left it goes to the next lane instead, and asks for nothing', () => {
+    const sent = offered()
+    const lowered: DayState = { ...sent, config: { ...sent.config, maxAttempts: 1 } }
+    const s = choose(lowered, 'address')
+    expect(record(s).state).toBe('queued')
+    expect(order(s).status).toBe('refused')
+    expect(order(s).replies).not.toContain('fix_address')
   })
 })
 

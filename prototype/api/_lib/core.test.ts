@@ -249,6 +249,13 @@ describe('the second-chance options and the hub pickup over the API', () => {
   }
   const rec = (h: ReturnType<typeof harness>, parcelId: string) => h.db.days.get(HUB)!.parcels.find((p) => p.id === parcelId)!
 
+  it('a customer can choose Share address over the API (the option passes validation)', async () => {
+    const { h, orderId, parcelId } = await offered()
+    await runAction(h.deps, HUB, { type: 'customerSecondChance', parcelId, accept: true, option: 'address' })
+    expect(rec(h, parcelId).state).toBe('recovered')
+    expect(h.db.days.get(HUB)!.stops[orderId].replies).toContain('fix_address')
+  })
+
   it('a customer can ask for a different time and pick the day', async () => {
     const { h, orderId, parcelId } = await offered()
     await runAction(h.deps, HUB, { type: 'customerSecondChance', parcelId, accept: true, option: 'later' })

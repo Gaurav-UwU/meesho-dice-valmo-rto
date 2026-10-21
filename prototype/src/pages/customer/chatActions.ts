@@ -66,7 +66,7 @@ export function actionForButton(state: DayState, msg: WaMessage, button: Message
       const parcel = parcelForOrder(state, orderId)
       if (!parcel) return null
       if (button.id === 'decline') return { type: 'customerSecondChance', parcelId: parcel.id, accept: false }
-      const option = button.id === 'accept' ? 'deliver' : button.id === 'later' || button.id === 'pay' || button.id === 'pickup' ? button.id : null
+      const option = button.id === 'accept' ? 'deliver' : button.id === 'later' || button.id === 'pay' || button.id === 'pickup' || button.id === 'address' ? button.id : null
       return option ? { type: 'customerSecondChance', parcelId: parcel.id, accept: true, option } : null
     }
     case 'second_chance_when': {

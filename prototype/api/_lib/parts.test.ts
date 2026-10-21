@@ -133,14 +133,15 @@ describe('inbound parsing', () => {
     expect(actionFromReply({ ...base, lastOffer: offer('second_chance', ['accept', 'decline']) }, '2')).toEqual({ type: 'customerSecondChance', parcelId: base.parcelId, accept: false })
   })
 
-  it('reads the four second-chance options by number, whichever are on offer', () => {
-    const all = offer('second_chance', ['accept', 'later', 'pay', 'pickup', 'decline'])
+  it('reads the five second-chance options by number, whichever are on offer', () => {
+    const all = offer('second_chance', ['accept', 'later', 'pay', 'pickup', 'address', 'decline'])
     const sc = (accept: boolean, option?: string) => ({ type: 'customerSecondChance', parcelId: base.parcelId, accept, ...(option ? { option } : {}) })
     expect(actionFromReply({ ...base, lastOffer: all }, '1')).toEqual(sc(true, 'deliver'))
     expect(actionFromReply({ ...base, lastOffer: all }, '2')).toEqual(sc(true, 'later'))
     expect(actionFromReply({ ...base, lastOffer: all }, '3')).toEqual(sc(true, 'pay'))
     expect(actionFromReply({ ...base, lastOffer: all }, '4')).toEqual(sc(true, 'pickup'))
-    expect(actionFromReply({ ...base, lastOffer: all }, '5')).toEqual(sc(false))
+    expect(actionFromReply({ ...base, lastOffer: all }, '5')).toEqual(sc(true, 'address'))
+    expect(actionFromReply({ ...base, lastOffer: all }, '6')).toEqual(sc(false))
     // With no pickup on offer the numbers shift: the ids decide, never the position.
     const noPickup = offer('second_chance', ['accept', 'later', 'pay', 'decline'])
     expect(actionFromReply({ ...base, lastOffer: noPickup }, '4')).toEqual(sc(false))

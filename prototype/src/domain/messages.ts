@@ -38,7 +38,7 @@ export interface WaCopy {
   readonly secondChanceText: (awb: string) => string
   readonly secondChanceButtons: (offer: SecondChanceOffer) => readonly MessageButton[]
   /** What the customer's tap on a second-chance or day button reads as in the chat */
-  readonly secondChanceTap: Readonly<Record<'deliver' | 'later' | 'tomorrow' | 'day_after' | 'pay' | 'pickup' | 'decline', string>>
+  readonly secondChanceTap: Readonly<Record<'deliver' | 'later' | 'tomorrow' | 'day_after' | 'pay' | 'pickup' | 'address' | 'decline', string>>
   readonly whenText: string
   readonly whenButtons: readonly MessageButton[]
   readonly laterAck: (day: 'tomorrow' | 'day_after') => string
@@ -49,10 +49,10 @@ export interface WaCopy {
   readonly replyWithNumber: string
 }
 
-/** Deliver again and Different time always; Pay now unless the order is already prepaid; Pick up at hub only while the shelf has a free slot. */
+/** Deliver again, Different time and Share address always; Pay now unless the order is already prepaid; Pick up at hub only while the shelf has a free slot. */
 const scButtons =
-  (sc: Readonly<Record<'accept' | 'later' | 'pay' | 'pickup' | 'decline', MessageButton>>) =>
-  (offer: SecondChanceOffer): readonly MessageButton[] => [sc.accept, sc.later, ...(offer.pay ? [sc.pay] : []), ...(offer.pickup ? [sc.pickup] : []), sc.decline]
+  (sc: Readonly<Record<'accept' | 'later' | 'pay' | 'pickup' | 'address' | 'decline', MessageButton>>) =>
+  (offer: SecondChanceOffer): readonly MessageButton[] => [sc.accept, sc.later, ...(offer.pay ? [sc.pay] : []), ...(offer.pickup ? [sc.pickup] : []), sc.address, sc.decline]
 
 const EN: WaCopy = {
   replyButtons: {
@@ -102,9 +102,10 @@ const EN: WaCopy = {
     later: { id: 'later', label: '🕐 Different time' },
     pay: { id: 'pay', label: '💳 Pay now by UPI' },
     pickup: { id: 'pickup', label: '🏬 Pick up at hub' },
+    address: { id: 'address', label: '📍 Share address' },
     decline: { id: 'decline', label: '❌ Cancel order' },
   }),
-  secondChanceTap: { deliver: '🔁 Deliver again', later: '🕐 Different time', tomorrow: 'Tomorrow', day_after: 'Day after tomorrow', pay: '💳 Pay now by UPI', pickup: '🏬 Pick up at hub', decline: '❌ Cancel order' },
+  secondChanceTap: { deliver: '🔁 Deliver again', later: '🕐 Different time', tomorrow: 'Tomorrow', day_after: 'Day after tomorrow', pay: '💳 Pay now by UPI', pickup: '🏬 Pick up at hub', address: '📍 Share address', decline: '❌ Cancel order' },
   whenText: 'Which day should we try again?',
   whenButtons: [
     { id: 'tomorrow', label: 'Tomorrow' },
@@ -166,9 +167,10 @@ const HI: WaCopy = {
     later: { id: 'later', label: '🕐 कोई और समय' },
     pay: { id: 'pay', label: '💳 अभी UPI से पे करें' },
     pickup: { id: 'pickup', label: '🏬 हब से ले जाऊँगा' },
+    address: { id: 'address', label: '📍 पता भेजें' },
     decline: { id: 'decline', label: '❌ ऑर्डर रद्द करें' },
   }),
-  secondChanceTap: { deliver: '🔁 फिर से डिलीवर करें', later: '🕐 कोई और समय', tomorrow: 'कल', day_after: 'परसों', pay: '💳 अभी UPI से पे करें', pickup: '🏬 हब से ले जाऊँगा', decline: '❌ ऑर्डर रद्द करें' },
+  secondChanceTap: { deliver: '🔁 फिर से डिलीवर करें', later: '🕐 कोई और समय', tomorrow: 'कल', day_after: 'परसों', pay: '💳 अभी UPI से पे करें', pickup: '🏬 हब से ले जाऊँगा', address: '📍 पता भेजें', decline: '❌ ऑर्डर रद्द करें' },
   whenText: 'हम किस दिन फिर कोशिश करें?',
   whenButtons: [
     { id: 'tomorrow', label: 'कल' },
