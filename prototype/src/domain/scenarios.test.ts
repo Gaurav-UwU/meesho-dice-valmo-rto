@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DEFAULT_VERDICT_CONFIG, compareArms, ruleHash, verdict } from '../engine/verdict.ts'
 import { reduce } from './reducer.ts'
 import { kpis, stopsOf } from './selectors.ts'
-import { AT, forceParcel, heroStops, run, startedDay } from './testkit.ts'
+import { AT, forceParcel, heroStops, run, startedDay, walkSecondChance } from './testkit.ts'
 import { verdictConfigFor } from './rule.ts'
 import { dayVerdict, dayVerdictData } from './verdictData.ts'
 import type { DayState } from './types.ts'
@@ -122,7 +122,7 @@ describe('scenario 5: "Change time" becomes a next-day attempt and the order sta
 describe('the accepted second chance no longer erases the failure', () => {
   const refused = forceParcel(run(day, { type: 'riderRefuse', at: AT, orderId: bonusId, code: '7777' }, { type: 'submitOtp', at: AT + 1, orderId: bonusId, code: '7777' }), bonusId, { reason: 'not_home' })
   const pid = refused.parcels[0].id
-  const accepted = run(refused, { type: 'deskSecondChance', at: AT + 2, parcelId: pid }, { type: 'customerSecondChance', at: AT + 3, parcelId: pid, accept: true })
+  const accepted = walkSecondChance(run(refused, { type: 'deskSecondChance', at: AT + 2, parcelId: pid }), pid, AT + 3)
 
   it('the order goes back out as attempt 2, still counted in its arm', () => {
     expect(accepted.stops[bonusId].status).toBe('out_for_delivery')

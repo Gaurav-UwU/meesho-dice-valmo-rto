@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { REFUSAL_REASONS } from '../engine/router.ts'
-import { drawDay, drawOption, OPTION_MIX, PAY_SUCCESS_SHARE, PICKUP_COLLECT_SHARE, pickupCollects } from './botCustomer.ts'
+import { ANSWER_MIX, drawOutcome, drawWhen, PAY_SUCCESS_SHARE, paysByUpi, PICKUP_COLLECT_SHARE, pickupCollects, SHARE_LOCATION_SHARE, sharesLocation } from './botCustomer.ts'
 import { reduce } from './reducer.ts'
 import { createDay } from './day.ts'
 import { fakeGeo } from '../engine/testkit.ts'
@@ -9,26 +9,36 @@ import { runAudit } from './audit.ts'
 import { shelfUsed } from './routing.ts'
 import { AT } from './testkit.ts'
 
-describe('the simulated customer (bots) picks from a fixed mix by refusal reason', () => {
-  it('has a mix for every reason and each mix sums to 1', () => {
+describe('the simulated customer (bots) answers each step from a fixed mix by refusal reason', () => {
+  it('has a mix for every reason, every share a probability', () => {
     for (const r of REFUSAL_REASONS) {
-      expect(OPTION_MIX[r].length).toBe(4)
-      expect(OPTION_MIX[r].reduce((t, [, w]) => t + w, 0)).toBeCloseTo(1, 9)
+      for (const v of Object.values(ANSWER_MIX[r])) {
+        expect(v).toBeGreaterThanOrEqual(0)
+        expect(v).toBeLessThanOrEqual(1)
+      }
     }
+    expect(SHARE_LOCATION_SHARE).toBeGreaterThan(0)
   })
 
   it('is deterministic for a parcel and follows the mix over many parcels', () => {
-    expect(drawOption('no_cash', 'P-a')).toBe(drawOption('no_cash', 'P-a'))
+    expect(drawOutcome('no_cash', 'P-a')).toBe(drawOutcome('no_cash', 'P-a'))
     const n = 4000
-    const counts = { deliver: 0, later: 0, pay: 0, pickup: 0, address: 0 }
-    for (let i = 0; i < n; i++) counts[drawOption('no_cash', `P-x${i}`)]++
-    // "No cash on hand" mostly pays by UPI.
-    expect(counts.pay / n).toBeGreaterThan(0.45)
-    expect(counts.pay / n).toBeLessThan(0.55)
-    expect(counts.pay).toBeGreaterThan(counts.deliver)
-    const later = { tomorrow: 0, day_after: 0 }
-    for (let i = 0; i < 1000; i++) later[drawDay(`P-y${i}`)]++
-    expect(later.tomorrow).toBeGreaterThan(later.day_after)
+    let pickups = 0
+    let upi = 0
+    const when = { today: 0, tomorrow: 0, day_after: 0 }
+    for (let i = 0; i < n; i++) {
+      if (drawOutcome('no_cash', `P-x${i}`) === 'pickup') pickups++
+      if (paysByUpi('no_cash', `P-x${i}`)) upi++
+      when[drawWhen('want_later', `P-x${i}`)]++
+    }
+    expect(pickups / n).toBeCloseTo(ANSWER_MIX.no_cash.pickup, 1)
+    // "No cash on hand" mostly pays by UPI; "wants it later" mostly picks a later day, tomorrow more than the day after.
+    expect(upi / n).toBeGreaterThan(0.55)
+    expect(when.today / n).toBeLessThan(0.35)
+    expect(when.tomorrow).toBeGreaterThan(when.day_after)
+    let shares = 0
+    for (let i = 0; i < n; i++) if (sharesLocation(`P-x${i}`)) shares++
+    expect(shares / n).toBeCloseTo(SHARE_LOCATION_SHARE, 1)
   })
 
   it('has fixed shares for paying successfully and collecting a pickup (engine constants, not editable)', () => {
@@ -51,9 +61,12 @@ describe('Close pilot with every second-chance option in play', () => {
     expect(runAudit(closed).filter((c) => !c.ok).map((c) => `${c.id}: ${c.detail}`)).toEqual([])
   })
 
-  it('uses the new options: pickups are collected or expire, different times and payments happen', () => {
+  it('answers every step: deliveries and pickups, later days, how to pay and the address; pickups are collected or expire', () => {
     const choices = closed.parcels.map((p) => p.choice).filter(Boolean)
-    expect(new Set(choices).size).toBeGreaterThanOrEqual(3)
+    expect(new Set(choices)).toEqual(new Set(['deliver', 'pickup']))
+    expect(closed.parcels.some((p) => p.scWhen === 'tomorrow' || p.scWhen === 'day_after')).toBe(true)
+    const asked = new Set(closed.messages.map((m) => m.kind))
+    expect((['second_chance_when', 'second_chance_method', 'second_chance_address'] as const).every((k) => asked.has(k))).toBe(true)
     expect(eventsOf(closed, 'PICKUP_RESERVED').length).toBe(eventsOf(closed, 'PICKUP_COLLECTED').length + eventsOf(closed, 'PICKUP_EXPIRED').length)
   })
 

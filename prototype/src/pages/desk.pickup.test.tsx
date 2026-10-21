@@ -46,39 +46,48 @@ beforeEach(async () => {
 afterEach(cleanup)
 
 describe('the customer phone offers the options', () => {
-  it('shows Deliver again, Different time, Pay now by UPI (COD only), Pick up at hub and Cancel order', async () => {
+  it('asks one thing first: deliver it, pick it up at the hub, or cancel; nothing about time or payment yet', async () => {
     await offerSecondChance()
     show('customer')
-    for (const name of [/Deliver again/, /Different time/, /Pick up at hub/, /Cancel order/]) expect(await screen.findByRole('button', { name })).toBeTruthy()
-    const cod = state().stops[hero].order.payment === 'COD'
-    expect(screen.queryByRole('button', { name: /Pay now by UPI/ }) !== null).toBe(cod)
+    for (const name of [/Yes, deliver it/, /pick it up at the hub/, /No, cancel it/]) expect(await screen.findByRole('button', { name })).toBeTruthy()
+    for (const name of [/Tomorrow/, /Pay now by UPI/, /exact location/]) expect(screen.queryByRole('button', { name })).toBeNull()
   })
 
-  it('Different time asks which day, then books it', async () => {
+  it('a delivery then asks the day, how to pay (COD) and the address, one at a time, and books it', async () => {
     const id = await offerSecondChance()
     show('customer')
     const user = userEvent.setup()
-    await user.click(await screen.findByRole('button', { name: /Different time/ }))
-    await user.click(await screen.findByRole('button', { name: 'Tomorrow' }))
+    await user.click(await screen.findByRole('button', { name: /Yes, deliver it/ }))
+    await user.click(await screen.findByRole('button', { name: /Tomorrow/ }))
+    expect(state().stops[hero].order.payment).toBe('COD')
+    await user.click(await screen.findByRole('button', { name: /Cash on delivery/ }))
+    await user.click(await screen.findByRole('button', { name: /Yes, same address/ }))
     await waitFor(() => expect(state().parcels.find((p) => p.id === id)!.state).toBe('recovered'))
     expect(state().stops[hero].status).toBe('rescheduled')
   })
 
-  it('Pick up at hub shows the pickup code and the instructions in the reply', async () => {
+  it('Pick up at the hub shows the pickup code and the instructions in the reply', async () => {
     const id = await offerSecondChance()
     show('customer')
-    await userEvent.setup().click(await screen.findByRole('button', { name: /Pick up at hub/ }))
+    await userEvent.setup().click(await screen.findByRole('button', { name: /pick it up at the hub/ }))
     await waitFor(() => expect(state().parcels.find((p) => p.id === id)!.state).toBe('pickup_reserved'))
     expect((await screen.findAllByText(/pickup code/i)).length).toBeGreaterThan(0)
   })
 })
 
 describe('the Desk while the customer is choosing, and at the counter', () => {
-  it('says what the customer is doing: choosing a day, or paying', async () => {
+  it('says what the customer is doing at each step: choosing a day, how to pay, or confirming the address', async () => {
     const id = await offerSecondChance()
-    await store.send('lucknow', { type: 'customerSecondChance', parcelId: id, accept: true, option: 'later' })
+    const answer = (option: 'deliver' | 'tomorrow' | 'cod') => store.send('lucknow', { type: 'customerSecondChance', parcelId: id, accept: true, option })
+    await answer('deliver')
     show('desk')
-    expect(await screen.findByText(/choosing a day/i)).toBeTruthy()
+    expect(await screen.findByText(/choosing the day/i)).toBeTruthy()
+    await answer('tomorrow')
+    show('desk')
+    expect(await screen.findByText(/choosing how to pay/i)).toBeTruthy()
+    await answer('cod')
+    show('desk')
+    expect(await screen.findByText(/confirming the address/i)).toBeTruthy()
   })
 
   it('a reserved pickup shows the window, takes the customer\'s code, counts wrong tries, and on the right code closes the sale', async () => {

@@ -7,90 +7,130 @@ import { ledgerTotals, savingsLedger, costLedger } from './ledger.ts'
 import { reduce } from './reducer.ts'
 import { shelfUsed } from './routing.ts'
 import { deskItems, kpis, stopsOf } from './selectors.ts'
-import { AT, advanceHours, deliverOrder, forceParcel, heroStops, inspectParcel, refuseOrder, run, setPayment, startedDay } from './testkit.ts'
+import { AT, advanceHours, deliverOrder, forceParcel, heroStops, inspectParcel, refuseOrder, run, setPayment, startedDay, walkSecondChance } from './testkit.ts'
 import { overdueTimers } from './tick.ts'
-import type { DayState } from './types.ts'
+import type { DayState, SecondChanceOption } from './types.ts'
 
 const day = startedDay()
 const { bonus: bonusId } = heroStops(day)
 const pid = `P-${bonusId}`
 
 /** A COD order refused as "not home" (a soft refusal: the Router offers the second chance first). */
-const refused = (payment: 'COD' | 'PREPAID' = 'COD'): DayState => forceParcel(refuseOrder(setPayment(day, bonusId, payment), bonusId), bonusId, { reason: 'not_home' })
+const refused = (payment: 'COD' | 'PREPAID' = 'COD', reason: 'not_home' | 'no_cash' | 'other' = 'not_home'): DayState =>
+  forceParcel(refuseOrder(setPayment(day, bonusId, payment), bonusId), bonusId, { reason })
 const offered = (s = refused()): DayState => run(s, { type: 'deskSecondChance', at: AT + 2, parcelId: pid })
-const choose = (s: DayState, option: 'deliver' | 'later' | 'tomorrow' | 'day_after' | 'pay' | 'pickup' | 'address', at = AT + 3): DayState =>
+const choose = (s: DayState, option: SecondChanceOption, at = AT + 3): DayState =>
   reduce(s, { type: 'customerSecondChance', at, parcelId: pid, accept: true, option })
 const record = (s: DayState) => s.parcels.find((p) => p.id === pid)!
 const order = (s: DayState) => s.stops[bonusId]
 const messagesOf = (s: DayState, kind: string) => s.messages.filter((m) => m.orderId === bonusId && m.kind === kind)
 
-describe('the second-chance offer carries the options the customer can really take', () => {
-  it('offers Deliver again, Different time, Pay now by UPI, Pick up at hub, Share address and Cancel order, in that order (deck slide 9)', () => {
+const buttonsOf = (s: DayState, kind: string) => messagesOf(s, kind).at(-1)!.buttons?.map((b) => b.id)
+
+describe('step 1, "Do you still want it?": three outcomes that do not overlap', () => {
+  it('offers deliver, pick up at the hub, or cancel, and nothing about time, payment or address', () => {
     const msg = messagesOf(offered(), 'second_chance').at(-1)!
-    expect(msg.buttons?.map((b) => b.id)).toEqual(['accept', 'later', 'pay', 'pickup', 'address', 'decline'])
-    expect(msg.buttons?.map((b) => b.label)).toEqual(['🔁 Deliver again', '🕐 Different time', '💳 Pay now by UPI', '🏬 Pick up at hub', '📍 Share address', '❌ Cancel order'])
+    expect(msg.text).toMatch(/Do you still want it\?/)
+    expect(msg.buttons?.map((b) => b.id)).toEqual(['deliver', 'pickup', 'decline'])
+    expect(msg.buttons?.map((b) => b.label)).toEqual(['🚚 Yes, deliver it', '🏬 Yes, I’ll pick it up at the hub', '❌ No, cancel it'])
     expect(record(offered()).pickupOffered).toBe(true)
   })
 
-  it('does not offer a pickup when there is no free shelf slot at the moment it is sent', () => {
+  it('leaves out the pickup when there is no free shelf slot at the moment it is sent', () => {
     const full = reduce(refused(), { type: 'deskSetParam', at: AT + 1, param: 'shelfCapacity', value: 0 })
-    const s = offered(full)
-    expect(record(s).pickupOffered).toBe(false)
-    expect(messagesOf(s, 'second_chance').at(-1)!.buttons?.map((b) => b.id)).toEqual(['accept', 'later', 'pay', 'address', 'decline'])
+    expect(buttonsOf(offered(full), 'second_chance')).toEqual(['deliver', 'decline'])
   })
 
-  it('does not offer Pay now on an order that is already prepaid', () => {
-    const s = offered(refused('PREPAID'))
-    expect(messagesOf(s, 'second_chance').at(-1)!.buttons?.map((b) => b.id)).toEqual(['accept', 'later', 'pickup', 'address', 'decline'])
+  it('is the same for a prepaid order (payment is asked later, and only on COD)', () => {
+    expect(buttonsOf(offered(refused('PREPAID')), 'second_chance')).toEqual(['deliver', 'pickup', 'decline'])
   })
 
   it('the offer is the only proactive message: it counts, and the order stays inside the cap of 4', () => {
     expect(proactiveCount(offered(), bonusId)).toBeLessThanOrEqual(CONTACT_CAP)
   })
+
+  it('an answer from a later step is ignored until its question has been asked', () => {
+    const s = offered()
+    for (const option of ['today', 'tomorrow', 'cod', 'upi', 'same_address', 'share_location'] as const) expect(choose(s, option)).toBe(s)
+  })
+
+  it('an accept with no option means "Yes, deliver it"', () => {
+    const s = reduce(offered(), { type: 'customerSecondChance', at: AT + 3, parcelId: pid, accept: true })
+    expect(record(s).awaiting).toBe('when')
+  })
 })
 
-describe('Share address: the order goes out again and the customer drops a pin', () => {
-  const near = { lat: 26.851, lng: 81.001 }
-
-  it('puts the order back in the bag as attempt 2 and asks for a live location, without using a proactive message', () => {
+describe('step 2, "When should we come?": today, tomorrow or the day after', () => {
+  it('asks in a reply (not a proactive message) and waits; the order is still refused', () => {
     const before = offered()
-    const s = choose(before, 'address')
-    expect(record(s)).toMatchObject({ state: 'recovered', choice: 'address' })
-    expect(order(s).status).toBe('out_for_delivery')
-    expect(order(s).viaSecondChance).toBe(true)
-    expect(order(s).replies).toContain('fix_address')
-    expect(s.messages.filter((m) => m.orderId === bonusId).at(-1)!.text).toMatch(/share your live location/i)
-    expect(eventsOf(s, 'SECOND_CHANCE_ACCEPTED', bonusId)).toHaveLength(1)
+    const s = choose(before, 'deliver')
+    expect(record(s)).toMatchObject({ state: 'second_chance_sent', awaiting: 'when', choice: 'deliver' })
+    expect(messagesOf(s, 'second_chance_when').at(-1)!.text).toMatch(/When should we come\?/)
+    expect(buttonsOf(s, 'second_chance_when')).toEqual(['today', 'tomorrow', 'day_after'])
     expect(proactiveCount(s, bonusId)).toBe(proactiveCount(before, bonusId))
+    expect(order(s).status).toBe('refused')
   })
 
-  it('the shared pin moves the order, clears the address flag, and the delivery books the saving', () => {
-    let s = choose(offered(), 'address')
-    s = reduce(s, { type: 'customerReply', at: AT + 4, orderId: bonusId, reply: 'fix_address', location: near })
-    expect(order(s).order.addressQuality).toBe('clear')
-    expect(order(s).location).toBeDefined()
-    const done = deliverOrder(s, bonusId, '1357')
-    expect(order(done).status).toBe('delivered_a2')
-    expect(savingsLedger(done).total).toBeGreaterThan(0)
-    expect(runAudit(done).filter((c) => !c.ok)).toEqual([])
-  })
-
-  it('with no attempt left it goes to the next lane instead, and asks for nothing', () => {
+  it('with no attempt left it goes to the next lane instead, and asks nothing more', () => {
     const sent = offered()
     const lowered: DayState = { ...sent, config: { ...sent.config, maxAttempts: 1 } }
-    const s = choose(lowered, 'address')
+    const s = choose(lowered, 'deliver')
     expect(record(s).state).toBe('queued')
     expect(order(s).status).toBe('refused')
-    expect(order(s).replies).not.toContain('fix_address')
+    expect(messagesOf(s, 'second_chance_when')).toHaveLength(0)
   })
 })
 
-describe('Deliver again (as before)', () => {
-  it('puts the order back in the bag as attempt 2 and books the saving only when it is delivered', () => {
-    const s = choose(offered(), 'deliver')
-    expect(record(s).state).toBe('recovered')
+describe('step 3, "How will you pay?": cash or UPI, on COD orders only', () => {
+  const atMethod = (s = offered()) => choose(choose(s, 'deliver'), 'today', AT + 4)
+
+  it('a COD order is asked; cash on delivery comes first', () => {
+    const s = atMethod()
+    expect(record(s).awaiting).toBe('method')
+    expect(messagesOf(s, 'second_chance_method').at(-1)!.text).toMatch(/How will you pay\?/)
+    expect(buttonsOf(s, 'second_chance_method')).toEqual(['cod', 'upi'])
+  })
+
+  it('when the rider heard "no cash on hand", UPI comes first', () => {
+    expect(buttonsOf(atMethod(offered(refused('COD', 'no_cash'))), 'second_chance_method')).toEqual(['upi', 'cod'])
+  })
+
+  it('a prepaid order skips straight to the address', () => {
+    expect(record(atMethod(offered(refused('PREPAID')))).awaiting).toBe('address')
+  })
+
+  it('UPI asks for the payment in a reply and marks it pending', () => {
+    const s = choose(atMethod(), 'upi', AT + 5)
+    expect(record(s).awaiting).toBe('pay')
+    expect(order(s).paymentPending).toBe(true)
+    expect(buttonsOf(s, 'second_chance_pay')).toEqual(['pay_ok', 'pay_fail'])
+  })
+
+  it('a payment that goes through makes the order prepaid, then asks the address; one that fails keeps it COD and asks the address too', () => {
+    const paid = reduce(choose(atMethod(), 'upi', AT + 5), { type: 'customerPayment', at: AT + 6, orderId: bonusId, ok: true })
+    expect(order(paid).order.payment).toBe('PREPAID')
+    expect(record(paid).awaiting).toBe('address')
+    expect(eventsOf(paid, 'PAYMENT_ATTEMPTED', bonusId)).toHaveLength(1)
+    const failed = reduce(choose(atMethod(), 'upi', AT + 5), { type: 'customerPayment', at: AT + 6, orderId: bonusId, ok: false })
+    expect(order(failed).order.payment).toBe('COD')
+    expect(record(failed).awaiting).toBe('address')
+  })
+})
+
+describe('step 4, "Is the address right?": always asked, then the order goes out', () => {
+  it('is asked with two answers', () => {
+    const s = choose(choose(choose(offered(), 'deliver'), 'today', AT + 4), 'cod', AT + 5)
+    expect(record(s).awaiting).toBe('address')
+    expect(buttonsOf(s, 'second_chance_address')).toEqual(['same_address', 'share_location'])
+  })
+
+  it('today + same address: back in the bag as attempt 2 at once; the saving books only when it is delivered (net ₹99)', () => {
+    const s = walkSecondChance(offered(), pid, AT + 3)
+    expect(record(s)).toMatchObject({ state: 'recovered', choice: 'deliver' })
+    expect(record(s).awaiting).toBeUndefined()
     expect(order(s).status).toBe('out_for_delivery')
     expect(order(s).viaSecondChance).toBe(true)
+    expect(messagesOf(s, 'second_chance_ack').at(-1)!.text).toMatch(/goes out again today/)
     expect(savingsLedger(s).total).toBe(0)
     const done = deliverOrder(s, bonusId, '1357')
     expect(order(done).status).toBe('delivered_a2')
@@ -98,31 +138,11 @@ describe('Deliver again (as before)', () => {
     expect(costLedger(done).find((c) => c.line === 'Second-chance re-attempt leg')?.amount).toBe(21)
   })
 
-  it('an accept with no option means Deliver again', () => {
-    expect(reduce(offered(), { type: 'customerSecondChance', at: AT + 3, parcelId: pid, accept: true }).parcels[0].state).toBe('recovered')
-  })
-})
-
-describe('Different time', () => {
-  it('asks which day in a reply (not a proactive message) and waits', () => {
-    const before = proactiveCount(offered(), bonusId)
-    const s = choose(offered(), 'later')
-    expect(record(s).state).toBe('second_chance_sent')
-    expect(record(s).awaiting).toBe('when')
-    const ask = messagesOf(s, 'second_chance_when').at(-1)!
-    expect(ask.buttons?.map((b) => b.id)).toEqual(['tomorrow', 'day_after'])
-    expect(proactiveCount(s, bonusId)).toBe(before)
-    expect(order(s).status).toBe('refused')
-  })
-
-  it('tomorrow: the order is parked until 08:00 tomorrow, then goes out as attempt 2; the delivery books the ₹120 saving (net ₹99 with the ₹21 leg)', () => {
-    const s = choose(choose(offered(), 'later'), 'tomorrow', AT + 4)
+  it('tomorrow: parked until 08:00 tomorrow, then out as attempt 2; never counted as a customer reschedule', () => {
+    const s = walkSecondChance(offered(), pid, AT + 3, { when: 'tomorrow' })
     expect(record(s).state).toBe('recovered')
-    expect(record(s).choice).toBe('later')
-    expect(record(s).awaiting).toBeUndefined()
     expect(order(s).status).toBe('rescheduled')
     expect(order(s).rescheduledTo).toBe(nextDayStart(s.simNow))
-    expect(order(s).viaSecondChance).toBe(true)
     expect(order(s).reschedules).toBe(0)
     const out = advanceHours(s, 24)
     expect(order(out).status).toBe('out_for_delivery')
@@ -131,44 +151,34 @@ describe('Different time', () => {
   })
 
   it('the day after: one day later than tomorrow', () => {
-    const s = choose(choose(offered(), 'later'), 'day_after', AT + 4)
+    const s = walkSecondChance(offered(), pid, AT + 3, { when: 'day_after' })
     expect(order(s).rescheduledTo).toBe(nextDayStart(s.simNow) + DAY_MS)
   })
 
-  it('a customer who picks a day straight away (no question) gets the same result', () => {
-    expect(order(choose(offered(), 'tomorrow')).status).toBe('rescheduled')
+  it('share my exact location: the order goes out and the customer is asked for the pin, which then moves it', () => {
+    const s = walkSecondChance(offered(), pid, AT + 3, { shareLocation: true })
+    expect(order(s).status).toBe('out_for_delivery')
+    expect(order(s).replies).toContain('fix_address')
+    expect(s.messages.filter((m) => m.orderId === bonusId).at(-1)!.text).toMatch(/share your live location/i)
+    const pinned = reduce(s, { type: 'customerReply', at: AT + 20, orderId: bonusId, reply: 'fix_address', location: { lat: 26.851, lng: 81.001 } })
+    expect(order(pinned).order.addressQuality).toBe('clear')
+    expect(runAudit(deliverOrder(pinned, bonusId, '1357')).filter((c) => !c.ok)).toEqual([])
   })
 
-  it('never turns the order into an RTO through the reschedule cap, because it is not a customer reschedule', () => {
-    const s = choose(offered(), 'tomorrow')
-    expect(order(advanceHours(s, 24)).status).toBe('out_for_delivery')
+  it('a UPI payment that went through ends prepaid and out for delivery', () => {
+    const s = walkSecondChance(offered(), pid, AT + 3, { upi: true, payOk: true })
+    expect(order(s).order.payment).toBe('PREPAID')
+    expect(order(s).status).toBe('out_for_delivery')
   })
 })
 
-describe('Pay now by UPI', () => {
-  it('asks for the payment in a reply, marks the payment pending, and waits', () => {
-    const s = choose(offered(), 'pay')
-    expect(record(s).awaiting).toBe('pay')
-    expect(record(s).state).toBe('second_chance_sent')
-    expect(order(s).paymentPending).toBe(true)
-    expect(messagesOf(s, 'second_chance_pay').at(-1)!.buttons?.map((b) => b.id)).toEqual(['pay_ok', 'pay_fail'])
-  })
-
-  it('a payment that goes through makes the order prepaid and sends it out as attempt 2', () => {
-    const s = reduce(choose(offered(), 'pay'), { type: 'customerPayment', at: AT + 4, orderId: bonusId, ok: true })
-    expect(order(s).order.payment).toBe('PREPAID')
-    expect(record(s).state).toBe('recovered')
-    expect(record(s).choice).toBe('pay')
-    expect(order(s).status).toBe('out_for_delivery')
-    expect(order(s).viaSecondChance).toBe(true)
-    expect(eventsOf(s, 'PAYMENT_ATTEMPTED', bonusId)).toHaveLength(1)
-  })
-
-  it('a payment that fails still gets the parcel back out, cash on delivery (as the failure message says)', () => {
-    const s = reduce(choose(offered(), 'pay'), { type: 'customerPayment', at: AT + 4, orderId: bonusId, ok: false })
-    expect(order(s).order.payment).toBe('COD')
-    expect(record(s).state).toBe('recovered')
-    expect(order(s).status).toBe('out_for_delivery')
+describe('a refusal the rider could not explain ("Other") goes to the second chance first', () => {
+  it('the Desk offers the second chance and says the customer’s reply decides the lane', () => {
+    const s = refused('COD', 'other')
+    const item = deskItems(s).find((d) => d.record.id === pid)!
+    expect(item.decision.lane).toBe('second_chance')
+    expect(item.decision.reason).toMatch(/Reason not given by the rider/)
+    expect(record(offered(s)).state).toBe('second_chance_sent')
   })
 })
 
@@ -208,7 +218,7 @@ describe('Pick up at hub', () => {
     expect(deskItems(tight)[0].options.shelfUsed).toBe(1)
   })
 
-  it('falls back to Different time when the shelf filled between the offer and the answer', () => {
+  it('falls back to tomorrow’s delivery when the shelf filled between the offer and the answer', () => {
     const sent = offered()
     expect(record(sent).pickupOffered).toBe(true)
     const full = reduce(sent, { type: 'deskSetParam', at: AT + 2, param: 'shelfCapacity', value: 0 })
@@ -306,29 +316,33 @@ describe('the pickup never counts as a delivery and never pays a bonus (the verd
 
   it('whereas a second chance delivered by a rider still counts as delivered and pays as before', () => {
     const prepaid = refused('PREPAID')
-    const s = deliverOrder(choose(offered(prepaid), 'deliver'), bonusId, '1357')
+    const s = deliverOrder(walkSecondChance(offered(prepaid), pid, AT + 3), bonusId, '1357')
     expect(order(s).status).toBe('delivered_a2')
     expect(kpis(s).flaggedBonus.delivered).toBe(kpis(day).flaggedBonus.delivered + 1)
   })
 })
 
-describe('contact cap: four proactive messages per order, whatever the customer picks', () => {
-  it.each(['deliver', 'later', 'pay', 'pickup'] as const)('option %s keeps the order within the cap and rejects nothing', (option) => {
-    const s = choose(offered(), option)
-    expect(proactiveCount(s, bonusId)).toBeLessThanOrEqual(CONTACT_CAP)
+describe('contact cap: four proactive messages per order, whatever the customer answers', () => {
+  it.each([
+    ['today, cash', {}],
+    ['tomorrow', { when: 'tomorrow' }],
+    ['UPI', { upi: true }],
+    ['share location', { shareLocation: true }],
+  ] as const)('the walk %s adds replies only and rejects nothing', (_name, walk) => {
+    const base = offered()
+    const s = walkSecondChance(base, pid, AT + 3, walk)
+    expect(proactiveCount(s, bonusId)).toBe(proactiveCount(base, bonusId))
     expect(eventsOf(s, 'MSG_REJECTED', bonusId)).toHaveLength(0)
   })
 
-  it('a full walk (later -> tomorrow) and a full pickup each add replies only', () => {
-    const base = proactiveCount(offered(), bonusId)
-    expect(proactiveCount(choose(choose(offered(), 'later'), 'tomorrow'), bonusId)).toBe(base)
-    expect(proactiveCount(choose(offered(), 'pickup'), bonusId)).toBe(base)
+  it('a pickup adds replies only', () => {
+    expect(proactiveCount(choose(offered(), 'pickup'), bonusId)).toBe(proactiveCount(offered(), bonusId))
   })
 })
 
 describe('a customer who takes the second chance and refuses again', () => {
   it('does not become a second parcel: the order goes back as an RTO and nothing is saved', () => {
-    const back = choose(offered(), 'deliver')
+    const back = walkSecondChance(offered(), pid, AT + 3)
     const again = run(back, { type: 'riderRefuse', at: AT + 50, orderId: bonusId, code: '8888' }, { type: 'submitOtp', at: AT + 51, orderId: bonusId, code: '8888' })
     expect(again.parcels.filter((p) => p.orderId === bonusId)).toHaveLength(1)
     expect(order(again).status).toBe('rto')
@@ -342,7 +356,7 @@ describe('a declined or unanswered offer still works as before', () => {
     const declined = reduce(offered(), { type: 'customerSecondChance', at: AT + 3, parcelId: pid, accept: false })
     expect(record(declined).state).toBe('queued')
     expect(record(declined).secondChanceDeclined).toBe(true)
-    const midway = choose(offered(), 'pay')
+    const midway = choose(choose(choose(offered(), 'deliver'), 'today', AT + 4), 'upi', AT + 5)
     const expired = advanceHours(midway, 24)
     expect(record(expired).state).toBe('queued')
     expect(record(expired).secondChanceExpired).toBe(true)

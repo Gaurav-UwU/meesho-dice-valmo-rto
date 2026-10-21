@@ -11,7 +11,8 @@ import type { StopRecord } from './types.ts'
  */
 export const PARCEL_ASSUMPTIONS = {
   /** Why customers refuse: no cash, later, not home, changed mind, cheaper elsewhere, didn't order, damaged (sums to 1) */
-  reasonShares: [0.15, 0.12, 0.1, 0.25, 0.15, 0.1, 0.13],
+  // The last share is "Other": only a rider records it, the seeded parcels never draw it.
+  reasonShares: [0.15, 0.12, 0.1, 0.25, 0.15, 0.1, 0.13, 0],
   unopenedShare: 0.9,
   sealOkShare: 0.92,
   invoiceOutsideShare: 0.7,

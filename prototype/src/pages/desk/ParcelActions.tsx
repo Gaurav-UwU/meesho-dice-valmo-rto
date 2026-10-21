@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { HOUR_MS } from '../../domain/clock.ts'
 import { MAX_PICKUP_TRIES } from '../../domain/secondChance.ts'
-import type { ParcelRecord } from '../../domain/types.ts'
+import type { Awaiting, ParcelRecord } from '../../domain/types.ts'
 import type { Lane, SkipReason } from '../../engine/router.ts'
 import type { HubId } from '../../engine/types.ts'
 import { SkipSecondChance } from './SkipSecondChance.tsx'
@@ -24,6 +24,14 @@ interface ParcelActionsProps {
   readonly onSkip: (reason: SkipReason) => void
 }
 
+/** Which second-chance question the customer is on (the offer itself has no text: they have not answered yet) */
+const AWAITING_TEXT: Readonly<Record<Awaiting, string>> = {
+  when: 'The customer wants it delivered and is choosing the day.',
+  method: 'The customer is choosing how to pay (cash or UPI).',
+  pay: 'The customer is paying by UPI.',
+  address: 'The customer is confirming the address.',
+}
+
 const hoursLeft = (until: number, simNow: number): number => Math.max(0, Math.ceil((until - simNow) / HOUR_MS))
 
 export function ParcelActions({ record, lane, hubId, simNow, secondChanceHours, holdHours, pickupHours, payment, onHandover, onSecondChance, onHold, onMatch, onConsolidate, onSkip }: ParcelActionsProps) {
@@ -31,7 +39,7 @@ export function ParcelActions({ record, lane, hubId, simNow, secondChanceHours, 
     return <Handover record={record} left={hoursLeft(record.pickup.deadline, simNow)} pickupHours={pickupHours} cod={payment === 'COD'} onHandover={onHandover} />
   }
   if (record.state === 'second_chance_sent') {
-    const doing = record.awaiting === 'when' ? 'The customer is choosing a day (Different time). ' : record.awaiting === 'pay' ? 'The customer is paying by UPI. ' : ''
+    const doing = record.awaiting ? `${AWAITING_TEXT[record.awaiting]} ` : ''
     return (
       <div className="desk-actions">
         <p className="desk-wait" role="status">

@@ -9,7 +9,7 @@ interface Props {
 }
 
 /**
- * The Router's assumptions, in plain numbers the operator can change. Three headline numbers up front; the seven accept rates are folded
+ * The Router's assumptions, in plain numbers the operator can change. Three headline numbers up front; the eight accept rates are folded
  * under "More". Every one of them is an assumption the pilot would measure.
  */
 export function RouterAssumptions({ day, send }: Props) {
@@ -58,7 +58,7 @@ export function RouterAssumptions({ day, send }: Props) {
         </label>
       </div>
       <details className="desk-more">
-        <summary>More: the seven accept rates</summary>
+        <summary>More: the eight accept rates</summary>
         <div className="desk-params">
           {REFUSAL_REASONS.map((reason) => (
             <label key={reason}>

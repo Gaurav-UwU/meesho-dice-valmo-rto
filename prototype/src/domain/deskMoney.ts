@@ -9,7 +9,7 @@ import { decisionFor } from './routing.ts'
 import type { DayState } from './types.ts'
 
 /** Outbound WhatsApp templates the Router sends: each costs ₹0.50 and is a Router cost (the customer's taps are free). */
-const ROUTER_TEMPLATES: ReadonlySet<string> = new Set(['second_chance', 'second_chance_when', 'second_chance_pay', 'second_chance_ack', 'pickup_code'])
+const ROUTER_TEMPLATES: ReadonlySet<string> = new Set(['second_chance', 'second_chance_when', 'second_chance_method', 'second_chance_pay', 'second_chance_address', 'second_chance_ack', 'pickup_code'])
 
 export interface DeskMoney {
   /** Refused parcels the Desk has seen today */

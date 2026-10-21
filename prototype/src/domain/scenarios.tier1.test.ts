@@ -8,7 +8,7 @@ import { eventsOf } from './events.ts'
 import { costLedger, ledgerTotals, savingsLedger } from './ledger.ts'
 import { reduce } from './reducer.ts'
 import { deskItems, kpis, stopsOf } from './selectors.ts'
-import { AT, advanceHours, attemptWithCalls, deliverOrder, forceParcel, forgedStrikes, heroStops, inspectParcel, refuseOrder, run, setPayment, startedDay } from './testkit.ts'
+import { AT, advanceHours, attemptWithCalls, deliverOrder, forceParcel, forgedStrikes, heroStops, inspectParcel, refuseOrder, run, setPayment, startedDay, walkSecondChance } from './testkit.ts'
 import { activeCount } from './captain.ts'
 import type { DayState } from './types.ts'
 
@@ -220,7 +220,7 @@ describe('scenario 3: a fake attempt becomes an exception and a free re-attempt 
 describe('scenario 6: a soft refusal accepted as a second chance is delivered, and the saving books at delivery', () => {
   const refused = forceParcel(refuseOrder(day, bonusId), bonusId, { reason: 'not_home' })
   const pid = refused.parcels[0].id
-  const accepted = run(refused, { type: 'deskSecondChance', at: AT + 2, parcelId: pid }, { type: 'customerSecondChance', at: AT + 3, parcelId: pid, accept: true })
+  const accepted = walkSecondChance(run(refused, { type: 'deskSecondChance', at: AT + 2, parcelId: pid }), pid, AT + 3)
 
   it('the Router offers it (soft reason, positive expected value) and logs the lane', () => {
     expect(deskItems(refused)[0].decision.lane).toBe('second_chance')

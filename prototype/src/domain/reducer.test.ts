@@ -4,7 +4,7 @@ import { deskItems, demoStops, kpis, messagesFor, riderEarnings, suspectStops } 
 import { createDay } from './day.ts'
 import { fakeGeo } from '../engine/testkit.ts'
 import { DAY_MS, DAY_START_MS } from './clock.ts'
-import { AT, forceParcel, heroStops, inspectParcel, run, startedDay } from './testkit.ts'
+import { AT, forceParcel, heroStops, inspectParcel, run, startedDay, walkSecondChance } from './testkit.ts'
 import type { Action, DayState } from './types.ts'
 import { logit, sigmoid } from '../engine/math.ts'
 
@@ -308,7 +308,7 @@ describe('refusal and the Refused-Parcel Desk', () => {
   it('second chance: accepted saves the sale', () => {
     const s0 = forceParcel(refused(bonusId), bonusId, { reason: 'not_home' })
     const pid = s0.parcels[0].id
-    const s = run(s0, { type: 'deskSecondChance', at: AT + 2, parcelId: pid }, { type: 'customerSecondChance', at: AT + 3, parcelId: pid, accept: true })
+    const s = walkSecondChance(run(s0, { type: 'deskSecondChance', at: AT + 2, parcelId: pid }), pid, AT + 3)
     expect(s.parcels[0].state).toBe('recovered')
     expect(s.stops[bonusId].status).toBe('out_for_delivery')
     expect(s.stops[bonusId].failedAttempts).toBe(1)

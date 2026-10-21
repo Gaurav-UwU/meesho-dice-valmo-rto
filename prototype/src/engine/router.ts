@@ -19,9 +19,9 @@ export const LANE_LABEL: Readonly<Record<Lane, string>> = {
   consolidated_return: 'Consolidated return',
 }
 
-export type RefusalReason = 'no_cash' | 'want_later' | 'not_home' | 'changed_mind' | 'cheaper_elsewhere' | 'not_ordered' | 'damaged'
+export type RefusalReason = 'no_cash' | 'want_later' | 'not_home' | 'changed_mind' | 'cheaper_elsewhere' | 'not_ordered' | 'damaged' | 'other'
 
-export const REFUSAL_REASONS: readonly RefusalReason[] = ['no_cash', 'want_later', 'not_home', 'changed_mind', 'cheaper_elsewhere', 'not_ordered', 'damaged']
+export const REFUSAL_REASONS: readonly RefusalReason[] = ['no_cash', 'want_later', 'not_home', 'changed_mind', 'cheaper_elsewhere', 'not_ordered', 'damaged', 'other']
 
 export const REFUSAL_LABEL: Readonly<Record<RefusalReason, string>> = {
   no_cash: 'No cash on hand',
@@ -31,10 +31,14 @@ export const REFUSAL_LABEL: Readonly<Record<RefusalReason, string>> = {
   cheaper_elsewhere: 'Found it cheaper elsewhere',
   not_ordered: "Didn't order it",
   damaged: 'Damaged or wrong item',
+  other: 'Other (not sure why)',
 }
 
-/** Not home, no cash and "later" are soft: the sale may still be there. The rest are hard. */
-export const isSoftReason = (r: RefusalReason): boolean => r === 'no_cash' || r === 'want_later' || r === 'not_home'
+/**
+ * Not home, no cash and "later" are soft: the sale may still be there. "Other" (the rider could not tell) is treated as soft too, so the
+ * customer's own answer to the second chance decides the lane. The rest are hard.
+ */
+export const isSoftReason = (r: RefusalReason): boolean => r === 'no_cash' || r === 'want_later' || r === 'not_home' || r === 'other'
 
 /** Why the operator skipped the second chance. Logged and counted; it never opens a closed gate. */
 export type SkipReason = 'refused_firmly' | 'not_reachable' | 'seller_wants_back' | 'other'
@@ -77,7 +81,7 @@ export interface RouterParams {
 }
 
 export const DEFAULT_ROUTER_PARAMS: RouterParams = {
-  acceptByReason: { no_cash: 0.5, want_later: 0.5, not_home: 0.4, changed_mind: 0.15, cheaper_elsewhere: 0.1, not_ordered: 0, damaged: 0 },
+  acceptByReason: { no_cash: 0.5, want_later: 0.5, not_home: 0.4, changed_mind: 0.15, cheaper_elsewhere: 0.1, not_ordered: 0, damaged: 0, other: 0.3 },
   conversion: 0.5,
   holdHours: 48,
   secondChanceHours: 24,
@@ -312,7 +316,7 @@ export function routeParcel(p: RefusedParcel, opts: RouteOptions = {}): RouteDec
   if (!tried && scEv > 0) {
     return {
       lane: 'second_chance',
-      reason: `${REFUSAL_LABEL[p.reason]}: ${(inputs.pAccept * 100).toFixed(0)}% accept a second chance, worth +₹${scEv.toFixed(0)} on average. Offer it on WhatsApp`,
+      reason: `${p.reason === 'other' ? 'Reason not given by the rider, so the customer’s reply decides the lane' : REFUSAL_LABEL[p.reason]}: ${(inputs.pAccept * 100).toFixed(0)}% accept a second chance, worth +₹${scEv.toFixed(0)} on average. Offer it on WhatsApp`,
       gates,
       effect: LANE_EFFECT.second_chance,
       ev,

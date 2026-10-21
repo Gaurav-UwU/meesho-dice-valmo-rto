@@ -79,3 +79,29 @@ export function forgedStrikes(s: DayState, riderId: string, n: number, simAt: nu
     captainName: 'Captain Test',
   }))
 }
+
+export interface SecondChanceWalk {
+  readonly when?: 'today' | 'tomorrow' | 'day_after'
+  /** COD only: pay now by UPI (with this result) instead of cash on delivery */
+  readonly upi?: boolean
+  readonly payOk?: boolean
+  readonly shareLocation?: boolean
+}
+
+/** Walk the second-chance questions after an offer: deliver, the day, how to pay (COD only) and the address. */
+export function walkSecondChance(s: DayState, parcelId: string, at: number, w: SecondChanceWalk = {}): DayState {
+  const step = (cur: DayState, option: Extract<Action, { type: 'customerSecondChance' }>['option'], t: number): DayState =>
+    reduce(cur, { type: 'customerSecondChance', at: t, parcelId, accept: true, option })
+  let next = step(s, 'deliver', at)
+  next = step(next, w.when ?? 'today', at + 1)
+  if (next.parcels.find((p) => p.id === parcelId)?.awaiting === 'method') {
+    if (w.upi) {
+      next = step(next, 'upi', at + 2)
+      const orderId = next.parcels.find((p) => p.id === parcelId)!.orderId
+      next = reduce(next, { type: 'customerPayment', at: at + 3, orderId, ok: w.payOk ?? true })
+    } else {
+      next = step(next, 'cod', at + 2)
+    }
+  }
+  return step(next, w.shareLocation ? 'share_location' : 'same_address', at + 4)
+}

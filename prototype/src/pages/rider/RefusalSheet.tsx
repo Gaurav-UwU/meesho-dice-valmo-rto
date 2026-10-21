@@ -20,7 +20,7 @@ export function RefusalSheet({ onPick, onClose }: Props) {
     <div className="rider-overlay" role="presentation" onClick={onClose}>
       <div className="rider-sheet" role="dialog" aria-modal="true" aria-labelledby="rider-refuse-title" onClick={(e) => e.stopPropagation()}>
         <h2 id="rider-refuse-title">Why is the customer refusing?</h2>
-        <p className="rider-muted">A refusal code will be sent to the customer next. Demo tip: “Didn&apos;t order it” sends the parcel to Hold &amp; Re-home; “Not home” offers a second chance.</p>
+        <p className="rider-muted">A refusal code will be sent to the customer next. Demo tip: “Didn&apos;t order it” sends the parcel to Hold &amp; Re-home; “Not home” offers a second chance. Not sure why? Pick “Other” and the customer&apos;s WhatsApp reply decides.</p>
         {REFUSAL_REASONS.map((reason) => (
           <button key={reason} type="button" className="rider-menu-item" onClick={() => onPick(reason)}>
             {REFUSAL_LABEL[reason]}

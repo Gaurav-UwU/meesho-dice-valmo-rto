@@ -1,10 +1,10 @@
 import { createRng, hashSeed } from '../engine/rng.ts'
 import { pAccept } from '../engine/router.ts'
-import { drawDay, drawOption, paymentGoesThrough, pickupCollects } from './botCustomer.ts'
+import { drawOutcome, drawWhen, paymentGoesThrough, paysByUpi, pickupCollects, sharesLocation } from './botCustomer.ts'
 import { planAutopilot } from './autopilot.ts'
 import { DAY_MS } from './clock.ts'
 import { decisionFor } from './routing.ts'
-import type { Action, DayState } from './types.ts'
+import type { Action, DayState, SecondChanceOption } from './types.ts'
 
 type Reduce = (s: DayState, a: Action) => DayState
 
@@ -53,29 +53,33 @@ function deskRound(s: DayState, at: number, reduce: Reduce): DayState {
   return next
 }
 
-/** A seeded customer answers a second-chance offer: accept (per P(accept | reason)) and then one of the four options, decline, or say nothing. */
+/**
+ * A seeded customer answers a second-chance offer: accept (per P(accept | reason)), decline, or say nothing. One who accepts then answers
+ * each question in turn: deliver or pick up; for a delivery the day, how to pay (COD only, with the UPI result) and the address.
+ */
 function customerAnswers(s: DayState, parcelId: string, at: number, reduce: Reduce): DayState {
   const rec = s.parcels.find((p) => p.id === parcelId)
   if (!rec || rec.state !== 'second_chance_sent') return s
   const u = createRng(hashSeed(`sc-${parcelId}`)).next()
   const accept = pAccept(rec.parcel.reason, s.router)
   if (u >= accept) return u < accept + (1 - accept) * (1 - NO_ANSWER_SHARE) ? reduce(s, { type: 'customerSecondChance', at, parcelId, accept: false }) : s
-  const st = s.stops[rec.orderId]
-  let option = drawOption(rec.parcel.reason, parcelId)
-  // An option that was not on offer (a prepaid order has nothing to pay; the shelf was full) becomes the nearest one that was.
-  if (option === 'pay' && st.order.payment === 'PREPAID') option = 'deliver'
-  if (option === 'pickup' && !rec.pickupOffered) option = 'later'
-  switch (option) {
-    case 'later':
-      return reduce(s, { type: 'customerSecondChance', at, parcelId, accept: true, option: drawDay(parcelId) })
-    case 'pay': {
-      const asked = reduce(s, { type: 'customerSecondChance', at, parcelId, accept: true, option: 'pay' })
-      return reduce(asked, { type: 'customerPayment', at, orderId: rec.orderId, ok: paymentGoesThrough(parcelId) })
-    }
-    default:
-      return reduce(s, { type: 'customerSecondChance', at, parcelId, accept: true, option })
+  const reason = rec.parcel.reason
+  const answer = (cur: DayState, option: Parameters<typeof sc>[1]): DayState => reduce(cur, sc(parcelId, option, at))
+  // A pickup that was not on offer (the shelf was full) becomes a delivery.
+  if (drawOutcome(reason, parcelId) === 'pickup' && rec.pickupOffered) return answer(s, 'pickup')
+  let next = answer(s, 'deliver')
+  next = answer(next, drawWhen(reason, parcelId))
+  const cod = next.stops[rec.orderId].order.payment === 'COD'
+  if (cod && paysByUpi(reason, parcelId)) {
+    next = answer(next, 'upi')
+    next = reduce(next, { type: 'customerPayment', at, orderId: rec.orderId, ok: paymentGoesThrough(parcelId) })
+  } else if (cod) {
+    next = answer(next, 'cod')
   }
+  return answer(next, sharesLocation(parcelId) ? 'share_location' : 'same_address')
 }
+
+const sc = (parcelId: string, option: SecondChanceOption, at: number): Action => ({ type: 'customerSecondChance', at, parcelId, accept: true, option })
 
 /**
  * Run the rest of the pilot: the bots work every open order, the Desk follows the Router, and the clock moves a day at a time

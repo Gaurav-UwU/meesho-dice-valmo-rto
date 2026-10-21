@@ -93,7 +93,8 @@ export function secondChanceDelivered(s: S, orderId: string, at: number): S {
   return s.stops[orderId]?.viaSecondChance ? bookSaving(s, at, 'Second chance delivered (₹120 return avoided)', REVERSE_COST, orderId) : s
 }
 
-const SOFT_REASONS = REFUSAL_REASONS.filter(isSoftReason)
+/** The three named soft reasons the one slider sets together. "Other" is soft too but keeps its own rate. */
+const SOFT_REASONS = REFUSAL_REASONS.filter((r) => isSoftReason(r) && r !== 'other')
 
 /** The one number the three soft-refusal rows share, or null ("mixed") when an operator has set them apart. */
 export function softAcceptRate(params: RouterParams): number | null {
@@ -239,7 +240,7 @@ export function parcelTimers(s: S, at: number): S {
   for (const rec of s.parcels) {
     const cur = next.parcels.find((p) => p.id === rec.id) ?? rec
     if (cur.state === 'second_chance_sent' && cur.secondChanceSentSim !== undefined && next.simNow - cur.secondChanceSentSim >= next.router.secondChanceHours * HOUR_MS) {
-      next = patchParcel(next, cur.id, { state: 'queued', secondChanceExpired: true, awaiting: undefined })
+      next = patchParcel(next, cur.id, { state: 'queued', secondChanceExpired: true, awaiting: undefined, scWhen: undefined })
       if (next.stops[cur.orderId]?.paymentPending) next = patchStop(next, cur.orderId, { paymentPending: false })
       next = emit(next, at, 'SECOND_CHANCE_EXPIRED', {}, { orderId: cur.orderId })
       next = feedAdd(next, at, 'desk', `No answer to the second chance for ${cur.parcel.awb} in ${next.router.secondChanceHours} h: routed to the next lane`, cur.orderId)

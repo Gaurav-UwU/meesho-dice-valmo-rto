@@ -1,4 +1,4 @@
-import type { ReplyKind, MessageButton, WaLang } from './types.ts'
+import type { ReplyKind, MessageButton, SecondChanceOption, WaLang } from './types.ts'
 
 /**
  * Customer WhatsApp copy, in English and Hindi (plan 33). The first line of each "Valmo" message reuses the wording of Valmo's real messages
@@ -17,7 +17,7 @@ export function daysEarly(orderId: string, isCod: boolean): number {
   return h % 3 === 0 ? 2 + ((h >>> 2) % 4) : 0
 }
 
-type SecondChanceOffer = { readonly pay: boolean; readonly pickup: boolean }
+type SecondChanceOffer = { readonly pickup: boolean }
 
 export interface WaCopy {
   readonly replyButtons: Readonly<Record<ReplyKind, MessageButton>>
@@ -36,11 +36,21 @@ export interface WaCopy {
   readonly rescheduleCheckText: string
   readonly yesNo: readonly MessageButton[]
   readonly secondChanceText: (awb: string) => string
+  /** Step 1, "Do you still want it?": deliver, pick up (only while the shelf has room) or cancel */
   readonly secondChanceButtons: (offer: SecondChanceOffer) => readonly MessageButton[]
-  /** What the customer's tap on a second-chance or day button reads as in the chat */
-  readonly secondChanceTap: Readonly<Record<'deliver' | 'later' | 'tomorrow' | 'day_after' | 'pay' | 'pickup' | 'address' | 'decline', string>>
+  /** What the customer's tap on any second-chance button reads as in the chat */
+  readonly secondChanceTap: Readonly<Record<SecondChanceOption | 'decline', string>>
+  /** Step 2, "When should we come?" */
   readonly whenText: string
   readonly whenButtons: readonly MessageButton[]
+  /** Step 3, "How will you pay?" (COD orders only). UPI goes first when the rider heard "no cash". */
+  readonly methodText: string
+  readonly methodButtons: (upiFirst: boolean) => readonly MessageButton[]
+  /** Step 4, "Is the address right?" */
+  readonly addressText: string
+  readonly addressButtons: readonly MessageButton[]
+  /** The order goes out again today */
+  readonly todayAck: string
   readonly laterAck: (day: 'tomorrow' | 'day_after') => string
   readonly pickupFullAck: string
   readonly pickupText: (code: string, hubName: string, hours: number) => string
@@ -49,10 +59,14 @@ export interface WaCopy {
   readonly replyWithNumber: string
 }
 
-/** Deliver again, Different time and Share address always; Pay now unless the order is already prepaid; Pick up at hub only while the shelf has a free slot. */
+/** Step 1 is the outcome only (deliver, pick up, cancel): when, how to pay and where come one question at a time, so no two answers overlap. */
 const scButtons =
-  (sc: Readonly<Record<'accept' | 'later' | 'pay' | 'pickup' | 'address' | 'decline', MessageButton>>) =>
-  (offer: SecondChanceOffer): readonly MessageButton[] => [sc.accept, sc.later, ...(offer.pay ? [sc.pay] : []), ...(offer.pickup ? [sc.pickup] : []), sc.address, sc.decline]
+  (sc: Readonly<Record<'deliver' | 'pickup' | 'decline', MessageButton>>) =>
+  (offer: SecondChanceOffer): readonly MessageButton[] => [sc.deliver, ...(offer.pickup ? [sc.pickup] : []), sc.decline]
+
+const methodOrder =
+  (m: Readonly<Record<'cod' | 'upi', MessageButton>>) =>
+  (upiFirst: boolean): readonly MessageButton[] => (upiFirst ? [m.upi, m.cod] : [m.cod, m.upi])
 
 const EN: WaCopy = {
   replyButtons: {
@@ -96,21 +110,38 @@ const EN: WaCopy = {
     { id: 'yes', label: 'Yes' },
     { id: 'no', label: 'No' },
   ],
-  secondChanceText: (awb) => `Your order ${awb} is still at our hub. What would you like to do? Choose an option:`,
+  secondChanceText: (awb) => `Your order ${awb} is still at our hub. Do you still want it?`,
   secondChanceButtons: scButtons({
-    accept: { id: 'accept', label: '🔁 Deliver again' },
-    later: { id: 'later', label: '🕐 Different time' },
-    pay: { id: 'pay', label: '💳 Pay now by UPI' },
-    pickup: { id: 'pickup', label: '🏬 Pick up at hub' },
-    address: { id: 'address', label: '📍 Share address' },
-    decline: { id: 'decline', label: '❌ Cancel order' },
+    deliver: { id: 'deliver', label: '🚚 Yes, deliver it' },
+    pickup: { id: 'pickup', label: '🏬 Yes, I’ll pick it up at the hub' },
+    decline: { id: 'decline', label: '❌ No, cancel it' },
   }),
-  secondChanceTap: { deliver: '🔁 Deliver again', later: '🕐 Different time', tomorrow: 'Tomorrow', day_after: 'Day after tomorrow', pay: '💳 Pay now by UPI', pickup: '🏬 Pick up at hub', address: '📍 Share address', decline: '❌ Cancel order' },
-  whenText: 'Which day should we try again?',
+  secondChanceTap: {
+    deliver: '🚚 Yes, deliver it',
+    pickup: '🏬 Yes, I’ll pick it up at the hub',
+    decline: '❌ No, cancel it',
+    today: 'Today',
+    tomorrow: 'Tomorrow',
+    day_after: 'Day after tomorrow',
+    cod: '💵 Cash on delivery',
+    upi: '💳 Pay now by UPI',
+    same_address: '✅ Yes, same address',
+    share_location: '📍 Share my exact location',
+  },
+  whenText: 'When should we come?',
   whenButtons: [
+    { id: 'today', label: 'Today' },
     { id: 'tomorrow', label: 'Tomorrow' },
     { id: 'day_after', label: 'Day after tomorrow' },
   ],
+  methodText: 'How will you pay?',
+  methodButtons: methodOrder({ cod: { id: 'cod', label: '💵 Cash on delivery' }, upi: { id: 'upi', label: '💳 Pay now by UPI' } }),
+  addressText: 'Is the address on the order right?',
+  addressButtons: [
+    { id: 'same_address', label: '✅ Yes, same address' },
+    { id: 'share_location', label: '📍 Share my exact location' },
+  ],
+  todayAck: 'Done. Your order goes out again today.',
   laterAck: (day) => `Done. We will try again ${day === 'tomorrow' ? 'tomorrow' : 'the day after tomorrow'} and tell you the time.`,
   pickupFullAck: 'Sorry, the hub shelf has just filled up, so we cannot keep it for you. We will deliver it tomorrow instead and tell you the time.',
   pickupText: (code, hubName, hours) =>
@@ -161,21 +192,38 @@ const HI: WaCopy = {
     { id: 'yes', label: 'हाँ' },
     { id: 'no', label: 'नहीं' },
   ],
-  secondChanceText: (awb) => `आपका ऑर्डर ${awb} अभी हमारे हब पर है। आप क्या करना चाहेंगे? एक विकल्प चुनें:`,
+  secondChanceText: (awb) => `आपका ऑर्डर ${awb} अभी हमारे हब पर है। क्या आपको यह अब भी चाहिए?`,
   secondChanceButtons: scButtons({
-    accept: { id: 'accept', label: '🔁 फिर से डिलीवर करें' },
-    later: { id: 'later', label: '🕐 कोई और समय' },
-    pay: { id: 'pay', label: '💳 अभी UPI से पे करें' },
-    pickup: { id: 'pickup', label: '🏬 हब से ले जाऊँगा' },
-    address: { id: 'address', label: '📍 पता भेजें' },
-    decline: { id: 'decline', label: '❌ ऑर्डर रद्द करें' },
+    deliver: { id: 'deliver', label: '🚚 हाँ, डिलीवर करें' },
+    pickup: { id: 'pickup', label: '🏬 हाँ, हब से ले जाऊँगा' },
+    decline: { id: 'decline', label: '❌ नहीं, रद्द करें' },
   }),
-  secondChanceTap: { deliver: '🔁 फिर से डिलीवर करें', later: '🕐 कोई और समय', tomorrow: 'कल', day_after: 'परसों', pay: '💳 अभी UPI से पे करें', pickup: '🏬 हब से ले जाऊँगा', address: '📍 पता भेजें', decline: '❌ ऑर्डर रद्द करें' },
-  whenText: 'हम किस दिन फिर कोशिश करें?',
+  secondChanceTap: {
+    deliver: '🚚 हाँ, डिलीवर करें',
+    pickup: '🏬 हाँ, हब से ले जाऊँगा',
+    decline: '❌ नहीं, रद्द करें',
+    today: 'आज',
+    tomorrow: 'कल',
+    day_after: 'परसों',
+    cod: '💵 डिलीवरी पर कैश',
+    upi: '💳 अभी UPI से पे करें',
+    same_address: '✅ हाँ, वही पता',
+    share_location: '📍 अपनी सही लोकेशन भेजें',
+  },
+  whenText: 'हम कब आएँ?',
   whenButtons: [
+    { id: 'today', label: 'आज' },
     { id: 'tomorrow', label: 'कल' },
     { id: 'day_after', label: 'परसों' },
   ],
+  methodText: 'आप कैसे पे करेंगे?',
+  methodButtons: methodOrder({ cod: { id: 'cod', label: '💵 डिलीवरी पर कैश' }, upi: { id: 'upi', label: '💳 अभी UPI से पे करें' } }),
+  addressText: 'क्या ऑर्डर पर लिखा पता सही है?',
+  addressButtons: [
+    { id: 'same_address', label: '✅ हाँ, वही पता' },
+    { id: 'share_location', label: '📍 अपनी सही लोकेशन भेजें' },
+  ],
+  todayAck: 'ठीक है। आपका ऑर्डर आज फिर से निकलेगा।',
   laterAck: (day) => `ठीक है। हम ${day === 'tomorrow' ? 'कल' : 'परसों'} फिर कोशिश करेंगे और समय बताएँगे।`,
   pickupFullAck: 'माफ़ कीजिए, हब की शेल्फ़ अभी भर गई है, इसलिए हम इसे आपके लिए रख नहीं सकते। हम इसे कल डिलीवर करेंगे और समय बताएँगे।',
   pickupText: (code, hubName, hours) =>

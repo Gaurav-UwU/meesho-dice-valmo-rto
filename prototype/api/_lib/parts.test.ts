@@ -130,27 +130,31 @@ describe('inbound parsing', () => {
     expect(actionFromReply({ ...base, lastOffer: offer('order_day', ['home', 'change_time', 'fix_address', 'pay_now']) }, '4')).toEqual({ type: 'customerReply', orderId: base.orderId, reply: 'pay_now' })
     expect(actionFromReply({ ...base, lastOffer: offer('attempt_check', ['yes', 'no']) }, '2')).toEqual({ type: 'customerReach', orderId: base.orderId, reached: false })
     expect(actionFromReply({ ...base, lastOffer: offer('reschedule_check', ['yes', 'no']) }, 'yes')).toEqual({ type: 'customerAskedReschedule', orderId: base.orderId, asked: true })
-    expect(actionFromReply({ ...base, lastOffer: offer('second_chance', ['accept', 'decline']) }, '2')).toEqual({ type: 'customerSecondChance', parcelId: base.parcelId, accept: false })
+    expect(actionFromReply({ ...base, lastOffer: offer('second_chance', ['deliver', 'decline']) }, '2')).toEqual({ type: 'customerSecondChance', parcelId: base.parcelId, accept: false })
   })
 
-  it('reads the five second-chance options by number, whichever are on offer', () => {
-    const all = offer('second_chance', ['accept', 'later', 'pay', 'pickup', 'address', 'decline'])
+  it('reads the three first-step answers by number, whichever are on offer', () => {
+    const all = offer('second_chance', ['deliver', 'pickup', 'decline'])
     const sc = (accept: boolean, option?: string) => ({ type: 'customerSecondChance', parcelId: base.parcelId, accept, ...(option ? { option } : {}) })
     expect(actionFromReply({ ...base, lastOffer: all }, '1')).toEqual(sc(true, 'deliver'))
-    expect(actionFromReply({ ...base, lastOffer: all }, '2')).toEqual(sc(true, 'later'))
-    expect(actionFromReply({ ...base, lastOffer: all }, '3')).toEqual(sc(true, 'pay'))
-    expect(actionFromReply({ ...base, lastOffer: all }, '4')).toEqual(sc(true, 'pickup'))
-    expect(actionFromReply({ ...base, lastOffer: all }, '5')).toEqual(sc(true, 'address'))
-    expect(actionFromReply({ ...base, lastOffer: all }, '6')).toEqual(sc(false))
+    expect(actionFromReply({ ...base, lastOffer: all }, '2')).toEqual(sc(true, 'pickup'))
+    expect(actionFromReply({ ...base, lastOffer: all }, '3')).toEqual(sc(false))
     // With no pickup on offer the numbers shift: the ids decide, never the position.
-    const noPickup = offer('second_chance', ['accept', 'later', 'pay', 'decline'])
-    expect(actionFromReply({ ...base, lastOffer: noPickup }, '4')).toEqual(sc(false))
-    expect(actionFromReply({ ...base, lastOffer: noPickup }, '3')).toEqual(sc(true, 'pay'))
+    const noPickup = offer('second_chance', ['deliver', 'decline'])
+    expect(actionFromReply({ ...base, lastOffer: noPickup }, '2')).toEqual(sc(false))
+    expect(actionFromReply({ ...base, lastOffer: noPickup }, 'yes')).toEqual(sc(true, 'deliver'))
   })
 
-  it('reads the follow-up questions: which day, and did the payment go through', () => {
-    expect(actionFromReply({ ...base, lastOffer: offer('second_chance_when', ['tomorrow', 'day_after']) }, '2')).toEqual({ type: 'customerSecondChance', parcelId: base.parcelId, accept: true, option: 'day_after' })
-    expect(actionFromReply({ ...base, lastOffer: offer('second_chance_when', ['tomorrow', 'day_after']) }, 'yes')).toEqual({ type: 'customerSecondChance', parcelId: base.parcelId, accept: true, option: 'tomorrow' })
+  it('reads the follow-up questions: which day, how to pay, did the payment go through, and the address', () => {
+    const sc = (option: string) => ({ type: 'customerSecondChance', parcelId: base.parcelId, accept: true, option })
+    const when = offer('second_chance_when', ['today', 'tomorrow', 'day_after'])
+    expect(actionFromReply({ ...base, lastOffer: when }, '1')).toEqual(sc('today'))
+    expect(actionFromReply({ ...base, lastOffer: when }, '3')).toEqual(sc('day_after'))
+    expect(actionFromReply({ ...base, lastOffer: offer('second_chance_method', ['upi', 'cod']) }, '1')).toEqual(sc('upi'))
+    expect(actionFromReply({ ...base, lastOffer: offer('second_chance_method', ['cod', 'upi']) }, '1')).toEqual(sc('cod'))
+    expect(actionFromReply({ ...base, lastOffer: offer('second_chance_address', ['same_address', 'share_location']) }, '2')).toEqual(sc('share_location'))
+    // An answer from one step is never read as another step's.
+    expect(actionFromReply({ ...base, lastOffer: offer('second_chance_method', ['tomorrow', 'upi']) }, '1')).toBeNull()
     expect(actionFromReply({ ...base, lastOffer: offer('second_chance_pay', ['pay_ok', 'pay_fail']) }, '1')).toEqual({ type: 'customerPayment', orderId: base.orderId, ok: true })
     expect(actionFromReply({ ...base, lastOffer: offer('second_chance_pay', ['pay_ok', 'pay_fail']) }, '2')).toEqual({ type: 'customerPayment', orderId: base.orderId, ok: false })
     expect(actionFromReply({ ...base, lastOffer: offer('second_chance_when', ['bogus', 'day_after']) }, '1')).toBeNull()
@@ -163,7 +167,7 @@ describe('inbound parsing', () => {
   it('returns null when there is nothing to answer or the reply is unclear', () => {
     expect(actionFromReply({ ...base, lastOffer: undefined }, '1')).toBeNull()
     expect(actionFromReply({ ...base, lastOffer: offer('order_day', ['home']) }, 'hmm')).toBeNull()
-    expect(actionFromReply({ ...base, lastOffer: offer('second_chance', ['accept', 'decline']), parcelId: undefined }, '1')).toBeNull()
+    expect(actionFromReply({ ...base, lastOffer: offer('second_chance', ['deliver', 'decline']), parcelId: undefined }, '1')).toBeNull()
     expect(actionFromReply({ ...base, lastOffer: offer('delivery_otp', ['x']) }, '1')).toBeNull()
     expect(actionFromReply({ ...base, lastOffer: offer('order_day', ['bogus']) }, '1')).toBeNull()
   })
@@ -236,6 +240,9 @@ describe('request validation', () => {
     expect(ok({ type: 'deskInspect', parcelId: pid, unopened: true, sealOk: true, invoiceOutside: true, photoNote: 'x'.repeat(81) })).toBe(false)
     expect(ok({ type: 'deskInspect', parcelId: '../x', unopened: true, sealOk: true, invoiceOutside: true })).toBe(false)
     for (const reason of ['refused_firmly', 'not_reachable', 'seller_wants_back', 'other']) expect(ok({ type: 'deskSkipSecondChance', parcelId: pid, reason })).toBe(true)
+    // The rider can refuse with 'Other (not sure why)'; an unknown reason is rejected.
+    expect(ok({ type: 'riderRefuse', orderId: 'lucknow-0001', reason: 'other' })).toBe(true)
+    expect(ok({ type: 'riderRefuse', orderId: 'lucknow-0001', reason: 'because' })).toBe(false)
     expect(ok({ type: 'deskSkipSecondChance', parcelId: pid, reason: 'because' })).toBe(false)
     expect(ok({ type: 'deskSetParam', param: 'accept_soft', value: 0.4 })).toBe(true)
     expect(ok({ type: 'deskSetGate', parcelId: pid, gate: 'sealOk', value: false })).toBe(false)
@@ -279,7 +286,8 @@ describe('request validation', () => {
   it('accepts the second-chance options and the pickup handover, and rejects anything else', () => {
     const ok = (action: unknown) => parseActionRequest({ hubId: 'lucknow', dayId: 'd1-x', action }).ok
     const pid = 'P-lucknow-0001'
-    for (const option of ['deliver', 'later', 'tomorrow', 'day_after', 'pay', 'pickup']) expect(ok({ type: 'customerSecondChance', parcelId: pid, accept: true, option })).toBe(true)
+    for (const option of ['deliver', 'pickup', 'today', 'tomorrow', 'day_after', 'cod', 'upi', 'same_address', 'share_location']) expect(ok({ type: 'customerSecondChance', parcelId: pid, accept: true, option })).toBe(true)
+    for (const option of ['later', 'pay', 'address']) expect(ok({ type: 'customerSecondChance', parcelId: pid, accept: true, option })).toBe(false)
     expect(ok({ type: 'customerSecondChance', parcelId: pid, accept: true })).toBe(true)
     expect(ok({ type: 'customerSecondChance', parcelId: pid, accept: true, option: 'refund' })).toBe(false)
     expect(ok({ type: 'deskHandover', parcelId: pid, code: '4321' })).toBe(true)

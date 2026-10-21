@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { isDelivered } from '../../src/domain/lifecycle.ts'
 import { demoStops } from '../../src/domain/selectors.ts'
-import type { DayState } from '../../src/domain/types.ts'
+import type { DayState, SecondChanceOption } from '../../src/domain/types.ts'
 import { bindPhone, handleInbound, MAX_OTP_REQUESTS_PER_ORDER, runAction, runAutopilot, runEnsure, runReset } from './core.ts'
 import { hashOtp } from './otp.ts'
 import { harness } from './testkit.ts'
@@ -191,6 +191,9 @@ describe('handleInbound', () => {
     await runAction(h.deps, HUB, { type: 'riderRefuse', orderId, reason: 'not_home' })
     await runAction(h.deps, HUB, { type: 'submitOtp', orderId, code: '4321' })
     await runAction(h.deps, HUB, { type: 'deskSecondChance', parcelId: `P-${orderId}` })
+    // 1 = deliver, 1 = today, 1 = cash on delivery, 1 = same address
+    for (const reply of ['1', '1', '1']) await handleInbound(h.deps, PHONE, reply)
+    expect(h.db.days.get(HUB)!.parcels[0].awaiting).toBe('address')
     await handleInbound(h.deps, PHONE, '1')
     expect(h.db.days.get(HUB)!.parcels[0].state).toBe('recovered')
   })
@@ -249,19 +252,26 @@ describe('the second-chance options and the hub pickup over the API', () => {
   }
   const rec = (h: ReturnType<typeof harness>, parcelId: string) => h.db.days.get(HUB)!.parcels.find((p) => p.id === parcelId)!
 
-  it('a customer can choose Share address over the API (the option passes validation)', async () => {
+  const answer = (h: ReturnType<typeof harness>, parcelId: string, option: SecondChanceOption) => runAction(h.deps, HUB, { type: 'customerSecondChance', parcelId, accept: true, option })
+
+  it('a customer can share the exact location over the API (the option passes validation)', async () => {
     const { h, orderId, parcelId } = await offered()
-    await runAction(h.deps, HUB, { type: 'customerSecondChance', parcelId, accept: true, option: 'address' })
+    for (const option of ['deliver', 'today', 'cod', 'share_location'] as const) expect((await answer(h, parcelId, option)).ok).toBe(true)
     expect(rec(h, parcelId).state).toBe('recovered')
     expect(h.db.days.get(HUB)!.stops[orderId].replies).toContain('fix_address')
   })
 
-  it('a customer can ask for a different time and pick the day', async () => {
+  it('a customer can pick a later day, then answers how to pay and the address', async () => {
     const { h, orderId, parcelId } = await offered()
-    await runAction(h.deps, HUB, { type: 'customerSecondChance', parcelId, accept: true, option: 'later' })
+    await answer(h, parcelId, 'deliver')
     expect(rec(h, parcelId).awaiting).toBe('when')
-    await runAction(h.deps, HUB, { type: 'customerSecondChance', parcelId, accept: true, option: 'day_after' })
+    await answer(h, parcelId, 'day_after')
+    expect(rec(h, parcelId).awaiting).toBe('method')
+    await answer(h, parcelId, 'cod')
+    expect(rec(h, parcelId).awaiting).toBe('address')
+    await answer(h, parcelId, 'same_address')
     expect(rec(h, parcelId).state).toBe('recovered')
+    expect(rec(h, parcelId).scWhen).toBe('day_after')
     expect(h.db.days.get(HUB)!.stops[orderId].status).toBe('rescheduled')
   })
 
@@ -286,7 +296,7 @@ describe('the second-chance options and the hub pickup over the API', () => {
   it('pickup for a real phone: the code reaches that phone by WhatsApp but is masked in the stored day', async () => {
     const { h, orderId, parcelId } = await offered()
     await bindPhone(h.deps, { phone: PHONE, hubId: HUB, orderId })
-    await handleInbound(h.deps, PHONE, '4')
+    await handleInbound(h.deps, PHONE, '2')
     expect(rec(h, parcelId).state).toBe('pickup_reserved')
     const sentText = h.sent.map((x) => x.body).find((b) => /pickup code/i.test(b))!
     expect(/\b(\d{4})\b/.exec(sentText)).not.toBeNull()
@@ -294,11 +304,13 @@ describe('the second-chance options and the hub pickup over the API', () => {
     expect(stored).toContain('••••')
   })
 
-  it('a customer\'s numbered WhatsApp replies walk the whole flow: 3 = pay, then 1 = paid', async () => {
+  it('a customer\'s numbered WhatsApp replies walk the whole flow: 1 = deliver, 2 = tomorrow, 2 = UPI, 1 = paid, 1 = same address', async () => {
     const { h, orderId, parcelId } = await offered()
     await bindPhone(h.deps, { phone: PHONE, hubId: HUB, orderId })
-    await handleInbound(h.deps, PHONE, '3')
+    for (const reply of ['1', '2', '2']) await handleInbound(h.deps, PHONE, reply)
     expect(rec(h, parcelId).awaiting).toBe('pay')
+    await handleInbound(h.deps, PHONE, '1')
+    expect(rec(h, parcelId).awaiting).toBe('address')
     await handleInbound(h.deps, PHONE, '1')
     expect(rec(h, parcelId).state).toBe('recovered')
     expect(h.db.days.get(HUB)!.stops[orderId].order.payment).toBe('PREPAID')

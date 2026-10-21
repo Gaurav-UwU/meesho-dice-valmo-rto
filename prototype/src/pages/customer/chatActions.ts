@@ -1,8 +1,16 @@
 import { parcelForOrder } from '../../domain/selectors.ts'
-import type { DayState, MessageButton, ReplyKind, WaMessage } from '../../domain/types.ts'
+import type { DayState, MessageButton, ReplyKind, SecondChanceOption, WaMessage } from '../../domain/types.ts'
 import type { ActionInput } from '../../store/types.ts'
 
 const REPLY_KINDS: readonly string[] = ['home', 'change_time', 'fix_address', 'pay_now']
+
+/** The answers each second-chance step offers (the button id is the option) */
+const STEP_OPTIONS: Readonly<Record<'second_chance' | 'second_chance_when' | 'second_chance_method' | 'second_chance_address', readonly SecondChanceOption[]>> = {
+  second_chance: ['deliver', 'pickup'],
+  second_chance_when: ['today', 'tomorrow', 'day_after'],
+  second_chance_method: ['cod', 'upi'],
+  second_chance_address: ['same_address', 'share_location'],
+}
 
 const isReplyKind = (id: string): id is ReplyKind => REPLY_KINDS.includes(id)
 
@@ -41,8 +49,12 @@ export function isMessageLive(state: DayState, msg: WaMessage, latestId: string 
     }
     case 'second_chance_when':
       return parcelForOrder(state, msg.orderId)?.awaiting === 'when'
+    case 'second_chance_method':
+      return parcelForOrder(state, msg.orderId)?.awaiting === 'method'
     case 'second_chance_pay':
       return parcelForOrder(state, msg.orderId)?.awaiting === 'pay'
+    case 'second_chance_address':
+      return parcelForOrder(state, msg.orderId)?.awaiting === 'address'
     default:
       return false
   }
@@ -62,16 +74,15 @@ export function actionForButton(state: DayState, msg: WaMessage, button: Message
       return { type: 'customerAskedReschedule', orderId, asked: button.id === 'yes' }
     case 'pay_prompt':
       return { type: 'customerPayment', orderId, ok: button.id === 'pay_ok' }
-    case 'second_chance': {
+    case 'second_chance':
+    case 'second_chance_when':
+    case 'second_chance_method':
+    case 'second_chance_address': {
       const parcel = parcelForOrder(state, orderId)
       if (!parcel) return null
-      if (button.id === 'decline') return { type: 'customerSecondChance', parcelId: parcel.id, accept: false }
-      const option = button.id === 'accept' ? 'deliver' : button.id === 'later' || button.id === 'pay' || button.id === 'pickup' || button.id === 'address' ? button.id : null
+      if (msg.kind === 'second_chance' && button.id === 'decline') return { type: 'customerSecondChance', parcelId: parcel.id, accept: false }
+      const option = STEP_OPTIONS[msg.kind].find((o) => o === button.id)
       return option ? { type: 'customerSecondChance', parcelId: parcel.id, accept: true, option } : null
-    }
-    case 'second_chance_when': {
-      const parcel = parcelForOrder(state, orderId)
-      return parcel && (button.id === 'tomorrow' || button.id === 'day_after') ? { type: 'customerSecondChance', parcelId: parcel.id, accept: true, option: button.id } : null
     }
     case 'second_chance_pay':
       return { type: 'customerPayment', orderId, ok: button.id === 'pay_ok' }

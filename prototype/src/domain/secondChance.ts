@@ -4,7 +4,7 @@ import { emit } from './events.ts'
 import { bookCost, bookSecondChanceLeg, feedAdd, moveOrder, msgAdd, patchParcel, patchStop, proactiveCount, REVERSE_COST, sendProactive, tap, bookSaving, type S } from './helpers.ts'
 import { HOLD_COST, attemptLeft, decisionFor, findParcel, laneLogged, shelfUsed } from './routing.ts'
 import { waCopy } from './messages.ts'
-import type { Action, ParcelRecord, SecondChanceChoice } from './types.ts'
+import type { Action, Awaiting, ParcelRecord, SecondChanceChoice, SecondChanceOption } from './types.ts'
 
 /** The customer has five tries at the pickup code. */
 export const MAX_PICKUP_TRIES = 5
@@ -27,7 +27,7 @@ export function deskSecondChance(s: S, a: Extract<Action, { type: 'deskSecondCha
     direction: 'out',
     kind: 'second_chance',
     text: waCopy(st.lang).secondChanceText(st.order.awb),
-    buttons: waCopy(st.lang).secondChanceButtons({ pay: st.order.payment !== 'PREPAID', pickup: pickupOffered }),
+    buttons: waCopy(st.lang).secondChanceButtons({ pickup: pickupOffered }),
   })
   if (proactiveCount(sent, p.orderId) === proactiveCount(s, p.orderId)) {
     return feedAdd(sent, a.at, 'desk', `Second chance not sent for ${st.order.awb}: the order already had ${proactiveCount(s, p.orderId)} WhatsApp messages (the cap). Skip it with a reason to move to the next lane`, p.orderId)
@@ -56,16 +56,16 @@ function noAttemptLeft(s: S, p: ParcelRecord, at: number): S {
   return feedAdd(next, at, 'desk', `No attempt left for ${p.parcel.awb} (the cap is ${s.config.maxAttempts}): routed to the next lane instead of going out again`, p.orderId)
 }
 
-/** A different time: parked until 08:00 on the chosen day, then out as attempt 2. This is not a customer reschedule, so it never counts toward the reschedule cap. */
+/** Delivery on a later day: parked until 08:00 on the chosen day, then out as attempt 2. This is not a customer reschedule, so it never counts toward the reschedule cap. */
 function deliverLater(s: S, p: ParcelRecord, at: number, day: 'tomorrow' | 'day_after'): S {
   if (!attemptLeft(s, p)) return noAttemptLeft(s, p, at)
   const to = nextDayStart(s.simNow) + (day === 'day_after' ? DAY_MS : 0)
-  let next = patchParcel(s, p.id, { state: 'recovered', choice: 'later', awaiting: undefined })
-  next = moveOrder(next, p.orderId, 'rescheduled', { at, reason: 'second chance: a different time', patch: { viaSecondChance: true, rescheduledTo: to } })
+  let next = patchParcel(s, p.id, { state: 'recovered', choice: 'deliver', awaiting: undefined })
+  next = moveOrder(next, p.orderId, 'rescheduled', { at, reason: 'second chance: delivery on a later day', patch: { viaSecondChance: true, rescheduledTo: to } })
   next = emit(next, at, 'SECOND_CHANCE_ACCEPTED', {}, { orderId: p.orderId })
   next = emit(next, at, 'RESCHEDULED', { toSimAt: to }, { orderId: p.orderId })
   next = msgAdd(next, { orderId: p.orderId, at, direction: 'out', kind: 'second_chance_ack', text: waCopy(s.stops[p.orderId]?.lang).laterAck(day) })
-  return feedAdd(next, at, 'desk', `Customer chose a different time (${day === 'day_after' ? 'the day after tomorrow' : 'tomorrow'}): parked until then, then attempt 2`, p.orderId)
+  return feedAdd(next, at, 'desk', `Customer chose delivery ${day === 'day_after' ? 'the day after tomorrow' : 'tomorrow'}: parked until then, then attempt 2`, p.orderId)
 }
 
 /** The code is four digits from the parcel and the day's seed: the same in every run of the same day. */
@@ -83,7 +83,46 @@ function reservePickup(s: S, p: ParcelRecord, at: number): S {
   return feedAdd(next, at, 'desk', `${p.parcel.awb} kept at the hub for ${s.router.pickupHours} h for the customer to collect (shelf slot reserved)`, p.orderId)
 }
 
-/** The customer answers the second-chance WhatsApp. Declining (accept false) sends the parcel on to the next lane. */
+/** Which answers each step accepts: an answer from another step (a stale button, a duplicate tap) changes nothing. */
+const STEP_ANSWERS: Readonly<Record<Awaiting | 'offer', readonly SecondChanceOption[]>> = {
+  offer: ['deliver', 'pickup'],
+  when: ['today', 'tomorrow', 'day_after'],
+  method: ['cod', 'upi'],
+  pay: [],
+  address: ['same_address', 'share_location'],
+}
+
+/** Step 3: how will you pay? Asked only on a COD order. UPI goes first when the rider heard "no cash on hand". */
+function askMethod(s: S, p: ParcelRecord, at: number): S {
+  const wa = waCopy(s.stops[p.orderId]?.lang)
+  const next = patchParcel(s, p.id, { awaiting: 'method' })
+  return msgAdd(next, { orderId: p.orderId, at, direction: 'out', kind: 'second_chance_method', text: wa.methodText, buttons: wa.methodButtons(p.parcel.reason === 'no_cash') })
+}
+
+/** Step 4: is the address right? Always asked before the order goes out again. */
+function askAddress(s: S, p: ParcelRecord, at: number): S {
+  const wa = waCopy(s.stops[p.orderId]?.lang)
+  const next = patchParcel(s, p.id, { awaiting: 'address' })
+  return msgAdd(next, { orderId: p.orderId, at, direction: 'out', kind: 'second_chance_address', text: wa.addressText, buttons: wa.addressButtons })
+}
+
+/** The last answer is in: the order goes out today, or is parked for the day chosen. Sharing a location then moves the pin (the order-day flow). */
+function dispatch(s: S, p: ParcelRecord, at: number, shareLocation: boolean): S {
+  const wa = waCopy(s.stops[p.orderId]?.lang)
+  const when = p.scWhen ?? 'today'
+  let next = when === 'today' ? deliverAgain(s, p, at, 'deliver', 'second chance accepted') : deliverLater(s, p, at, when)
+  if (findParcel(next, p.id)?.state !== 'recovered') return next
+  if (when === 'today') next = msgAdd(next, { orderId: p.orderId, at, direction: 'out', kind: 'second_chance_ack', text: wa.todayAck })
+  if (!shareLocation) return next
+  next = patchStop(next, p.orderId, { replies: [...next.stops[p.orderId].replies, 'fix_address'] })
+  return msgAdd(next, { orderId: p.orderId, at, direction: 'out', kind: 'ack', text: wa.replyAck.fix_address })
+}
+
+/**
+ * The customer answers the second-chance WhatsApp, one question at a time, and each answer list is MECE:
+ * still want it (deliver, pick up, cancel), then for a delivery: when, how to pay (COD only) and whether the address is right.
+ * Declining (accept false) sends the parcel on to the next lane. Every follow-up is a reply, never one of the four proactive messages.
+ */
 export function customerSecondChance(s: S, a: Extract<Action, { type: 'customerSecondChance' }>): S {
   const p = findParcel(s, a.parcelId)
   if (!p || p.state !== 'second_chance_sent') return s
@@ -91,55 +130,56 @@ export function customerSecondChance(s: S, a: Extract<Action, { type: 'customerS
   const wa = waCopy(st.lang)
   if (!a.accept) {
     let declined = tap(s, a.at, p.orderId, wa.secondChanceTap.decline)
-    declined = patchParcel(declined, p.id, { state: 'queued', secondChanceDeclined: true, awaiting: undefined })
+    declined = patchParcel(declined, p.id, { state: 'queued', secondChanceDeclined: true, awaiting: undefined, scWhen: undefined })
     if (st.paymentPending) declined = patchStop(declined, p.orderId, { paymentPending: false })
     return feedAdd(declined, a.at, 'desk', 'Customer declined the second chance: parcel re-routed', p.orderId)
   }
   const option = a.option ?? 'deliver'
+  if (!STEP_ANSWERS[p.awaiting ?? 'offer'].includes(option)) return s
+  if (option === 'pickup' && !p.pickupOffered) return s
   let next = tap(s, a.at, p.orderId, wa.secondChanceTap[option])
   switch (option) {
-    case 'deliver':
-      return deliverAgain(next, p, a.at, 'deliver', 'second chance accepted')
-    case 'later':
-      next = patchParcel(next, p.id, { awaiting: 'when' })
+    case 'deliver': {
+      if (!attemptLeft(s, p)) return noAttemptLeft(next, p, a.at)
+      next = patchParcel(next, p.id, { choice: 'deliver', awaiting: 'when' })
       return msgAdd(next, { orderId: p.orderId, at: a.at, direction: 'out', kind: 'second_chance_when', text: wa.whenText, buttons: wa.whenButtons })
-    case 'tomorrow':
-    case 'day_after':
-      return deliverLater(next, p, a.at, option)
-    case 'pay': {
-      // Offered on COD orders only; a prepaid order has nothing to pay.
-      if (st.order.payment === 'PREPAID') return s
-      next = patchStop(next, p.orderId, { paymentPending: true })
-      next = patchParcel(next, p.id, { awaiting: 'pay' })
-      return msgAdd(next, { orderId: p.orderId, at: a.at, direction: 'out', kind: 'second_chance_pay', text: wa.replyAck.pay_now, buttons: wa.payButtons })
     }
     case 'pickup': {
-      if (!p.pickupOffered) return s
-      // The shelf is checked again now: it may have filled since the offer went out. Then the customer gets a different time instead.
+      // The shelf is checked again now: it may have filled since the offer went out. Then the customer gets tomorrow's delivery instead.
       if (shelfUsed(s) >= s.router.shelfCapacity) {
         next = msgAdd(next, { orderId: p.orderId, at: a.at, direction: 'out', kind: 'second_chance_ack', text: wa.pickupFullAck })
         return deliverLater(next, p, a.at, 'tomorrow')
       }
       return reservePickup(next, p, a.at)
     }
-    case 'address': {
-      // Out again as attempt 2, and the customer is asked for the exact spot: the share-location step then moves the pin (deck slide 9).
-      const out = deliverAgain(next, p, a.at, 'address', 'second chance: the customer will share the exact spot')
-      if (findParcel(out, p.id)?.state !== 'recovered') return out
-      const asked = patchStop(out, p.orderId, { replies: [...out.stops[p.orderId].replies, 'fix_address'] })
-      return msgAdd(asked, { orderId: p.orderId, at: a.at, direction: 'out', kind: 'ack', text: wa.replyAck.fix_address })
+    case 'today':
+    case 'tomorrow':
+    case 'day_after': {
+      next = patchParcel(next, p.id, { scWhen: option })
+      const cur = findParcel(next, p.id)!
+      return st.order.payment === 'COD' ? askMethod(next, cur, a.at) : askAddress(next, cur, a.at)
     }
+    case 'cod':
+      return askAddress(next, p, a.at)
+    case 'upi': {
+      next = patchStop(next, p.orderId, { paymentPending: true })
+      next = patchParcel(next, p.id, { awaiting: 'pay' })
+      return msgAdd(next, { orderId: p.orderId, at: a.at, direction: 'out', kind: 'second_chance_pay', text: wa.replyAck.pay_now, buttons: wa.payButtons })
+    }
+    case 'same_address':
+    case 'share_location':
+      return dispatch(next, findParcel(next, p.id)!, a.at, option === 'share_location')
   }
 }
 
 /**
- * The customer's payment, asked for by the Pay now option, has a result. Paid: the order is prepaid (the payment action set that) and goes out
- * as attempt 2. Failed: it still goes out, cash on delivery, as the failure message says. Called by the payment action, after it has run.
+ * The UPI payment asked for in step 3 has a result. Paid: the order is prepaid (the payment action set that). Failed: it stays cash on
+ * delivery, as the failure message says. Either way the customer moves on to the address question. Called by the payment action, after it has run.
  */
 export function afterSecondChancePayment(s: S, orderId: string, at: number): S {
   const p = s.parcels.find((x) => x.orderId === orderId && x.state === 'second_chance_sent' && x.awaiting === 'pay')
   if (!p) return s
-  return deliverAgain(s, p, at, 'pay', 'second chance: the customer paid, or will pay cash')
+  return askAddress(s, p, at)
 }
 
 /** The customer is at the counter with their code. Right code: the sale is saved and the order ends as a hub pickup (never a delivery, never a bonus). */

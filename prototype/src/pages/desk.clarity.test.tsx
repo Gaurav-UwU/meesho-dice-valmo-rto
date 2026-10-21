@@ -103,7 +103,7 @@ describe('desk: the three money tiles', () => {
 })
 
 describe('desk: three headline assumptions', () => {
-  it('shows the soft-refusal accept rate, conversion and shelf capacity up front, with the seven rates folded', async () => {
+  it('shows the soft-refusal accept rate, conversion and shelf capacity up front, with the eight rates folded (one per refusal reason, "Other" included)', async () => {
     await refuseShowcase()
     showDesk()
     const panel = await screen.findByRole('region', { name: 'Router assumptions' })
@@ -112,14 +112,14 @@ describe('desk: three headline assumptions', () => {
     expect(within(panel).getByLabelText(/Shelf capacity/)).toBeTruthy()
     // The shipped defaults differ slightly (50% / 50% / 40%), so the headline is honest and says mixed.
     expect(within(panel).getByText(/mixed/i)).toBeTruthy()
-    const more = within(panel).getByText(/More: the seven accept rates/).closest('details')!
+    const more = within(panel).getByText(/More: the eight accept rates/).closest('details')!
     expect(more.open).toBe(false)
-    expect(within(more).getAllByLabelText(/P\(accepts a second chance\)/)).toHaveLength(7)
+    expect(within(more).getAllByLabelText(/P\(accepts a second chance\)/)).toHaveLength(8)
     fireEvent.change(soft, { target: { value: '0.3' } })
     await waitFor(() => expect(state().router.acceptByReason.not_home).toBe(0.3))
     expect(state().router.acceptByReason.no_cash).toBe(0.3)
     expect(state().router.acceptByReason.want_later).toBe(0.3)
-    // Editing one of the seven rows afterwards makes the headline "mixed" again.
+    // Editing one of the eight rows afterwards makes the headline "mixed" again.
     const row = within(more).getByLabelText(/P\(accepts a second chance\) · No cash on hand/)
     fireEvent.change(row, { target: { value: '0.2' } })
     await waitFor(() => expect(within(panel).getByText(/mixed/i)).toBeTruthy())

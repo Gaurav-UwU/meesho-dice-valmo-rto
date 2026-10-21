@@ -1,5 +1,5 @@
 import { waCopy } from '../../src/domain/messages.ts'
-import type { WaLang, WaMessage } from '../../src/domain/types.ts'
+import type { SecondChanceOption, WaLang, WaMessage } from '../../src/domain/types.ts'
 import type { LatLng } from '../../src/engine/geo.ts'
 import type { ActionInput } from '../../src/store/types.ts'
 
@@ -25,8 +25,13 @@ export function languageFromReply(text: string): WaLang | null {
   return LANGUAGE_WORDS[t] ?? null
 }
 
-/** The second-chance offer's button ids and the option each one stands for. The id decides, never the position: a pickup is left out when the shelf is full. */
-const SECOND_CHANCE_IDS: Readonly<Record<string, 'deliver' | 'later' | 'pay' | 'pickup' | 'address'>> = { accept: 'deliver', later: 'later', pay: 'pay', pickup: 'pickup', address: 'address' }
+/** The second-chance button ids are the options themselves, one MECE list per step. The id decides, never the position: a pickup is left out when the shelf is full. */
+const SECOND_CHANCE_IDS: Readonly<Record<string, readonly string[]>> = {
+  second_chance: ['deliver', 'pickup'],
+  second_chance_when: ['today', 'tomorrow', 'day_after'],
+  second_chance_method: ['cod', 'upi'],
+  second_chance_address: ['same_address', 'share_location'],
+}
 
 const WORD_TO_INDEX: Readonly<Record<string, number>> = { yes: 0, y: 0, haan: 0, no: 1, n: 1, nahi: 1 }
 
@@ -68,14 +73,14 @@ export function actionFromReply(ctx: InboundContext, body: string, location?: La
       return { type: 'customerAskedReschedule', orderId, asked: id === 'yes' }
     case 'pay_prompt':
       return { type: 'customerPayment', orderId, ok: id === 'pay_ok' }
-    case 'second_chance': {
-      if (!parcelId) return null
-      const option = SECOND_CHANCE_IDS[id]
-      if (id === 'decline') return { type: 'customerSecondChance', parcelId, accept: false }
-      return option ? { type: 'customerSecondChance', parcelId, accept: true, option } : null
-    }
+    case 'second_chance':
     case 'second_chance_when':
-      return parcelId && (id === 'tomorrow' || id === 'day_after') ? { type: 'customerSecondChance', parcelId, accept: true, option: id } : null
+    case 'second_chance_method':
+    case 'second_chance_address': {
+      if (!parcelId) return null
+      if (lastOffer.kind === 'second_chance' && id === 'decline') return { type: 'customerSecondChance', parcelId, accept: false }
+      return SECOND_CHANCE_IDS[lastOffer.kind].includes(id) ? { type: 'customerSecondChance', parcelId, accept: true, option: id as SecondChanceOption } : null
+    }
     case 'second_chance_pay':
       return id === 'pay_ok' || id === 'pay_fail' ? { type: 'customerPayment', orderId, ok: id === 'pay_ok' } : null
     default:

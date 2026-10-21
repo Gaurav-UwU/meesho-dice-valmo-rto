@@ -3,7 +3,7 @@ import { createDay } from './day.ts'
 import { deskKpis, killRule, MIN_PARCELS_PER_LANE } from './deskKpis.ts'
 import { reduce } from './reducer.ts'
 import { fakeGeo } from '../engine/testkit.ts'
-import { AT, advanceHours, deliverOrder, forceParcel, heroStops, inspectParcel, refuseOrder, run, setPayment, startedDay } from './testkit.ts'
+import { AT, advanceHours, deliverOrder, forceParcel, heroStops, inspectParcel, refuseOrder, run, setPayment, startedDay, walkSecondChance } from './testkit.ts'
 import type { DayState } from './types.ts'
 
 const day = startedDay()
@@ -34,7 +34,7 @@ describe('the pilot KPI panel', () => {
   })
 
   it('second chances: accept rate and sales saved, with the sample size and the floor', () => {
-    const s = choose(sent(), 'deliver')
+    const s = walkSecondChance(sent(), pid, AT + 3)
     const delivered = deliverOrder(s, bonusId, '1357')
     const k = deskKpis(delivered)
     expect(k.acceptRate).toMatchObject({ n: 1, value: 1, tooEarly: true })

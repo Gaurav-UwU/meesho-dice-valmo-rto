@@ -6,7 +6,7 @@ import { CONTACT_CAP, proactiveCount } from './helpers.ts'
 import { WA_COPY } from './messages.ts'
 import { reduce } from './reducer.ts'
 import { AT, deliverOrder, forceParcel, heroStops, refuseOrder, run, setPayment, startedDay } from './testkit.ts'
-import type { DayState, WaLang, WaMessage } from './types.ts'
+import type { DayState, SecondChanceOption, WaLang, WaMessage } from './types.ts'
 
 /**
  * Plan 33: the first WhatsApp message is in English and Hindi, a second one asks which language the customer prefers, and every later message
@@ -117,10 +117,17 @@ describe('after choosing Hindi, every later message is in Hindi', () => {
     expect(offer.kind).toBe('second_chance')
     expect(offer.text).toBe(WA_COPY.hi.secondChanceText(day.stops[hero].order.awb))
     expect(offer.buttons?.every((b) => HINDI.test(b.label))).toBe(true)
-    const later = run(sent, { type: 'customerSecondChance', at: AT + 4, parcelId: pid, accept: true, option: 'later' })
-    expect(lastOut(later)).toMatchObject({ kind: 'second_chance_when', text: WA_COPY.hi.whenText, buttons: WA_COPY.hi.whenButtons })
-    const tomorrow = run(later, { type: 'customerSecondChance', at: AT + 5, parcelId: pid, accept: true, option: 'tomorrow' })
-    expect(lastOut(tomorrow).text).toBe(WA_COPY.hi.laterAck('tomorrow'))
+    const answer = (s: DayState, option: SecondChanceOption, at: number) => run(s, { type: 'customerSecondChance', at, parcelId: pid, accept: true, option })
+    const deliver = answer(sent, 'deliver', AT + 4)
+    expect(lastOut(deliver)).toMatchObject({ kind: 'second_chance_when', text: WA_COPY.hi.whenText, buttons: WA_COPY.hi.whenButtons })
+    let s = answer(deliver, 'tomorrow', AT + 5)
+    if (s.stops[hero].order.payment === 'COD') {
+      expect(lastOut(s)).toMatchObject({ kind: 'second_chance_method', text: WA_COPY.hi.methodText })
+      s = answer(s, 'cod', AT + 6)
+    }
+    expect(lastOut(s)).toMatchObject({ kind: 'second_chance_address', text: WA_COPY.hi.addressText, buttons: WA_COPY.hi.addressButtons })
+    const done = answer(s, 'same_address', AT + 7)
+    expect(lastOut(done).text).toBe(WA_COPY.hi.laterAck('tomorrow'))
   })
 })
 
@@ -148,6 +155,10 @@ describe('the copy: every English line has a Hindi line', () => {
     expect(Object.keys(WA_COPY.hi).sort()).toEqual(Object.keys(WA_COPY.en).sort())
     expect(WA_COPY.hi.attemptCheckText('X')).toMatch(HINDI)
     expect(Object.values(WA_COPY.hi.replyAck).every((t) => HINDI.test(t))).toBe(true)
-    expect(WA_COPY.hi.secondChanceButtons({ pay: true, pickup: true }).map((b) => b.id)).toEqual(WA_COPY.en.secondChanceButtons({ pay: true, pickup: true }).map((b) => b.id))
+    expect(WA_COPY.hi.secondChanceButtons({ pickup: true }).map((b) => b.id)).toEqual(WA_COPY.en.secondChanceButtons({ pickup: true }).map((b) => b.id))
+    expect(WA_COPY.hi.whenButtons.map((b) => b.id)).toEqual(WA_COPY.en.whenButtons.map((b) => b.id))
+    expect(WA_COPY.hi.methodButtons(true).map((b) => b.id)).toEqual(WA_COPY.en.methodButtons(true).map((b) => b.id))
+    expect(WA_COPY.hi.addressButtons.map((b) => b.id)).toEqual(WA_COPY.en.addressButtons.map((b) => b.id))
+    expect([WA_COPY.hi.whenText, WA_COPY.hi.methodText, WA_COPY.hi.addressText, WA_COPY.hi.todayAck].every((t) => HINDI.test(t))).toBe(true)
   })
 })

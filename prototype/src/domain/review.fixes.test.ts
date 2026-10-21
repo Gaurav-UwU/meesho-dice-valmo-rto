@@ -7,7 +7,7 @@ import { costLedger, normalFloorBreached, savingsLedger } from './ledger.ts'
 import { reduce } from './reducer.ts'
 import { decisionFor } from './routing.ts'
 import { demoRiders, stopsOf } from './selectors.ts'
-import { AT, advanceHours, deliverOrder, forceParcel, heroStops, inspectParcel, refuseOrder, run, startedDay } from './testkit.ts'
+import { AT, advanceHours, deliverOrder, forceParcel, heroStops, inspectParcel, refuseOrder, run, startedDay, walkSecondChance } from './testkit.ts'
 import { dayHeadline, dayVerdict } from './verdictData.ts'
 import { verdictConfigFor } from './rule.ts'
 import type { OrderStatus } from './lifecycle.ts'
@@ -108,21 +108,21 @@ describe('1c(iii): a second chance never exceeds maxAttempts', () => {
     // The offer went out while an attempt was left; the cap was then lowered.
     const sent = run(refused(day), { type: 'deskSecondChance', at: AT + 2, parcelId: pid })
     const lowered: DayState = { ...sent, config: { ...sent.config, maxAttempts: 1 } }
-    const accepted = reduce(lowered, { type: 'customerSecondChance', at: AT + 3, parcelId: pid, accept: true, option: 'deliver' })
+    const accepted = walkSecondChance(lowered, pid, AT + 3)
     expect(accepted.stops[bonusId].status).toBe('refused')
     expect(record(accepted).state).toBe('queued')
     expect(decisionFor(accepted, record(accepted)).lane).not.toBe('second_chance')
   })
 
   it('with the default two attempts a second chance still goes out as attempt 2', () => {
-    const s = run(refused(day), { type: 'deskSecondChance', at: AT + 2, parcelId: pid }, { type: 'customerSecondChance', at: AT + 3, parcelId: pid, accept: true, option: 'deliver' })
+    const s = walkSecondChance(run(refused(day), { type: 'deskSecondChance', at: AT + 2, parcelId: pid }), pid, AT + 3)
     expect(s.stops[bonusId].status).toBe('out_for_delivery')
   })
 })
 
 describe('1c(iv): the ₹21 second-chance leg is a booked cost, and the saving is the gross ₹120', () => {
   const refused = forceParcel(refuseOrder(day, bonusId), bonusId, { reason: 'not_home' })
-  const out = run(refused, { type: 'deskSecondChance', at: AT + 2, parcelId: pid }, { type: 'customerSecondChance', at: AT + 3, parcelId: pid, accept: true, option: 'deliver' })
+  const out = walkSecondChance(run(refused, { type: 'deskSecondChance', at: AT + 2, parcelId: pid }), pid, AT + 3)
   const leg = (s: DayState) => costLedger(s).find((c) => c.line === 'Second-chance re-attempt leg')
 
   it('books the leg as a Router cost the moment the order goes back out', () => {
@@ -142,7 +142,7 @@ describe('1c(iv): the ₹21 second-chance leg is a booked cost, and the saving i
   })
 
   it('a "different time" books the leg when the order goes back out, not before', () => {
-    const later = run(refused, { type: 'deskSecondChance', at: AT + 2, parcelId: pid }, { type: 'customerSecondChance', at: AT + 3, parcelId: pid, accept: true, option: 'tomorrow' })
+    const later = walkSecondChance(run(refused, { type: 'deskSecondChance', at: AT + 2, parcelId: pid }), pid, AT + 3, { when: 'tomorrow' })
     expect(leg(later)).toBeUndefined()
     const next = reduce(later, { type: 'advanceDay', at: AT + 4 })
     expect(next.stops[bonusId].status).toBe('out_for_delivery')
@@ -330,7 +330,7 @@ describe('code review of 2 Oct: follow-up fixes', () => {
 
   it('the dispatchNextDay override also books the ₹21 second-chance leg', () => {
     const refused = forceParcel(refuseOrder(day, bonusId), bonusId, { reason: 'not_home' })
-    let s = run(refused, { type: 'deskSecondChance', at: AT + 2, parcelId: pid }, { type: 'customerSecondChance', at: AT + 3, parcelId: pid, accept: true, option: 'tomorrow' })
+    let s = walkSecondChance(run(refused, { type: 'deskSecondChance', at: AT + 2, parcelId: pid }), pid, AT + 3, { when: 'tomorrow' })
     s = reduce(s, { type: 'dispatchNextDay', at: AT + 4, orderId: bonusId })
     expect(s.stops[bonusId].status).toBe('out_for_delivery')
     expect(costLedger(s).find((c) => c.line === 'Second-chance re-attempt leg')).toMatchObject({ amount: 21, count: 1 })

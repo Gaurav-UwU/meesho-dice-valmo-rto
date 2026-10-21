@@ -64,11 +64,11 @@ describe('expected values behind the waterfall', () => {
     for (const r of REFUSAL_REASONS) expect(pAccept(r)).toBe(DEFAULT_ROUTER_PARAMS.acceptByReason[r])
     expect(pAccept('no_cash')).toBe(0.5)
     expect(pAccept('cheaper_elsewhere')).toBe(0.1)
-    expect(REFUSAL_REASONS).toHaveLength(7)
+    expect(REFUSAL_REASONS).toHaveLength(8)
   })
 
-  it('treats not home, no cash and "later" as soft', () => {
-    expect(REFUSAL_REASONS.filter(isSoftReason)).toEqual(['no_cash', 'want_later', 'not_home'])
+  it('treats not home, no cash, "later" and "other" (the rider could not tell) as soft', () => {
+    expect(REFUSAL_REASONS.filter(isSoftReason)).toEqual(['no_cash', 'want_later', 'not_home', 'other'])
   })
 })
 

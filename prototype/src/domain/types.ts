@@ -122,7 +122,9 @@ export type MessageKind =
   | 'reschedule_check'
   | 'second_chance'
   | 'second_chance_when'
+  | 'second_chance_method'
   | 'second_chance_pay'
+  | 'second_chance_address'
   | 'second_chance_ack'
   | 'pickup_code'
   | 'pay_prompt'
@@ -184,14 +186,23 @@ export interface BonusReview {
 
 export type ParcelState = 'queued' | 'second_chance_sent' | 'recovered' | 'held' | 'pickup_reserved' | 'picked_up' | 'rehomed' | 'batched'
 
-/** What a customer picked on the second-chance WhatsApp. `later` asks "which day?"; `tomorrow` and `day_after` answer it. */
-export type SecondChanceOption = 'deliver' | 'later' | 'tomorrow' | 'day_after' | 'pay' | 'pickup' | 'address'
+/**
+ * The second chance asks one question at a time, and each answer list is exhaustive and non-overlapping (MECE):
+ *   1. Do you still want it?   deliver | pickup | (decline: accept false)
+ *   2. When should we come?    today | tomorrow | day_after          (deliver only)
+ *   3. How will you pay?       cod | upi                            (deliver and COD only)
+ *   4. Is the address right?   same_address | share_location         (deliver only)
+ */
+export type SecondChanceOption = 'deliver' | 'pickup' | 'today' | 'tomorrow' | 'day_after' | 'cod' | 'upi' | 'same_address' | 'share_location'
 
-/** The option the customer finally took (for the KPIs): a different time, paying now and a pickup at the hub each end differently. */
-export type SecondChanceChoice = 'deliver' | 'later' | 'pay' | 'pickup' | 'address'
+/** The outcome the customer chose in step 1 (for the KPIs) */
+export type SecondChanceChoice = 'deliver' | 'pickup'
 
-/** The customer asked a question the Desk is waiting on (which day? did the payment go through?) */
-export type Awaiting = 'when' | 'pay'
+/** The delivery day chosen in step 2 */
+export type SecondChanceWhen = 'today' | 'tomorrow' | 'day_after'
+
+/** The question the Desk is waiting on: which day, how to pay, the UPI result, or the address */
+export type Awaiting = 'when' | 'method' | 'pay' | 'address'
 
 /** A parcel waiting at the hub for its customer. The code is the customer's to show; it is verified by the operator, with 5 tries. */
 export interface Pickup {
@@ -223,6 +234,8 @@ export interface ParcelRecord {
   /** The shelf was free when the offer was sent, so the customer was offered a pickup */
   readonly pickupOffered?: boolean
   readonly choice?: SecondChanceChoice
+  /** The day picked in step 2, kept until step 4 sends the order out */
+  readonly scWhen?: SecondChanceWhen
   readonly awaiting?: Awaiting
   readonly pickup?: Pickup
   readonly heldSim?: number
