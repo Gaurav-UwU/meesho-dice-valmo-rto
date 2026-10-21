@@ -240,7 +240,7 @@ export function parcelTimers(s: S, at: number): S {
   for (const rec of s.parcels) {
     const cur = next.parcels.find((p) => p.id === rec.id) ?? rec
     if (cur.state === 'second_chance_sent' && cur.secondChanceSentSim !== undefined && next.simNow - cur.secondChanceSentSim >= next.router.secondChanceHours * HOUR_MS) {
-      next = patchParcel(next, cur.id, { state: 'queued', secondChanceExpired: true, awaiting: undefined, scWhen: undefined })
+      next = patchParcel(next, cur.id, { state: 'queued', secondChanceExpired: true, choice: undefined, awaiting: undefined, scWhen: undefined })
       if (next.stops[cur.orderId]?.paymentPending) next = patchStop(next, cur.orderId, { paymentPending: false })
       next = emit(next, at, 'SECOND_CHANCE_EXPIRED', {}, { orderId: cur.orderId })
       next = feedAdd(next, at, 'desk', `No answer to the second chance for ${cur.parcel.awb} in ${next.router.secondChanceHours} h: routed to the next lane`, cur.orderId)

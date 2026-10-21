@@ -6,6 +6,7 @@ import { CONTACT_CAP, proactiveCount } from './helpers.ts'
 import { ledgerTotals, savingsLedger, costLedger } from './ledger.ts'
 import { reduce } from './reducer.ts'
 import { shelfUsed } from './routing.ts'
+import { deskKpis } from './deskKpis.ts'
 import { deskItems, kpis, stopsOf } from './selectors.ts'
 import { AT, advanceHours, deliverOrder, forceParcel, heroStops, inspectParcel, refuseOrder, run, setPayment, startedDay, walkSecondChance } from './testkit.ts'
 import { overdueTimers } from './tick.ts'
@@ -153,6 +154,33 @@ describe('step 4, "Is the address right?": always asked, then the order goes out
   it('the day after: one day later than tomorrow', () => {
     const s = walkSecondChance(offered(), pid, AT + 3, { when: 'day_after' })
     expect(order(s).rescheduledTo).toBe(nextDayStart(s.simNow) + DAY_MS)
+  })
+
+  it('on Ops, +1 day brings back a "tomorrow" at once and a "day after" only on the second press, with a green Audit', () => {
+    const nextDay = (x: DayState, at: number): DayState => reduce(x, { type: 'advanceDay', at })
+    const tomorrow = nextDay(walkSecondChance(offered(), pid, AT + 3, { when: 'tomorrow' }), AT + 10)
+    expect(order(tomorrow).status).toBe('out_for_delivery')
+    const later = walkSecondChance(offered(), pid, AT + 3, { when: 'day_after' })
+    const day2 = nextDay(later, AT + 10)
+    expect(order(day2).status).toBe('rescheduled')
+    const day3 = nextDay(day2, AT + 11)
+    expect(order(day3).status).toBe('out_for_delivery')
+    expect(eventsOf(day3, 'ORDER_DISPATCHED', bonusId).at(-1)?.data.attempt).toBe(2)
+    expect(runAudit(deliverOrder(day3, bonusId, '2468', AT + 12)).filter((c) => !c.ok)).toEqual([])
+  })
+
+  it('on Ops, a customer who stops at "When should we come?" can still answer after +1 day until the 24 h run out', () => {
+    const halfway = choose(offered(), 'deliver')
+    const nextDay = reduce(halfway, { type: 'advanceDay', at: AT + 10 })
+    const open = nextDay.simNow - record(nextDay).secondChanceSentSim! < 24 * HOUR_MS
+    expect(record(nextDay).state).toBe(open ? 'second_chance_sent' : 'queued')
+    if (open) {
+      const done = walkSecondChance(nextDay, pid, AT + 11, { when: 'tomorrow' })
+      expect(order(done).rescheduledTo).toBe(nextDayStart(nextDay.simNow))
+    }
+    const twoDays = reduce(nextDay, { type: 'advanceDay', at: AT + 12 })
+    expect(record(twoDays).state).toBe('queued')
+    expect(overdueTimers(twoDays)).toEqual([])
   })
 
   it('share my exact location: the order goes out and the customer is asked for the pin, which then moves it', () => {
@@ -362,6 +390,14 @@ describe('a declined or unanswered offer still works as before', () => {
     expect(record(expired).secondChanceExpired).toBe(true)
     expect(record(expired).awaiting).toBeUndefined()
     expect(order(expired).paymentPending).toBeFalsy()
+  })
+
+  it('a customer who stops halfway and lets the offer expire is not counted as an accept on the Desk', () => {
+    const halfway = choose(offered(), 'deliver')
+    expect(deskKpis(halfway).acceptRate.n).toBe(1)
+    const expired = advanceHours(halfway, 24)
+    expect(record(expired).choice).toBeUndefined()
+    expect(deskKpis(expired).acceptRate.value).toBe(0)
   })
 })
 
